@@ -2,7 +2,7 @@
 
 This repository contains various mesoscale network models for studying mechanical properties of elastomeric materials.
 
-All projects utilize the opensource [LAMMPS](https://www.lammps.org/#gsc.tab=0) MD codebase, at the custom [meso-network](https://github.com/SoftMatterLab24/lammps/tree/meso-network) branch. Please see the Installing LAMMPS section for more guidance.
+All projects utilize the opensource [LAMMPS](https://www.lammps.org/#gsc.tab=0) MD codebase, under the custom [meso-network](https://github.com/SoftMatterLab24/lammps/tree/meso-network) branch. Please see the Installing LAMMPS section for more guidance.
 
 ## Branches
 Code for specific models can be found within the following branches
