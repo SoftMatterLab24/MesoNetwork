@@ -13,7 +13,6 @@ Code for specific models can be found within the following branches
 ## Installing & Running LAMMPS
 While LAMMPS offers both Windows and Mac compatability, we recommend using a Linux environment. For Windows users the recommended option is to install Windows Subsystem for Linux (WSL). A usefull guide can be found [here](https://docs.lammps.org/Howto_wsl.html). For a Linux distribution try Ubuntu 20.04.6 LTS.
 
-Once installed open a WSL terminal and 
 ### Installation Guide
 **Clean installation**
 1. Open a WSL terminal and navigate to the home directory or location you wish to install LAMMPS
