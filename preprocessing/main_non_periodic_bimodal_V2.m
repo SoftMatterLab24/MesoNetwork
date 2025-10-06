@@ -601,8 +601,8 @@ fprintf(fid, '%d atoms\n', Atom_count);
 fprintf(fid, '%d bonds\n', Bond_count);
 fprintf(fid, '%d atom types\n', 1);
 fprintf(fid, '%d bond types\n', 2);
-fprintf(fid, '%f %f xlo xhi\n', 2*xlo, 2*xhi);
-fprintf(fid, '%f %f ylo yhi\n', 2*ylo, 2*yhi);
+fprintf(fid, '%f %f xlo xhi\n', xlo, xhi);
+fprintf(fid, '%f %f ylo yhi\n', ylo, yhi);
 fprintf(fid, '%f %f zlo zhi\n', zlo, zhi);
 fprintf(fid, '\n');
 
@@ -732,4 +732,5 @@ fprintf('Wrote %s with %d atoms and %d bonds.\n', lammps_visual_file, Atom_count
 % else
 %     warning('No bonds to write into %s.', bond_table_file);
 % end
+
 
