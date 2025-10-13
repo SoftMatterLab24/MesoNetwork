@@ -1,0 +1,196 @@
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   Initialize simulation domain
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Some general info
+units               nano
+boundary            f f p
+dimension           2
+
+# Specify atoms and bond attributes
+atom_style          bpm/sphere
+special_bonds       lj/coul 1 1 1
+newton              off off
+
+# Read data file
+read_data           PronyNetwork_500_nano.txt
+thermo_modify       flush yes 
+comm_modify         cutoff 150 vel yes
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       Simulation settings
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Timestep multiplier (smaller = smaller timesteps)
+variable            alpha equal 0.01 #0.01
+
+# Max bond stiffness
+variable            Kmax equal 10
+
+# Max stretch
+variable            lammax equal 1.75
+
+# Strain rate
+variable            erate equal 0.001
+
+# Weissenberg number
+variable            Wi equal 0.1
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       Material Properties
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Kuhn segment/chain
+variable            N1 equal 50
+variable            N2 equal 50
+
+# Kuhn segment length
+variable            b equal 1.6     # Kuhn length (nm)
+
+# Energy scale
+variable            kBT equal 4.14  # Energy scale (attogram-nanometer^2/nanosecond^2) or 4.1400e-21 J or 1 kBT at 300K
+
+# Critical stretch for bond breaking (lamc < 1)
+variable            lamc equal 0.7
+
+# LJ parameters
+variable            e equal   0.4          # Energy scale 1
+variable            sig equal $(6*v_b)     #LJ particle diameter 10*b
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#      Assign groups
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+region              top_clamped block -350 350 270  350  -32 32
+region              bot_clamped block -350 350 -350 -270 -32 32
+group               top_clamp region top_clamped
+group               bot_clamp region bot_clamped
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#      Assign bond and pair styles
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Pairstyles
+pair_style           harmonic/cut
+pair_coeff           * * ${e} ${sig}
+
+#pair_style          lj/cut $(2.5*v_sig)
+#pair_coeff          * * ${e} ${sig}
+
+# Bondstyles
+bond_style          bpm/prony 1 break yes overlay/pair yes nonlinear yes smooth no
+bond_coeff          1 ${kBT} 1.0 0.0 prony.table KEY 1.0 ${N1} ${b} ${lamc}
+bond_coeff          2 ${kBT} 1.0 0.0 prony.table KEY 1.0 ${N2} ${b} ${lamc}
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#     Computes for system info
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+compute             1 all property/local btype batom1 batom2 
+compute             2 all bond/local dist force
+compute             3 all nbond/atom  
+compute             4 all reduce sum c_3
+
+# Calculate stress tensors
+compute             virial all pressure NULL fix bond pair
+compute             virials all pressure NULL pair
+
+variable            Pxx equal c_virial[1]
+variable            Pyy equal c_virial[2]
+variable            Pxy equal c_virial[4]
+
+variable            Pxx_p equal c_virials[1]
+variable            Pyy_p equal c_virials[2]
+variable            Pxy_p equal c_virials[4]
+
+variable            V equal vol
+
+# Calculate minimum mass
+compute             getmass all property/atom mass
+compute             minmass all reduce min c_getmass
+
+run                 0       
+
+# Get box dimensions
+variable            H0 equal $(yhi-ylo)                 #inital height
+variable            H equal yhi-ylo
+variable            Hf equal $(v_H0*v_lammax)           #final height
+
+variable            W0 equal $(xhi-xlo)                 #initial width
+variable            W equal xhi-xlo
+
+variable            stime equal time
+variable            nbonds_total equal c_4/2.0
+
+compute             Lmax all reduce max c_2[1] inputs local
+variable            Lmax equal c_Lmax 
+
+thermo              100
+thermo_style        custom step c_virial[1] c_virial[2] c_virial[4] v_Lmax pe ke lx ly c_virials[1] c_virials[2]
+
+dump                1 all custom 1000 atoms_equilib.dump id mol type xs ys zs fx fy fz
+dump                2 all local 1000 bonds_equilib.dump c_1[*] c_2[*]
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   Setup final settings
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Timestep (in microseconds)
+variable            dt equal $(v_alpha*sqrt(c_minmass/v_Kmax))
+
+# Timesteps to reach max stretch
+variable            Nrun equal $(ceil((v_lammax-1)/v_erate/v_dt))
+
+# Output frequency
+variable            nout equal $(ceil(v_Nrun/2000))
+variable            nthermo equal $(ceil(v_nout/10)) 
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#     Equilibrate networks
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+timestep            0.001
+
+fix                 1 all nve/bpm/sphere
+fix                 2 all viscous 0.1
+run                 200000 
+
+# Boundary conditions
+fix                 3 top_clamp setforce NULL 0 0 
+fix                 4 bot_clamp setforce NULL 0 0 
+
+group               clamps union top_clamp bot_clamp
+
+fix                 5 clamps deform 1 y erate ${erate}
+run                 2000
+unfix               5
+
+fix                 5 clamps deform/pressure 1 y pressure 0.0 1
+run                 20000
+unfix               5
+
+run                 50000
+undump              1
+undump              2
+
+reset_timestep      0 time 0
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#     Setup final physics and dumps
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+fix                 5 clamps deform 1 y erate ${erate}
+
+# Final computes
+variable            top_clamp_forces equal f_3[2]
+variable            bot_clamp_forces equal f_4[2]
+
+variable            lamy equal v_H/v_H0
+variable            PE equal pe
+variable            KE equal ke    
+
+# Dumps and prints
+dump                1 all custom ${nout} atoms.dump id mol type xs ys zs fx fy fz
+dump                2 all local ${nout} bonds.dump c_1[*] c_2[*]
+
+fix                 printF all print ${nout} "${stime} ${lamy} ${Pxx} ${Pyy} ${Pxy} ${Pxx_p} ${Pyy_p} ${Pxy_p} ${V} ${PE} ${KE} ${top_clamp_forces} ${bot_clamp_forces}" file Network_500_clamp.out screen no title "" #${nbonds_total}
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#               Run
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+timestep            ${dt}
+run                 ${Nrun}
