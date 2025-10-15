@@ -54,8 +54,23 @@ make -j 4
 ```
 
 ### Running LAMMPS
+For a more in-depth guide please see [Basics of running LAMMPS](https://docs.lammps.org/Run_basics.html). LAMMPS is run from the command-line, reading an input script via the ```-in``` command-line flag. The input script may use any name or file extention, however, the ```file.in``` format is preferred. LAMMPS is normally run in the directory where your input script is located. This is also where output files are produced by default.
 
-WIP
+***DO NOT*** run lammps within the build folder, as this can significatly clog your LAMMPS installation. Additionally, data may be lost when attempting to freshly reinstall LAMMPS. It is therefore recommended to run LAMMPS within an entirely seperate directory from the ```lammps``` installation.
+
+**Serial Execution**
+To run LAMMPS in serial, (i.e. one processor):
+```
+/path/to/lammps/src/build/lmp -in file.in
+```
+where ```/path/to/lammps/``` is the directory you installed LAMMPS, typically ```/home/usr/lammps/```.
+
+**Parallel Execution**
+To run LAMMPS in parallel, if it was built with more than 1 processor:
+```
+mpirun -np 4 /path/to/lammps/src/build/lmp -in file.in
+```
+where the ```-np``` command-line flag specifies the number of processors to use.
 
 ### Troubleshooting
 Below is a list of commonly encountered issues when trying to install lammps. Before trying one of the specific solutions below, please ensure that the requisite packages are installed:
@@ -68,7 +83,7 @@ sudo apt install -y cmake build-essential ccache gfortran openmpi-bin libopenmpi
 
 **Selecting the correct C++ Compiler**
 
-If LAMMPS fails to build following ``` make -j 8 ``` giving X error LAMMPS may not be using the correct compiler. After running ```cmake``` (Step 5) check that ```C++ Compiler:``` is set to ``` /usr/bin/c++ ``` in the build configuration, although the exact location may differ. If this is not the case:
+If LAMMPS fails to build following ``` make -j 8 ``` giving an error about the compiler, CMAKE may not be using the correct compiler when attempting to build LAMMPS. After running ```cmake``` (Step 5) check that ```C++ Compiler:``` is set to ``` /usr/bin/c++ ``` in the build configuration, although the exact location may differ. If this is not the case:
 1. Check to see if the C++ compiler is installed by running
 ```
 which c++
