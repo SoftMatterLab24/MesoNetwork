@@ -54,3 +54,35 @@ make -j 4
 ```
 
 ### Running LAMMPS
+
+WIP
+
+### Troubleshooting
+Below is a list of commonly encountered issues when trying to install lammps. Before trying one of the specific solutions below, please ensure that the requisite packages are installed:
+```
+sudo apt install -y cmake build-essential ccache gfortran openmpi-bin libopenmpi-dev \
+                    libfftw3-dev libjpeg-dev libpng-dev python3-dev python3-pip \
+                    python3-virtualenv libblas-dev liblapack-dev libhdf5-serial-dev \
+                    hdf5-tools
+```
+
+**Selecting the correct C++ Compiler**
+
+If LAMMPS fails to build following ``` make -j 8 ``` giving X error LAMMPS may not be using the correct compiler. After running ```cmake``` (Step 5) check that ```C++ Compiler:``` is set to ``` /usr/bin/c++ ``` in the build configuration, although the exact location may differ. If this is not the case:
+1. Check to see if the C++ compiler is installed by running
+```
+which c++
+```
+This should return the directory location of the compiler, i.e. ``` /usr/bin/c++ ```. If it returns blank, this means C++ is either not installed or cannot be found.
+
+2. Install the ```build-essentials``` package, which includes various compilers and development tools:
+```
+sudo apt install build-essential
+```
+Then check to see if LAMMPS compiles. Make sure to rebuild LAMMPS with ```cmake```. If this does not work then: 
+
+3. Manually set the compiler by including the following CMAKE build option
+```
+-D CMAKE_CXX_COMPILER=c++
+```
+This should set CMAKE to use the correct compiler during configuration. 
