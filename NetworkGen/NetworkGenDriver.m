@@ -96,11 +96,10 @@ for ii = 1:Nreplicates
     end
 
     % 2. Set replicate-specific file names
-    index = sprintf( '%04d', ii );
     if Nreplicates > 1
-        options.lammps_data_file   = sprintf('Replicate%d_%s',index,lammps_data_file);
-        options.lammps_visual_file = sprintf('Replicate%d_%s',index,lammps_visual_file);
-        options.bond_table_file    = sprintf('Replicate%d_%s',index,bond_table_file);
+        options.lammps_data_file   = sprintf('%04d_%s',ii,lammps_data_file);
+        options.lammps_visual_file = sprintf('%04d_%s',ii,lammps_visual_file);
+        options.bond_table_file    = sprintf('%04d_%s',ii,bond_table_file);
     end
 
 
