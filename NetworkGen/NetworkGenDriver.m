@@ -39,7 +39,6 @@ lammps_data_file   = 'PronyNetwork_nano_1300x800.dat';          % Prefix file na
 lammps_visual_file = 'PronyVisual_10000_nano_1300x800.dat';     % Prefix file name for LAMMPS visualization output
 bond_table_file    = 'bond.table';                              % File name for bond table output   
 
-
 %% --------------------- Polydisperse Options ----------------------
 
 
@@ -70,9 +69,10 @@ options.bond_table_file    = bond_table_file;
 
 % Polydisperse options
 % (none for now)
+% options.polydisperse.<param> = <value>;
 
 % Bimodal options
-options.N1                 = N1;
+options.bimodal.N1                 = N1;
 
 % Additional advanced options
 advancedOptions = [];
@@ -120,11 +120,11 @@ for ii = 1:Nreplicates
         error('Error: distribution type not recognized');
     end
 
-    %% E. Show visualization
-    [] = NetworkGenVisualize(Domain,Atoms,Bonds,options);
+    %% E. Show visualization and statistics
+    NetworkGenVisualize(Domain,Atoms,Bonds,options);
 
     %% F. Write data files
-    [] = NetworkGenWriteDataFiles(Domain,Atoms,Bonds,options);
+    NetworkGenWriteDataFiles(Domain,Atoms,Bonds,options);
     
 end
 
