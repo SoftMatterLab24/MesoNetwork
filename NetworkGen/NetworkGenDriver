@@ -29,7 +29,7 @@ Ly = 800;    % Domain size in y (in units of b)
 
 % Seed options
 imanualseed = true;  % true: manual seed; false: random seed
-seed = 1;
+seed = [1];
 
 % Visualization
 iplot = true;    % Show 
@@ -45,7 +45,11 @@ bond_table_file    = 'bond.table';                              % File name for 
 
 
 %% --------------------- Bimodal Options ---------------------------
+N1 = 1; 
+N2 = 1;
 
+%% --------------------- Advanced Options ---------------------------
+iadvancedoptions = false;
 
 
 %% --------------------- Network Generation ------------------------
@@ -70,11 +74,58 @@ options.bond_table_file    = bond_table_file;
 % Bimodal options
 options.N1                 = N1;
 
-%% A. Setup the system
-[] = NetworkGenSetup(options);
+% Additional advanced options
+advancedOptions = [];
+if iadvancedoptions
+    % (add advanced options here)
+end
 
-%% B. Scatter nodes with minimum spacing
-[] = NetworkGenScatterNodes();
+for ii = 1:Nreplicates
+    fprintf('Generating network replicate %d of %d...\n',ii,Nreplicates);
+    
 
-%% C. Connect nodes within bonds    
-[] = NetworkGenConnectNodes();
+    %% A. Prepare replicate-specific information
+    % 1. Set seed
+    if imanualseed
+        if length(seed) < Nreplicates
+            error('Error: not enough manual seeds provided for the number of replicates');
+        end
+        options.seed = seed(ii);
+    else
+        options.seed = randi(1e6);
+    end
+
+    % 2. Set replicate-specific file names
+    index = sprintf( '%04d', ii );
+    if Nreplicates > 1
+        options.lammps_data_file   = sprintf('Replicate%d_%s',index,lammps_data_file);
+        options.lammps_visual_file = sprintf('Replicate%d_%s',index,lammps_visual_file);
+        options.bond_table_file    = sprintf('Replicate%d_%s',index,bond_table_file);
+    end
+
+
+    %% B. Setup the system
+    [Domain] = NetworkGenSetup(options,advancedOptions);
+
+    %% C. Scatter nodes with minimum spacing
+    [Atoms] = NetworkGenScatterNodes(Domain);
+
+    %% D. Connect nodes within bonds
+    if strcmp(dist_type,'polydisperse')
+        % Polydisperse network
+        [Bonds] = NetworkGenConnectNodesPolydisperse(Domain,Atoms,options);
+    elseif strcmp(dist_type,'bimodal')
+        % Bimodal network
+        [Bonds] = NetworkGenConnectNodesBimodal(Domain,Atoms,options);
+    else
+        error('Error: distribution type not recognized');
+    end
+
+    %% E. Show visualization
+    [] = NetworkGenVisualize(Domain,Atoms,Bonds,options);
+
+    %% F. Write data files
+    [] = NetworkGenWriteDataFiles(Domain,Atoms,Bonds,options);
+    
+end
+
