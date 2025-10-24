@@ -38,6 +38,7 @@ iplot = true;    % Show
 lammps_data_file   = 'PronyNetwork_nano_1300x800.dat';          % Prefix file name for LAMMPS data output
 lammps_visual_file = 'PronyVisual_10000_nano_1300x800.dat';     % Prefix file name for LAMMPS visualization output
 bond_table_file    = 'bond.table';                              % File name for bond table output   
+write_location     = './networks';                              % Location to write output files
 
 %% --------------------- Polydisperse Options ----------------------
 
@@ -66,6 +67,7 @@ options.iplot              = iplot;
 options.lammps_data_file   = lammps_data_file;
 options.lammps_visual_file = lammps_visual_file;
 options.bond_table_file    = bond_table_file;
+options.write_location     = write_location;
 
 % Polydisperse options
 % (none for now)
