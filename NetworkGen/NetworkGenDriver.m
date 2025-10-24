@@ -48,9 +48,12 @@ write_location     = './networks';                              % Location to wr
 N1 = 1; 
 N2 = 1;
 
+P = 0.5;    % desired fraction of type 2 bonds
+
 %% --------------------- Advanced Options ---------------------------
 iadvancedoptions = false;
 
+% Rcut = 10*b;    % cutoff distance for bonding (in units of b)
 
 %% --------------------- Network Generation ------------------------
 % DO NOT EDIT BELOW THIS LINE
@@ -75,9 +78,11 @@ options.write_location     = write_location;
 
 % Bimodal options
 options.bimodal.N1                 = N1;
+options.bimodal.N2                 = N2;
+options.bimodal.P                  = P;
 
 % Additional advanced options
-advancedOptions = [];
+advancedOptions.iadvancedoptions = iadvancedoptions;
 if iadvancedoptions
     % (add advanced options here)
 end
@@ -89,13 +94,14 @@ for ii = 1:Nreplicates
     %% A. Prepare replicate-specific information
     % 1. Set seed
     if imanualseed
-        if length(seed) < Nreplicates
+        if length(seed) ~= Nreplicates
             error('Error: not enough manual seeds provided for the number of replicates');
         end
         options.seed = seed(ii);
     else
         options.seed = randi(1e6);
     end
+    rng(options.seed);
 
     % 2. Set replicate-specific file names
     if Nreplicates > 1
