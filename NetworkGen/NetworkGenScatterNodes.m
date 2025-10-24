@@ -6,7 +6,7 @@ xlo = Domain.xlo; xhi = Domain.xhi;
 ylo = Domain.ylo; yhi = Domain.yhi;
 zlo = Domain.zlo; zhi = Domain.zhi;
 
-Max_atom                        = Domain.Max_atom;
+Max_atom                        = 73335; %Domain.Max_atom;
 node_scatter_max_tries          = Domain.node_scatter_max_tries;
 min_node_sep                    = Domain.min_node_sep;
 Rmax                            = min_node_sep;

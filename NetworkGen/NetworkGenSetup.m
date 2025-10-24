@@ -30,9 +30,6 @@ max_attempts_without_progress  = 10  * Max_atom; % local stall guard
 % Pruning rule
 min_degree_keep    = 1;        % delete nodes with degree <= 1
 
-% Cutoff for atom placement
-Rcut = 6*b;
-
 % Write to Domain structure
 Domain.xlo = xlo; Domain.xhi = xhi;
 Domain.ylo = ylo; Domain.yhi = yhi;
@@ -91,7 +88,7 @@ elseif strcmp(dist_type,'bimodal')
 end
 
 % Node scattering (min distance)
-min_node_sep               = Rcut*b;            % HARD minimum spacing between any 2 nodes 0.30
+min_node_sep               = 6*b;            % HARD minimum spacing between any 2 nodes 0.30
 min_node_sep2              = min_node_sep^2;    % compare squared dists
 
 Domain.min_node_sep        = min_node_sep;      
