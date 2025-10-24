@@ -30,7 +30,8 @@ max_attempts_without_progress  = 10  * Max_atom; % local stall guard
 % Pruning rule
 min_degree_keep    = 1;        % delete nodes with degree <= 1
 
-
+% Cutoff for atom placement
+Rcut = 6*b;
 
 % Write to Domain structure
 Domain.xlo = xlo; Domain.xhi = xhi;
@@ -41,14 +42,12 @@ Domain.Max_atom                 = Max_atom;
 Domain.Max_bond                 = Max_bond;
 Domain.Max_peratom_bond         = Max_peratom_bond;
 
-Domain.node_scatter_max_tries       = node_scatter_max_tries;
+Domain.node_scatter_max_tries   = node_scatter_max_tries;
 Domain.bond_global_try_limit    = bond_global_try_limit;
 Domain.max_attempts_without_progress = max_attempts_without_progress;
 
-Domain.max_tries_per_node_sample    = max_tries_per_node_sample;
+Domain.max_tries_per_node_sample  = max_tries_per_node_sample;
 Domain.min_degree_keep            = min_degree_keep;
-
-
 %% B. Sytle specific Parameters
 if strcmp(dist_type,'polydisperse')
     % Polydisperse parameters
@@ -91,9 +90,10 @@ elseif strcmp(dist_type,'bimodal')
 
 end
 
-% Node scattering (min distance) + guards
-min_node_sep               = Rcut*b;       % HARD minimum spacing between any 2 nodes 0.30
-min_node_sep2              = min_node_sep^2;        % compare squared dists
+% Node scattering (min distance)
+min_node_sep               = Rcut*b;            % HARD minimum spacing between any 2 nodes 0.30
+min_node_sep2              = min_node_sep^2;    % compare squared dists
 
-
+Domain.min_node_sep        = min_node_sep;      
+Domain.min_node_sep2       = min_node_sep2;
 end

@@ -24,7 +24,7 @@ Nreplicates = 1;
 b = 1.6;     % Kuhn length (in nm)
 
 % Domain size
-Lx = 800;    % Domain size in x (in units of b)
+Lx = 1300;    % Domain size in x (in units of b)
 Ly = 800;    % Domain size in y (in units of b)
 
 % Seed options
@@ -95,7 +95,7 @@ for ii = 1:Nreplicates
     % 1. Set seed
     if imanualseed
         if length(seed) ~= Nreplicates
-            error('Error: not enough manual seeds provided for the number of replicates');
+            error(' Error: not enough manual seeds provided for the number of replicates');
         end
         options.seed = seed(ii);
     else

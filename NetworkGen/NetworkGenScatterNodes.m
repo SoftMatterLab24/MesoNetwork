@@ -8,17 +8,20 @@ zlo = Domain.zlo; zhi = Domain.zhi;
 
 Max_atom                        = Domain.Max_atom;
 node_scatter_max_tries          = Domain.node_scatter_max_tries;
-
+min_node_sep                    = Domain.min_node_sep;
+Rmax                            = min_node_sep;
 
 %%%
 Atoms  = zeros(Max_atom, 10);
 
-icount = 0; N_atom = 0;
+tic
+
+icount = 0; N_atom = 0; ng = 1;
 while (N_atom < Max_atom)
     
     icount = icount + 1;
     if icount > node_scatter_max_tries
-        fprintf("Placed %d atoms out of %d requested\n", N_atom, Max_atom);
+        fprintf("   Placed %d atoms out of %d requested in %d\n", N_atom, Max_atom,toc);
         break;
     end
 
@@ -41,7 +44,7 @@ while (N_atom < Max_atom)
     zg = zeros(200,1);
 
     %%% Remove atoms that are too close to atoms in remaining seed
-    Idx = rangesearch([xg yg zg],[xg yg zg],Dmax);
+    Idx = rangesearch([xg yg zg],[xg yg zg],Rmax);
     for II = 1:length(Idx)
         if Idx{II}(1) == II
             Idx{II}(1) = [];
@@ -63,7 +66,7 @@ while (N_atom < Max_atom)
     end
 
     %%% Remove particles overlapping with current discretization %%%
-    Idx = rangesearch([Xg(1:ng) Yg(1:ng) Zg(1:ng)],[xg yg zg],Dmax);
+    Idx = rangesearch([Xg(1:ng) Yg(1:ng) Zg(1:ng)],[xg yg zg],Rmax);
     idelete = ~(cellfun('isempty',Idx));
     if ~isempty(idelete)
         xg(idelete) = [];
@@ -75,21 +78,23 @@ while (N_atom < Max_atom)
         continue
     end
 
-    N_atom = N_atom + length(xg);
+    N_atom = N_atom + length(xg)
 
     %%% Add remaining particles to discretization %%%
-    id = [length(xg)+1:N_atom]';
+    n_add = length(xg);
+    id = [(ng+1):(ng+n_add)]';
     ID = [ID; id];
     Xg = [Xg; xg];
     Yg = [Yg; yg];
     Zg = [Zg; zg];
+    ng = ng+n_add;
 
     icount = 0;
 end
 
-    if N_atom == 0
-        error('Error: No atoms were placed in the domain. Consider increasing domain size or decreasing minimum distance between atoms.');
-    end
+if N_atom == 0
+    error('Error: No atoms were placed in the domain. Consider increasing domain size or decreasing minimum distance between atoms.');
+end
 
     % Write to atom vector
     Atoms(1:N_atom,1) = ID;
