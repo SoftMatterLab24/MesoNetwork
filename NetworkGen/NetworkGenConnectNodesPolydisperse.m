@@ -18,7 +18,7 @@ global_limit      = Domain.bond_global_try_limit;
 stall_limit       = Domain.max_attempts_without_progress;
 min_keep          = Domain.min_degree_keep;
 
-if isfield(Domain,'Rcut'), Rcut = Domain.Rcut; else, Rcut = 10*options.b; end
+R_cut = Domain.min_node_sep * 2;
 Rcut2 = Rcut*Rcut;
 
 ids = Atoms(:,1);         % IDs by row
