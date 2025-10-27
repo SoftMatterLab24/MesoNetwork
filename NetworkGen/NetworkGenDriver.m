@@ -154,7 +154,7 @@ for ii = 1:Nreplicates
     NetworkGenVisualize(Domain,Atoms,Bonds,options);
 
     %% F. Write data files
-    NetworkGenWriteDataFiles(Domain,Atoms,Bonds,options);
+    NetworkGenWriteDataFiles(Domain,Atoms,Bonds,options,Nvec);
     
 end
 
