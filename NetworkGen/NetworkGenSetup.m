@@ -28,7 +28,7 @@ bond_global_try_limit          = 200 * Max_bond; % absolute ceiling
 max_attempts_without_progress  = 10  * Max_atom; % local stall guard
 
 % Pruning rule
-min_degree_keep    = 1;        % delete nodes with degree <= 1
+min_degree_keep    = 3;        % delete nodes with degree <= 1
 
 % Write to Domain structure
 Domain.xlo = xlo; Domain.xhi = xhi;

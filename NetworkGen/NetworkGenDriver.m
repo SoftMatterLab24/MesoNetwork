@@ -120,7 +120,7 @@ for ii = 1:Nreplicates
     %% D. Connect nodes within bonds
     if strcmp(dist_type,'polydisperse')
         % Polydisperse network
-        [Bonds] = NetworkGenConnectNodesPolydisperse(Domain,Atoms,options);
+        [Atoms,Bonds] = NetworkGenConnectNodesPolydisperse(Domain,Atoms,options);
     elseif strcmp(dist_type,'bimodal')
         % Bimodal network
         [Bonds] = NetworkGenConnectNodesBimodal(Domain,Atoms,options);
