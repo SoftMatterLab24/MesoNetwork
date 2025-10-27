@@ -73,8 +73,29 @@ options.bond_table_file    = bond_table_file;
 options.write_location     = write_location;
 
 % Polydisperse options
-% (none for now)
-% options.polydisperse.<param> = <value>;
+% --- mode selection ---
+options.polydisperse.distribution_assignment_mode = 'pmf';   % 'geom' | 'range' | 'pmf'
+
+% --- shared / guards ---
+options.polydisperse.min_N           = 1;        % lower bound for all modes
+options.polydisperse.align_to_length = 'ascend'; % 'ascend' (shortest→smallest N) | 'none'
+options.polydisperse.kuhn_rounding   = 'round';  % 'round' | 'ceil' | 'floor' (used in 'geom')
+options.polydisperse.plot_hist       = true;     % show N histogram after assignment
+
+% --- 'geom' mode (N ≈ (L/b)^2) ---
+% uses: b (global), kuhn_rounding, min_N
+
+% --- 'range' mode (map lengths → [N_min,N_max]) ---
+options.polydisperse.N_range_method  = 'rank';   % 'rank' | 'linear'
+options.polydisperse.N_target_min    = 20;       % integer lower target
+options.polydisperse.N_target_max    = 120;      % integer upper target
+
+% --- 'pmf' mode (truncated geometric with hard cap) ---
+options.polydisperse.pmf_nu0         = 20;       % ν0 (minimum)
+options.polydisperse.pmf_meanN       = 30;       % target mean of ν after truncation
+options.polydisperse.pmf_cut_mode    = 'cap';    % keep as 'cap'
+options.polydisperse.pmf_nu_max      = 60;       % hard maximum ν (≥ ν0)
+options.polydisperse.integerize_rule = 'largest_remainder'; % allocation method
 
 % Bimodal options
 options.bimodal.N1                 = N1;
@@ -121,6 +142,7 @@ for ii = 1:Nreplicates
     if strcmp(dist_type,'polydisperse')
         % Polydisperse network
         [Atoms,Bonds] = NetworkGenConnectNodesPolydisperse(Domain,Atoms,options);
+        [Nvec] = NetworkGenAssignKuhnPolydisperse(Bonds, options);
     elseif strcmp(dist_type,'bimodal')
         % Bimodal network
         [Bonds] = NetworkGenConnectNodesBimodal(Domain,Atoms,options);
