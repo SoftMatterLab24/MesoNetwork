@@ -102,4 +102,6 @@ end
     Atoms(1:N_atom,3) = Yg;
     Atoms(1:N_atom,4) = Zg;
 
+    Atoms = Atoms(1:N_atom,:);
+
 end
