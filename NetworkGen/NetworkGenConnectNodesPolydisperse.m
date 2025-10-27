@@ -9,6 +9,7 @@ function [AtomsOut, BondsOut] = NetworkGenConnectNodesPolydisperse(Domain, Atoms
 % Assumptions:
 %   - Max_peratom_bond neighbor slots exist in Atoms (columns 6..(5+Max_peratom_bond))
 %   - R2016a compatible, no implicit expansion
+%   - Uses linked-cell (uniform grid) with cell size ~ Rcut
 
 % --------- Unpack ---------
 N_row             = size(Atoms,1);
@@ -18,17 +19,44 @@ global_limit      = Domain.bond_global_try_limit;
 stall_limit       = Domain.max_attempts_without_progress;
 min_keep          = Domain.min_degree_keep;
 
-R_cut = Domain.min_node_sep * 2;
+xlo = Domain.xlo; xhi = Domain.xhi;
+ylo = Domain.ylo; yhi = Domain.yhi;
+
+% Cutoff selection (prefer explicit Domain.Rcut if provided)
+if isfield(Domain,'Rcut')
+    Rcut = Domain.Rcut;
+else
+    Rcut = 2 * Domain.min_node_sep;   % fallback
+end
 Rcut2 = Rcut*Rcut;
 
 ids = Atoms(:,1);         % IDs by row
 x   = Atoms(:,2);  y = Atoms(:,3);
 
-% Build ID->row map (containers.Map is R2016a-safe)
+% Build ID->row map (robust to id ~= row)
 id2row = containers.Map('KeyType','int64','ValueType','int32');
 for r = 1:N_row
     id2row(int64(ids(r))) = int32(r);
 end
+
+% --------- Build linked-cell grid (bins) ---------
+% Cell size ~ Rcut; only search 3x3 neighboring cells per seed
+hx = Rcut; hy = Rcut;
+nx = max(1, floor((xhi - xlo)/hx));
+ny = max(1, floor((yhi - ylo)/hy));
+
+% Compute cell indices for each row
+cx = floor((x - xlo) / hx) + 1;   % 1..nx
+cy = floor((y - ylo) / hy) + 1;   % 1..ny
+% Clamp to domain
+cx(cx < 1) = 1; cx(cx > nx) = nx;
+cy(cy < 1) = 1; cy(cy > ny) = ny;
+
+% Linear bin index
+binIdx = int32(cx + (cy-1)*nx);  % 1..nx*ny
+
+% Build bins as cell array: bins{bin} = [row indices]
+bins = accumarray(double(binIdx), (1:N_row)', [nx*ny, 1], @(v){v});
 
 % --------- Bond creation in ROW space (store rows internally) ---------
 deg = zeros(N_row,1);             % degrees by row
@@ -50,15 +78,42 @@ while (nbond < Max_bond) && (no_progress < stall_limit) && (ntries < global_limi
         continue;
     end
 
+    % 3x3 neighborhood bins around r1's cell
+    c1x = cx(r1); c1y = cy(r1);
+
+    % Gather candidate rows from neighbor cells
+    candRows = []; % will grow; typical size small
+    for dyc = -1:1
+        yy = c1y + dyc;
+        if (yy < 1) || (yy > ny), continue; end
+        for dxc = -1:1
+            xx = c1x + dxc;
+            if (xx < 1) || (xx > nx), continue; end
+            bId = xx + (yy-1)*nx;
+            list = bins{bId};
+            if ~isempty(list)
+                candRows = [candRows; list]; %#ok<AGROW>
+            end
+        end
+    end
+
+    if isempty(candRows)
+        no_progress = no_progress + 1;
+        continue;
+    end
+
+    % Filter candidates: not self, unsaturated, not already connected, within Rcut
     x1 = x(r1); y1 = y(r1);
-    % brute-force candidate scan (R2016a robust)
     cand = zeros(16,1); ncan = 0;
-    for r2 = 1:N_row
+
+    % Iterate over local list only (fast)
+    for idx = 1:numel(candRows)
+        r2 = candRows(idx);
         if r2 == r1, continue; end
         if deg(r2) >= Max_peratom_bond, continue; end
         if adj(r1,r2) ~= 0, continue; end
-        dx = x(r2)-x1; dy = y(r2)-y1;
-        if (dx*dx + dy*dy) < Rcut2
+        dxv = x(r2) - x1; dyv = y(r2) - y1;
+        if (dxv*dxv + dyv*dyv) < Rcut2
             ncan = ncan + 1;
             if ncan > numel(cand), cand = [cand; zeros(numel(cand),1)]; end %#ok<AGROW>
             cand(ncan) = r2;
@@ -70,6 +125,7 @@ while (nbond < Max_bond) && (no_progress < stall_limit) && (ntries < global_limi
         continue;
     end
 
+    % choose random neighbor among candidates
     r2 = cand(randi(ncan));
     L  = sqrt((x(r2)-x(r1))^2 + (y(r2)-y(r1))^2);
 
@@ -126,8 +182,8 @@ if ~isempty(BondsRows)
     % refresh lengths from coords (robust)
     for k=1:size(BondsRows,1)
         r1 = BondsRows(k,1); r2 = BondsRows(k,2);
-        dx = x(r2)-x(r1); dy = y(r2)-y(r1);
-        BondsRows(k,3) = sqrt(dx*dx + dy*dy);
+        dxv = x(r2)-x(r1); dyv = y(r2)-y(r1);
+        BondsRows(k,3) = sqrt(dxv*dxv + dyv*dyv);
     end
 end
 
@@ -151,9 +207,7 @@ else
     Atoms(:, 6 : 5+Max_peratom_bond) = 0;   % zero neighbor IDs
 end
 
-% Quick row lookup for writing neighbors (ids → row)
-% (we already have id2row for robust mapping)
-
+% Populate neighbor IDs from final bonds
 for k=1:nb
     id1 = BondsOut(k,2);  id2 = BondsOut(k,3);
     r1  = id2row(int64(id1));
