@@ -16,7 +16,7 @@ zlo = -20*b; zhi = 20*b;
 % Network Size Caps
 Rho_atom           = 0.0078;                                   % intial atom density
 Max_atom           = ceil(Rho_atom*(xhi-xlo)*(yhi-ylo));       % requested # nodes
-Max_peratom_bond   = 5;                                        % degree cap per node (fits neighbor slots)
+Max_peratom_bond   = 4;                                        % degree cap per node (fits neighbor slots)
 Max_bond           = round(0.5*Max_atom*Max_peratom_bond);     % cap on bonds
 
 % Atom creation guards
