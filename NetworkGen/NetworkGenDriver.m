@@ -90,7 +90,7 @@ options.polydisperse.N_range_method  = 'rank';   % 'rank' | 'linear'
 options.polydisperse.N_target_min    = 20;       % integer lower target
 options.polydisperse.N_target_max    = 120;      % integer upper target
 
-% --- 'pmf' mode (truncated geometric with hard cap) ---
+% --- 'pmf' mode (truncated geometric with hard cap based on exp distribution) ---
 options.polydisperse.pmf_nu0         = 20;       % ν0 (minimum)
 options.polydisperse.pmf_meanN       = 30;       % target mean of ν after truncation
 options.polydisperse.pmf_cut_mode    = 'cap';    % keep as 'cap'
