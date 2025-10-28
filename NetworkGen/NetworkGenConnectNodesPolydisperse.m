@@ -1,4 +1,5 @@
 function [AtomsOut, BondsOut] = NetworkGenConnectNodesPolydisperse(Domain, Atoms, options)
+% NetworkGenConnectNodesPolydisperse - Connect Atoms nodes with Bonds
 % INPUT:
 %   Atoms layout: [ ID | X | Y | Z | num_bond | nbr1 | nbr2 | nbr3 | nbr4 | ... ]
 %   IDs are arbitrary (NOT equal to row index).

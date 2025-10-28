@@ -1,5 +1,5 @@
 function NetworkGenWriteDataFiles(Domain, Atoms, Bonds, options,Nvec)
-%NETWORKGENWRITEDATAFILES  Write LAMMPS data file and bond.table
+%NetworkGenWriteDataFiles - Write LAMMPS data file and bond.table
 % 
 % Files:
 %   - <write_location>/<lammps_data_file>

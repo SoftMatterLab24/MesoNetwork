@@ -1,4 +1,11 @@
 function [Domain] = NetworkGenSetup(options,advancedOptions)
+% NetworkGenSetup - Setup the simulation domain and parameters
+%
+% INPUT:
+%   options: structure with general options
+%   advancedOptions: structure with advanced options
+% OUTPUT:
+%   Domain: structure with domain and parameter settings
 
 %% Extract relevant options
 Lx = options.Lx;
@@ -20,7 +27,7 @@ Max_peratom_bond   = 4;                                        % degree cap per 
 Max_bond           = round(0.5*Max_atom*Max_peratom_bond);     % cap on bonds
 
 % Atom creation guards
-node_scatter_max_tries          = Max_atom*5;      % global limit for scatter loop was 10 * Max_atom
+node_scatter_max_tries          = Max_atom;      % global limit for scatter loop
 max_tries_per_node_sample       = 200;           % per-node rejection limit
 
 % Bond creation guards

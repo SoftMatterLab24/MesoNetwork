@@ -145,7 +145,8 @@ for ii = 1:Nreplicates
         [Nvec] = NetworkGenAssignKuhnPolydisperse(Bonds, options);
     elseif strcmp(dist_type,'bimodal')
         % Bimodal network
-        [Bonds] = NetworkGenConnectNodesBimodal(Domain,Atoms,options);
+        [Atoms,Bonds] = NetworkGenConnectNodesBimodal(Domain,Atoms,options);
+        Nvec = []; % Nvec not used for bimodal
     else
         error('Error: distribution type not recognized');
     end
