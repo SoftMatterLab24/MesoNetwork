@@ -12,6 +12,7 @@
 % -------------------------------------------------------------------------
 
 clc; clear; close all;
+warning off backtrace  % disable stack trace for warnings
 
 %% --------------------------- Global settings ----------------------
 % Distribution type: 'bimodal' or 'polydisperse'
@@ -24,8 +25,8 @@ Nreplicates = 1;
 b = 1.6;     % Kuhn length (in nm)
 
 % Domain size
-Lx = 1300;    % Domain size in x (in units of b)
-Ly = 800;    % Domain size in y (in units of b)
+Lx = 100;    % Domain size in x (in units of b)
+Ly = 100;    % Domain size in y (in units of b)
 
 % Seed options
 imanualseed = true;  % true: manual seed; false: random seed
@@ -35,6 +36,7 @@ seed = [1];
 iplot = true;    % Show 
 
 % Save options
+isave = true;  % Save data files
 lammps_data_file   = 'PronyNetwork_nano_1300x800.dat';          % Prefix file name for LAMMPS data output
 lammps_visual_file = 'PronyVisual_10000_nano_1300x800.dat';     % Prefix file name for LAMMPS visualization output
 bond_table_file    = 'bond.table';                              % File name for bond table output   
@@ -42,21 +44,24 @@ write_location     = './networks';                              % Location to wr
 
 %% --------------------- Polydisperse Options ----------------------
 
-
+distribution_assignment_mode = 'pmf';  % Kuhn segment assigment method: 'geom' | 'range' | 'pmf'
 
 %% --------------------- Bimodal Options ---------------------------
-N1 = 1; 
-N2 = 1;
+N1 = 50; 
+N2 = 250;
 
-P = 0.5;    % desired fraction of type 2 bonds
+distribution_assignment_mode = 'single';    % Kuhn segment assigment method: 'single' or 'geom'
+distribution_height_mode = 'fixed';          % Distribution height method: 'prob' or 'fixed'
 
-%% --------------------- Advanced Options ---------------------------
+% Height mode settings (only one is used)
+P = 0.2;        % Prob: desired fraction of type 2 bonds
+N2_bonds = 500; % Fixed: desired number of type 2 bonds
+
+%% --------------------- Advanced Options --------------------------
 iadvancedoptions = false;
 
-% Rcut = 10*b;    % cutoff distance for bonding (in units of b)
-
 %% --------------------- Network Generation ------------------------
-% DO NOT EDIT BELOW THIS LINE
+% !!!DO NOT EDIT BELOW THIS LINE!!!
 
 % prepare options structure
 options.dist_type          = dist_type;
@@ -67,20 +72,21 @@ options.Ly                 = Ly;
 options.imanualseed        = imanualseed;
 options.seed               = seed;
 options.iplot              = iplot;
+options.isave              = isave;
 options.lammps_data_file   = lammps_data_file;
 options.lammps_visual_file = lammps_visual_file;
 options.bond_table_file    = bond_table_file;
 options.write_location     = write_location;
 
-% Polydisperse options
+% A. Polydisperse options
+% ------------------------------------------------------------------
 % --- mode selection ---
-options.polydisperse.distribution_assignment_mode = 'pmf';   % 'geom' | 'range' | 'pmf'
+options.polydisperse.distribution_assignment_mode = distribution_assignment_mode;   % 'geom' | 'range' | 'pmf'
 
 % --- shared / guards ---
 options.polydisperse.min_N           = 1;        % lower bound for all modes
 options.polydisperse.align_to_length = 'ascend'; % 'ascend' (shortest→smallest N) | 'none'
 options.polydisperse.kuhn_rounding   = 'round';  % 'round' | 'ceil' | 'floor' (used in 'geom')
-options.polydisperse.plot_hist       = true;     % show N histogram after assignment
 
 % --- 'geom' mode (N ≈ (L/b)^2) ---
 % uses: b (global), kuhn_rounding, min_N
@@ -97,17 +103,38 @@ options.polydisperse.pmf_cut_mode    = 'cap';    % keep as 'cap'
 options.polydisperse.pmf_nu_max      = 60;       % hard maximum ν (≥ ν0)
 options.polydisperse.integerize_rule = 'largest_remainder'; % allocation method
 
-% Bimodal options
+% B. Bimodal options
+% ------------------------------------------------------------------
 options.bimodal.N1                 = N1;
 options.bimodal.N2                 = N2;
-options.bimodal.P                  = P;
 
-% Additional advanced options
+% --- mode selection ---
+% 'single' mode: applies N1 and N2 directly based on geometry (N ≈ (L/b)^2)
+% 'range' mode: uses: b (global), kuhn_rounding, min_N
+options.bimodal.distribution_assignment_mode = distribution_assignment_mode; % 'single' | 'geom'
+
+% --- distribution height mode selection ---
+options.bimodal.distribution_height_mode = distribution_height_mode; % 'prob' | 'fixed'
+
+% --- 'prob' mode ---
+options.bimodal.P = P;          % desired fraction of type 2 bonds
+
+% --- 'fixed' mode ---
+options.bimodal.N2_number = N2_bonds;  % fraction of type 2 bonds
+
+% C. Additional advanced options
+% ------------------------------------------------------------------
 advancedOptions.iadvancedoptions = iadvancedoptions;
 if iadvancedoptions
-    % (add advanced options here)
+   advancedOptions.Rho_atom = 0.0078;
+   advancedOptions.Max_peratom_bond = 5;
+   advancedOptions.bond_global_try_limit_multiplier = 200;
+   advancedOptions.max_attempts_without_progress_multiplier = 10;
+   advancedOptions.min_degree_keep = 1;
+   advancedOptions.cutoff_multiply = 6; %units of b
 end
 
+%% Loop over replicates
 for ii = 1:Nreplicates
     fprintf('Generating network replicate %d of %d...\n',ii,Nreplicates);
     
@@ -116,7 +143,7 @@ for ii = 1:Nreplicates
     % 1. Set seed
     if imanualseed
         if length(seed) ~= Nreplicates
-            error(' Error: not enough manual seeds provided for the number of replicates');
+            error('Error: not enough manual seeds provided for the number of replicates Expected %d, got %d', Nreplicates, length(seed));
         end
         options.seed = seed(ii);
     else
@@ -130,7 +157,6 @@ for ii = 1:Nreplicates
         options.lammps_visual_file = sprintf('%04d_%s',ii,lammps_visual_file);
         options.bond_table_file    = sprintf('%04d_%s',ii,bond_table_file);
     end
-
 
     %% B. Setup the system
     [Domain] = NetworkGenSetup(options,advancedOptions);
@@ -146,16 +172,16 @@ for ii = 1:Nreplicates
     elseif strcmp(dist_type,'bimodal')
         % Bimodal network
         [Atoms,Bonds] = NetworkGenConnectNodesBimodal(Domain,Atoms,options);
-        Nvec = []; % Nvec not used for bimodal
+        [Nvec] = NetworkGenAssignKuhnBimodal(Bonds, options);
     else
-        error('Error: distribution type not recognized');
+        error('Error: distribution type: %s not recognized', dist_type);
     end
 
     %% E. Show visualization and statistics
-    NetworkGenVisualize(Domain,Atoms,Bonds,options);
+    NetworkGenVisualize(Domain,Atoms,Bonds,Nvec,options);
 
     %% F. Write data files
-    NetworkGenWriteDataFiles(Domain,Atoms,Bonds,options,Nvec);
+    NetworkGenWriteDataFiles(Domain,Atoms,Bonds,Nvec,options);
     
 end
 

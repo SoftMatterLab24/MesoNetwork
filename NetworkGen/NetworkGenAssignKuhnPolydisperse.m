@@ -178,14 +178,6 @@ switch lower(mode)
         error('Unknown distribution_assignment_mode: %s', mode);
 end
 
-% ---------- Optional histogram ----------
-if isfield(pd,'plot_hist') && pd.plot_hist
-    nbins = max(10, min(80, ceil(sqrt(numel(Nvec)))));
-    figure; hist(Nvec, nbins);
-    xlabel('Assigned N per bond'); ylabel('Count');
-    title(sprintf('N distribution (mode = %s)', mode));
-end
-
 end
 
 % ===== helper (nested at EOF for R2016a) =====

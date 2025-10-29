@@ -1,4 +1,4 @@
-function NetworkGenWriteDataFiles(Domain, Atoms, Bonds, options,Nvec)
+function NetworkGenWriteDataFiles(Domain,Atoms,Bonds,Nvec,options)
 %NetworkGenWriteDataFiles - Write LAMMPS data file and bond.table
 % 
 % Files:
@@ -15,6 +15,13 @@ function NetworkGenWriteDataFiles(Domain, Atoms, Bonds, options,Nvec)
 %   KEY
 %   N <#bonds>
 %   <bondID> <id1> <id2> <N> <b>
+
+if options.isave ~= true
+    warning('Did not write data files because options.isave = false.');
+    return; % skip writing files
+end
+
+fprintf('   Writing network to data file...\n');
 
 % ---------- Prep paths ----------
 if isfield(options,'write_location') && ~isempty(options.write_location)
@@ -74,7 +81,7 @@ for i = 1:Bond_count
 end
 
 fclose(fid);
-fprintf('Wrote %s with %d atoms and %d bonds.\n', data_path, Atom_count, Bond_count);
+fprintf('   Wrote %s with %d atoms and %d bonds.\n', data_path, Atom_count, Bond_count);
 
 % ---------- Write bond.table ----------
 b = options.b;  % Kuhn length
@@ -83,8 +90,10 @@ if Bond_count > 0
     if isempty(Nvec)
         if isfield(options,'dist_type') && strcmpi(options.dist_type,'polydisperse')
             Nvec = NetworkGenAssignKuhnPolydisperse(Bonds, options);
+        elseif isfield(options,'dist_type') && strcmpi(options.dist_type,'bimodal')
+            Nvec = NetworkGenAssignKuhnBimodal(Bonds, options);
         else
-            % TODO: plug a bimodal assigner later; for now default to ones.
+            % fallback
             Nvec = ones(Bond_count,1);
         end
     end
@@ -111,7 +120,7 @@ if Bond_count > 0
     end
 
     fclose(fidBT);
-    fprintf('Wrote %s with %d entries. b = %.6g\n', bondtable_path, Bond_count, b);
+    fprintf('   Wrote %s with %d entries. b = %.6g\n', bondtable_path, Bond_count, b);
 else
     % Still create an empty bond.table with header for consistency
     fidBT = fopen(bondtable_path,'w');
@@ -121,5 +130,5 @@ else
         fprintf(fidBT, 'N 0\n\n');
         fclose(fidBT);
     end
-    fprintf('No bonds; wrote empty %s.\n', bondtable_path);
+    fprintf('   No bonds; wrote empty %s.\n', bondtable_path);
 end

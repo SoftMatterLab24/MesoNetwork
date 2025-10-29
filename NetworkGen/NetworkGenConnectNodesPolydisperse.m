@@ -13,7 +13,7 @@ function [AtomsOut, BondsOut] = NetworkGenConnectNodesPolydisperse(Domain, Atoms
 %   - Uses linked-cell (uniform grid) with cell size ~ Rcut
 
 % --------- Unpack ---------
-N_row             = size(Atoms,1);
+natom             = size(Atoms,1);
 Max_bond          = Domain.Max_bond;
 Max_peratom_bond  = Domain.Max_peratom_bond;
 global_limit      = Domain.bond_global_try_limit;
@@ -36,7 +36,7 @@ x   = Atoms(:,2);  y = Atoms(:,3);
 
 % Build ID->row map (robust to id ~= row)
 id2row = containers.Map('KeyType','int64','ValueType','int32');
-for r = 1:N_row
+for r = 1:natom
     id2row(int64(ids(r))) = int32(r);
 end
 
@@ -57,23 +57,23 @@ cy(cy < 1) = 1; cy(cy > ny) = ny;
 binIdx = int32(cx + (cy-1)*nx);  % 1..nx*ny
 
 % Build bins as cell array: bins{bin} = [row indices]
-bins = accumarray(double(binIdx), (1:N_row)', [nx*ny, 1], @(v){v});
+bins = accumarray(double(binIdx), (1:natom)', [nx*ny, 1], @(v){v});
 
 % --------- Bond creation in ROW space (store rows internally) ---------
-deg = zeros(N_row,1);             % degrees by row
-adj = sparse(N_row,N_row);        % 0/1 symmetric
+deg = zeros(natom,1);             % degrees by row
+adj = sparse(natom,natom);        % 0/1 symmetric
 
 BondsRows = zeros(Max_bond,3);    % [row1,row2,L]; bondID assigned later
-nbond = 0;
 
+nbond = 0;
 no_progress = 0;
 ntries = 0;
-
+tic
 while (nbond < Max_bond) && (no_progress < stall_limit) && (ntries < global_limit)
     ntries = ntries + 1;
 
     % pick unsaturated row
-    r1 = randi(N_row);
+    r1 = randi(natom);
     if deg(r1) >= Max_peratom_bond
         no_progress = no_progress + 1;
         continue;
@@ -140,6 +140,7 @@ while (nbond < Max_bond) && (no_progress < stall_limit) && (ntries < global_limi
 
     no_progress = 0;
 end
+fprintf('   Placed %d bonds in %4.4f sec \n', nbond, toc);
 
 if ntries >= global_limit
     warning('Bond creation: hit global try limit (%d).', global_limit);
@@ -166,7 +167,7 @@ if ~isempty(BondsRows)
             break;
         end
         kill = false(size(BondsRows,1),1);
-        mark = false(N_row,1); mark(to_del) = true;
+        mark = false(natom,1); mark(to_del) = true;
         for k=1:size(BondsRows,1)
             if mark(BondsRows(k,1)) || mark(BondsRows(k,2))
                 kill(k) = true;
@@ -229,4 +230,6 @@ for k=1:nb
 end
 
 AtomsOut = Atoms;
+fprintf('   Pruned %d atoms, and %d bonds\n',natom-length(AtomsOut),nbond-length(BondsOut));
+
 end
