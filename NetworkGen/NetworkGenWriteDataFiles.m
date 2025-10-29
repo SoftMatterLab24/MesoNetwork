@@ -131,4 +131,11 @@ else
         fclose(fidBT);
     end
     fprintf('   No bonds; wrote empty %s.\n', bondtable_path);
+
+
+    % Print out the appropriate LJ lengthscale for this specific network
+    Total_kuhn_segment = sum(Nvec);
+    Node_assigned_radius =(Total_kuhn_segment/Atom_count)^(1/2);
+    sigma = Node_assigned_radius / (2^(1/6));                      % convert to LJ sigma parameter
+    fprintf('The 6-12 Lennard-Jones radius is equal to %g\n',sigma);
 end
