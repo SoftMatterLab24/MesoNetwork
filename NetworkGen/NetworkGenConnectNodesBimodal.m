@@ -1,4 +1,4 @@
-function [Atoms,Bonds] = NetworkGenConnectNodesBimodal(Domain,Atoms,options)
+function [Atoms,Bonds] = NetworkGenConnectNodesBimodal(Domain,Atoms,options,advancedOptions)
 % NetworkGenConnectNodesBimodal - Connect Atoms nodes with Bonds for bimodal distribution
 % INPUT:
 %   Atoms layout: [ ID | X | Y | Z | num_bond | nbr1 | nbr2 | nbr3 | nbr4 | ... ]
@@ -29,8 +29,15 @@ r2_avg = b*sqrt(N2);
 
 
 %% Check for advanced options
+if (advancedOptions.iadvancedoptions)
 
-if 1==2%(advancedOptions.iadvancedoptions)
+    bm = advancedOptions.bimodal;
+    % Calculate inital bond pre-stretch (end-to-end distance)
+    sig1 = bm.bin_std1_factor*r1_avg;      % standard deviation of bond length distribution
+    FWHM1 = bm.bin_width1_factor*sig1;     % full width at half maximum 
+
+    sig2 = bm.bin_std2_factor*r2_avg;
+    FWHM2 = bm.bin_width2_factor*sig2;
 
 else
 

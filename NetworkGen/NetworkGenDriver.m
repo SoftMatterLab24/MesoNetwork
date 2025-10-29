@@ -50,7 +50,7 @@ distribution_assignment_mode = 'pmf';  % Kuhn segment assigment method: 'geom' |
 N1 = 50; 
 N2 = 250;
 
-distribution_assignment_mode = 'single';    % Kuhn segment assigment method: 'single' or 'geom'
+distribution_assignment_mode = 'geom';    % Kuhn segment assigment method: 'single' or 'geom'
 distribution_height_mode = 'fixed';          % Distribution height method: 'prob' or 'fixed'
 
 % Height mode settings (only one is used)
@@ -107,6 +107,8 @@ options.polydisperse.integerize_rule = 'largest_remainder'; % allocation method
 % ------------------------------------------------------------------
 options.bimodal.N1                 = N1;
 options.bimodal.N2                 = N2;
+options.bimodal.min_N              = 1;        % lower bound for all modes
+options.bimodal.kuhn_rounding      = 'round';  % 'round' | 'ceil' | 'floor' (used in 'geom')
 
 % --- mode selection ---
 % 'single' mode: applies N1 and N2 directly based on geometry (N ≈ (L/b)^2)
@@ -132,6 +134,12 @@ if iadvancedoptions
    advancedOptions.max_attempts_without_progress_multiplier = 10;
    advancedOptions.min_degree_keep = 1;
    advancedOptions.cutoff_multiply = 6; %units of b
+
+   %Bimodal advanced
+   advancedOptions.bimodal.bin_std1_factor = 0.4;
+   advancedOptions.bimodal.bin_std2_factor = 0.15;
+   advancedOptions.bimodal.bin_width1_factor = 2.355;
+   advancedOptions.bimodal.bin_width2_factor = 2.355;
 end
 
 %% Loop over replicates
@@ -171,7 +179,7 @@ for ii = 1:Nreplicates
         [Nvec] = NetworkGenAssignKuhnPolydisperse(Bonds, options);
     elseif strcmp(dist_type,'bimodal')
         % Bimodal network
-        [Atoms,Bonds] = NetworkGenConnectNodesBimodal(Domain,Atoms,options);
+        [Atoms,Bonds] = NetworkGenConnectNodesBimodal(Domain,Atoms,options,advancedOptions);
         [Nvec] = NetworkGenAssignKuhnBimodal(Bonds, options);
     else
         error('Error: distribution type: %s not recognized', dist_type);

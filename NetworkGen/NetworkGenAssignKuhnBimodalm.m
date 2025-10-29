@@ -27,6 +27,7 @@ Lvec = Bonds(:,4);
 type = Bonds(:,5);
 
 mode  = options.bimodal.distribution_assignment_mode; %'single'; % 'single' | 'geom'
+options.bimodal
 
 switch lower(mode)
     case 'geom'
@@ -37,7 +38,7 @@ switch lower(mode)
             case 'floor', Nvec = floor(raw);
             otherwise,    Nvec = round(raw);
         end
-        Nvec = max(Nvec, min_N);
+        Nvec = max(Nvec, options.bimodal.min_N);
 
     case 'single'
         N1 = bd.N1;

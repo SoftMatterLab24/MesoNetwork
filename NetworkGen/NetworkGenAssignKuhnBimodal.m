@@ -27,6 +27,7 @@ Lvec = Bonds(:,4);
 type = Bonds(:,5);
 
 mode  = options.bimodal.distribution_assignment_mode; %'single'; % 'single' | 'geom'
+min_N = bd.min_N;
 
 switch lower(mode)
     case 'geom'
