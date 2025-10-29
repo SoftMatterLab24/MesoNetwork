@@ -29,7 +29,7 @@ Lx = 100;    % Domain size in x (in units of b)
 Ly = 100;    % Domain size in y (in units of b)
 
 % Seed options
-imanualseed = true;  % true: manual seed; false: random seed
+imanualseed = false;  % true: manual seed; false: random seed
 seed = [1];
 
 % Visualization
@@ -193,3 +193,4 @@ for ii = 1:Nreplicates
     
 end
 
+fprintf("Done!\n")

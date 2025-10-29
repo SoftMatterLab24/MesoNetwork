@@ -23,21 +23,31 @@ N_atom = length(Atoms);
 Total_bond = size(Bonds, 1);
 
 % --------------------- Plot final bonds ---------------------
-figure; hold on;
+if strcmp(options.dist_type,'bimodal')
+    figure; hold on;
 
-scatter(Atoms(1:N_atom,2), Atoms(1:N_atom,3), 6, 'k', 'filled');
-for k = 1:Total_bond
-    if Bonds(k,1) == 0, continue; end
-    i1 = Bonds(k,2); i2 = Bonds(k,3);
-    if Bonds(k,5) == 1
-        plot([Atoms(i1,2) Atoms(i2,2)], [Atoms(i1,3) Atoms(i2,3)], 'k-');
-    else
-        plot([Atoms(i1,2) Atoms(i2,2)], [Atoms(i1,3) Atoms(i2,3)], 'r-');
-    end
+    scatter(Atoms(1:N_atom,2), Atoms(1:N_atom,3), 6, 'k', 'filled');
+    for k = 1:Total_bond
+        if Bonds(k,1) == 0, continue; end
+        i1 = Bonds(k,2); i2 = Bonds(k,3);
+        if Bonds(k,5) == 1
+            plot([Atoms(i1,2) Atoms(i2,2)], [Atoms(i1,3) Atoms(i2,3)], 'k-');
+        else
+            plot([Atoms(i1,2) Atoms(i2,2)], [Atoms(i1,3) Atoms(i2,3)], 'r-');
+        end
     
+    end
+    axis equal tight; title('Final bonds (post-prune)');
+else
+    figure; hold on;
+    scatter(Atoms(1:N_atom,2), Atoms(1:N_atom,3), 6, 'k', 'filled');
+    for k = 1:Total_bond
+        if Bonds(k,1) == 0, continue; end
+        i1 = Bonds(k,2); i2 = Bonds(k,3);
+        plot([Atoms(i1,2) Atoms(i2,2)], [Atoms(i1,3) Atoms(i2,3)], 'k-');
+    end
+    axis equal tight; title('Final bonds (post-prune)');
 end
-axis equal tight; title('Final bonds (post-prune)');
-
 % --------------------- Network stats (Kuhn length) ---------------------
 
 % ---------- Optional histogram ----------
