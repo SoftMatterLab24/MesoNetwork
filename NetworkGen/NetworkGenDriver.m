@@ -44,7 +44,7 @@ write_location     = './networks';                              % Location to wr
 
 %% --------------------- Polydisperse Options ----------------------
 
-distribution_assignment_mode = 'pmf';  % Kuhn segment assigment method: 'geom' | 'range' | 'pmf'
+distribution_assignment_mode_poly = 'pmf';  % Kuhn segment assigment method: 'geom' | 'range' | 'pmf'
 
 %% --------------------- Bimodal Options ---------------------------
 N1 = 50; 
@@ -81,7 +81,7 @@ options.write_location     = write_location;
 % A. Polydisperse options
 % ------------------------------------------------------------------
 % --- mode selection ---
-options.polydisperse.distribution_assignment_mode = distribution_assignment_mode;   % 'geom' | 'range' | 'pmf'
+options.polydisperse.distribution_assignment_mode = distribution_assignment_mode_poly;   % 'geom' | 'range' | 'pmf'
 
 % --- shared / guards ---
 options.polydisperse.min_N           = 1;        % lower bound for all modes
