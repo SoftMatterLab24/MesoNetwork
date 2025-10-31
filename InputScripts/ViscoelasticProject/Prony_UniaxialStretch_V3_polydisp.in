@@ -51,7 +51,7 @@ variable            kBT equal 4.14  # Energy scale (attogram-nanometer^2/nanosec
 # Critical stretch for bond breaking (lamc < 1)
 variable            lamc equal 0.7
 
-# LJ parameters
+# Pair parameters
 variable            e equal   0.4         # Energy scale 1
 variable            sig equal $(6*v_b)    #LJ particle diameter 
 
@@ -67,11 +67,13 @@ group               bot_clamp region bot_clamped
 #      Assign bond and pair styles
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Pairstyles
-pair_style           harmonic/cut
-pair_coeff           * * ${e} ${sig}
+#pair_style           harmonic/cut
+#pair_coeff           * * ${e} ${sig}
 
-#pair_style          lj/cut $(2.5*v_sig)
-#pair_coeff          * * ${e} ${sig}
+pair_style          hybrid/overlay bpm/spring anharmonic yes local/density
+pair_coeff          * * bpm/spring ${e} ${sig} 0.0 $(1*v_e)
+pair_coeff          * * local/density mytab.localdensity.table
+
 
 # Bondstyles
 bond_style          bpm/prony 1 break yes overlay/pair yes nonlinear yes smooth no
