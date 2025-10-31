@@ -50,7 +50,7 @@ distribution_assignment_mode_poly = 'pmf';  % Kuhn segment assigment method: 'ge
 N1 = 50; 
 N2 = 250;
 
-distribution_assignment_mode = 'geom';    % Kuhn segment assigment method: 'single' or 'geom'
+distribution_assignment_mode = 'gaussian';    % Kuhn segment assigment method: 'single' or 'geom' or 'gaussian'
 distribution_height_mode = 'fixed';          % Distribution height method: 'prob' or 'fixed'
 
 % Height mode settings (only one is used)

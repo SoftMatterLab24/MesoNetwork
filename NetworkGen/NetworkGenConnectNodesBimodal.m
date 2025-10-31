@@ -1,328 +1,376 @@
 function [Atoms,Bonds] = NetworkGenConnectNodesBimodal(Domain,Atoms,options,advancedOptions)
-% NetworkGenConnectNodesBimodal - Connect Atoms nodes with Bonds for bimodal distribution
+% NetworkGenConnectNodesBimodal (adaptive, grid-accelerated, two-pass)
 % INPUT:
-%   Atoms layout: [ ID | X | Y | Z | num_bond | nbr1 | nbr2 | nbr3 | nbr4 | ... ]
-%   IDs are arbitrary (NOT equal to row index).
+%   Atoms: [ID, x, y, z, degree, nbr1, ...]
+%   Domain: xlo,xhi,ylo,yhi, Max_bond, Max_peratom_bond, ...
+%           (optional) .min_separation  (alias: .dmin)
+%           (optional) .bond_global_try_limit, .max_attempts_without_progress, .min_degree_keep
+%   options.bimodal: N1, N2, distribution_height_mode ('prob'|'fixed'), P or N2_number
+%                    (optional) z1_min (default 3), targetC1,targetC2 (default 8,12)
+%   options.b: Kuhn length
+%   advancedOptions (optional):
+%       .iadvancedoptions = true/false
+%       .bimodal.bin_std1_factor, .bin_width1_factor, .bin_std2_factor, .bin_width2_factor  (ignored by adaptive)
+
 % OUTPUT:
-%   BondsOut: [bondID | id1 | id2 | L | bond_type]  (ids, not rows)
-%   AtomsOut: Atoms with num_bond and neighbor slots rebuilt to match BondsOut
+%   Atoms: updated degrees and neighbor ID lists
+%   Bonds: [bondID, id1, id2, L, bond_type], with type=1 or 2
 
-% --------- Unpack ---------
-natom             = size(Atoms,1);
-Max_bond          = Domain.Max_bond;
-Max_peratom_bond  = Domain.Max_peratom_bond;
-global_limit      = Domain.bond_global_try_limit;
-stall_limit       = Domain.max_attempts_without_progress;
-min_keep          = Domain.min_degree_keep;
-
+% ---------- Unpack domain & defaults ----------
+natom            = size(Atoms,1);
+Max_bond         = Domain.Max_bond;
+Max_peratom_bond = Domain.Max_peratom_bond;
 xlo = Domain.xlo; xhi = Domain.xhi;
 ylo = Domain.ylo; yhi = Domain.yhi;
-zlo = Domain.zlo; zhi = Domain.zhi;
 
-N1 = options.bimodal.N1;  % average N for type 1 bonds
-N2 = options.bimodal.N2;   % average N for type 2 bonds
-b  = options.b;
+if isfield(Domain,'bond_global_try_limit'), global_limit = Domain.bond_global_try_limit; else, global_limit = 5e7; end
+if isfield(Domain,'max_attempts_without_progress'), stall_limit = Domain.max_attempts_without_progress; else, stall_limit = 5e5; end
+if isfield(Domain,'min_degree_keep'), min_keep = Domain.min_degree_keep; else, min_keep = 0; end
+if isfield(Domain,'min_node_sep'), dmin = Domain.min_node_sep;
+% elseif isfield(Domain,'dmin'), dmin = Domain.dmin;
+% else, dmin = 0;
+end
+epsr = 1e-9;
 
-% Cutoff selection 
-r1_avg = b*sqrt(N1); 
+% ---------- Options ----------
+b   = options.b;
+N1  = options.bimodal.N1;
+N2  = options.bimodal.N2;
+
+useProb = strcmpi(options.bimodal.distribution_height_mode,'prob');
+if useProb
+    P2 = options.bimodal.P;
+    target_N2 = max(0, min(Max_bond, round(P2*Max_bond)));
+else
+    target_N2 = options.bimodal.N2_number;
+    target_N2 = max(0, min(Max_bond, target_N2));
+end
+
+if isfield(options.bimodal,'z1_min'), z1_min = options.bimodal.z1_min; else, z1_min = 3; end
+if isfield(options.bimodal,'targetC1'), targetC1 = options.bimodal.targetC1; else, targetC1 = 8; end
+if isfield(options.bimodal,'targetC2'), targetC2 = options.bimodal.targetC2; else, targetC2 = 12; end
+Cmin = 4; Cmax = 24;         % per-pick acceptable window; adaptive widens/narrows if outside
+
+% ---------- Refine r1_avg and r2_avg based on geometry ----------
+
+% 1) Start from geometric mean (Kuhn-based)
+r1_avg = b*sqrt(N1);
 r2_avg = b*sqrt(N2);
 
-
-%% Check for advanced options
-if (advancedOptions.iadvancedoptions)
-
-    bm = advancedOptions.bimodal;
-    % Calculate inital bond pre-stretch (end-to-end distance)
-    sig1 = bm.bin_std1_factor*r1_avg;      % standard deviation of bond length distribution
-    FWHM1 = bm.bin_width1_factor*sig1;     % full width at half maximum 
-
-    sig2 = bm.bin_std2_factor*r2_avg;
-    FWHM2 = bm.bin_width2_factor*sig2;
-
-else
-
-    % use default values
-    % Calculate inital bond pre-stretch (end-to-end distance)
-    sig1 = 0.4*r1_avg;      % standard deviation of bond length distribution
-    FWHM1 = 2.355*sig1;     % full width at half maximum 
-
-    sig2 = 1.5*sig1;
-    FWHM2 = 2.355*sig2;
-
+% 2) Enforce lower bound from min separation
+r_min_allowed = max(dmin * 1.2, b * 0.5);  % ensure above steric limit
+if r1_avg < r_min_allowed
+    warning('r1_avg=%.3g below min separation %.3g; lifting to %.3g.', ...
+        r1_avg, dmin, r_min_allowed);
+    r1_avg = r_min_allowed;
 end
 
-% Bond cutoff ranges
-r1_lower_cutoff = (r1_avg - FWHM1/2)^2;     %type 1         
-r1_upper_cutoff = (r1_avg + FWHM1/2)^2;
-
-r2_lower_cutoff = (r2_avg - FWHM2/2)^2;     %type 2
-r2_upper_cutoff = (r2_avg + FWHM2/2)^2;
-
-% some warning checks
-if r1_upper_cutoff < 0
-    warning("lower cutoff for bonding negative distance: Increase r1_avg or decrease std")
+% 3) Enforce sensible separation between r1 and r2
+if r2_avg < 1.4 * r1_avg
+    warning('r2_avg too close to r1_avg (%.3g vs %.3g). Adjusting r2_avg.', ...
+        r2_avg, r1_avg);
+    r2_avg = 1.5 * r1_avg;  % guarantee distinct bands
 end
 
-if r2_upper_cutoff < 0
-    warning("lower cutoff for bonding negative distance: Increase r2_avg or decrease std")
+% 4) Clip r2_avg if exceeds domain span (avoid impossible long bonds)
+Lx = xhi - xlo; Ly = yhi - ylo;
+domain_diag = hypot(Lx, Ly);
+r2_max_allowed = 0.4 * domain_diag;  % don’t let long bonds span half domain
+if r2_avg > r2_max_allowed
+    warning('r2_avg=%.3g exceeds domain size %.3g; capping to %.3g.', ...
+        r2_avg, domain_diag, r2_max_allowed);
+    r2_avg = r2_max_allowed;
 end
 
-if r2_lower_cutoff < r1_upper_cutoff
-    warning("overlap in bond length cutoffs between type 1 and type 2 bonds")
-end
 
-% Assign method for prob
-if strcmp(options.bimodal.distribution_height_mode,'prob')
-    P2 = options.bimodal.P;             % desired fraction of type 2 bonds
-elseif strcmp(options.bimodal.distribution_height_mode,'fixed')
-    N2_number = options.bimodal.N2_number;  % fraction of type
+% ---------- Density-based window widths ----------
+A   = (xhi-xlo)*(yhi-ylo);
+rho = natom / max(A, eps);
 
-    if N2_number > Max_bond
-        warning(" requested number of type 2 bonds exceeds maximum number of bonds")
-    end
+dr1 = targetC1 / max(2*pi*rho*max(r1_avg,eps), eps);
+dr2 = targetC2 / max(2*pi*rho*max(r2_avg,eps), eps);
 
-end
+% Respect min separation and separation between bands
+r1_lower = max(r1_avg - dr1, dmin + epsr);
+r1_upper = r1_avg + dr1;
 
-% --------- Unpack Atoms ---------
-ids = Atoms(:,1);         % IDs by row
-x   = Atoms(:,2);  
-y = Atoms(:,3);
+% keep a small gap; if density is low, we auto-relax in the loop
+gap = 0.1*r1_avg;
+r2_lower = max(r2_avg - dr2, r1_upper + gap);
+r2_upper = r2_avg + dr2;
 
-% Build ID->row map (robust to id ~= row)
+% ---------- Unpack atoms & maps ----------
+ids = Atoms(:,1);
+x   = Atoms(:,2);
+y   = Atoms(:,3);
+
 id2row = containers.Map('KeyType','int64','ValueType','int32');
-for r = 1:natom
-    id2row(int64(ids(r))) = int32(r);
+for r=1:natom, id2row(int64(ids(r))) = int32(r); end
+
+% ---------- Grid (cell list): cell size = max window radius ----------
+rmax = max(r1_upper, r2_upper);
+if rmax<=0, rmax = max(xhi-xlo, yhi-ylo); end
+cellSize = rmax;
+nx = max(1, ceil((xhi-xlo)/cellSize));
+ny = max(1, ceil((yhi-ylo)/cellSize));
+
+cx = floor((x - xlo)/cellSize) + 1; cx = max(1, min(nx, cx));
+cy = floor((y - ylo)/cellSize) + 1; cy = max(1, min(ny, cy));
+
+Cells = cell(nx, ny);
+for i=1:natom
+    Cells{cx(i), cy(i)}(end+1) = i; %#ok<AGROW>
 end
 
-% --------- Connect nearby nodes ---------
-Bonds      = zeros(Max_bond, 5);
-nbond = 0;
-no_progress = 0;
-ntries = 0;
+% ---------- Helpers ----------
+eligible = (Atoms(:,5) < Max_peratom_bond);
 
+% store ROW indices first for speed; convert to IDs at the end
+Btmp = zeros(Max_bond, 5);  % [bid, r1, r2, L, type]
+nbond = 0;
+countType2 = 0;
+
+% adaptive per-pick multipliers (reset per pick)
+% global guard multipliers (if persistent starvation happens)
+g_mul1 = 1.0; g_mul2 = 1.0;
+
+% ---------- PASS A: build type-1 scaffold to degree >= z1_min ----------
+ntries = 0; no_progress = 0;
 tic
-while (nbond < Max_bond) && (no_progress < stall_limit) %&& (ntries < global_limit)
-    
+while (nbond < Max_bond) && (no_progress < stall_limit) && (ntries < global_limit)
+    % stop if most nodes already have degree >= z1_min
+    if mean(Atoms(:,5) >= z1_min) > 0.95
+        break;
+    end
     ntries = ntries + 1;
 
-    % Randomly select distinct node
+    % pick an r1 that still needs degree
     r1 = randi(natom);
-    if Atoms(r1,5) >= Max_peratom_bond
+    if ~eligible(r1) || (Atoms(r1,5) >= z1_min)
+        no_progress = no_progress + 1; continue;
+    end
+
+    % candidate window (adaptive per pick)
+    dr1_pick = dr1 * g_mul1;
+    rlo = max(r1_lower - (dr1 - dr1_pick), dmin + epsr);
+    rhi = r1_upper + (dr1_pick - dr1);
+
+    neigh = gather_neighbors(r1, Cells, cx, cy, nx, ny);
+    if isempty(neigh), no_progress = no_progress + 1; continue; end
+
+    neigh(neigh==r1) = [];
+    if isempty(neigh), no_progress = no_progress + 1; continue; end
+    freeMask = (Atoms(neigh,5) < Max_peratom_bond);
+    neigh = neigh(freeMask);
+    if isempty(neigh), no_progress = no_progress + 1; continue; end
+
+    dxv = x(neigh) - x(r1);
+    dyv = y(neigh) - y(r1);
+    d   = sqrt(dxv.^2 + dyv.^2);
+
+    % in-band for type-1
+    in1 = (d >= rlo) & (d <= rhi);
+    cand = neigh(in1);
+
+    % remove already-bonded neighbors
+    cand = exclude_existing(cand, r1, Atoms, id2row);
+
+    % adaptive per-pick feedback
+    C = numel(cand);
+    if C < Cmin
+        % widen next try around this r1
+        g_mul1 = min(2.0, g_mul1*1.15);
         no_progress = no_progress + 1;
         continue;
+    elseif C > Cmax
+        g_mul1 = max(0.5, g_mul1*0.85);
+    else
+        g_mul1 = 1.0;
     end
 
-    % return list of possible r2 candidates based on distance cutoffs
-    candidate_list = [];
-    candidate_types = [];
-    for idx = 1:natom
+    if isempty(cand), no_progress = no_progress + 1; continue; end
 
-        if r1 == idx, continue; end
-        if Atoms(idx,5) >= Max_peratom_bond, continue; end
-        dxv = x(idx)-x(r1);
-        dyv = y(idx)-y(r1);
-        L = dxv*dxv + dyv*dyv;
+    r2 = cand(randi(numel(cand)));
+    L  = hypot(x(r2)-x(r1), y(r2)-y(r1));
 
-        if ((L >= r1_lower_cutoff) && (L <= r1_upper_cutoff))
-            candidate_list(end+1) = idx; %#ok<AGROW>
-            candidate_types(end+1) = 1; %#ok<AGROW>
-        end
-        if (L >= r2_lower_cutoff) && (L <= r2_upper_cutoff)
-            candidate_list(end+1) = idx; %#ok<AGROW>
-            candidate_types(end+1) = 2; %#ok<AGROW>
-        end
-
-    end
-
-    if isempty(candidate_list)
-        %no_progress = no_progress + 1;
-        continue;
-    end
-
-    % Remove candidates that are already bonds
-    for k = 1:Atoms(r1,5)
-        bonded_id = Atoms(r1,5 + k);
-        bonded_row = find(ids == bonded_id, 1);
-        remove_indices = find(candidate_list == bonded_row);
-        candidate_list(remove_indices) = [];
-        candidate_types(remove_indices) = [];
-    end
-
-    if isempty(candidate_list)
-        %no_progress = no_progress + 1;
-        continue;
-    end
-
-    % Select candidate based on probability or fixed number
-    if strcmp(options.bimodal.distribution_height_mode,'prob')
-        if rand() < P2
-            % Randomly select type 2 bond
-            type2_indices = find(candidate_types == 2);
-            if isempty(type2_indices)
-                %no_progress = no_progress + 1;
-                continue; % invalid
-            end 
-            select_idx = type2_indices(randi(length(type2_indices)));
-            
-        else
-            % Randomly select type 1 bond
-            type1_indices = find(candidate_types == 1);
-            if isempty(type1_indices)
-                %no_progress = no_progress + 1;
-                continue; % invalid
-            end
-            select_idx = type1_indices(randi(length(type1_indices)));
-            
-        end
-    elseif strcmp(options.bimodal.distribution_height_mode,'fixed')
-        if sum(Bonds(:,5)==2) < N2_number
-            % Randomly select type 2 bond
-            type2_indices = find(candidate_types == 2);
-            if isempty(type2_indices)
-                %no_progress = no_progress + 1;
-                continue; % invalid
-            end 
-            select_idx = type2_indices(randi(length(type2_indices)));
-            
-        else
-            % Randomly select type 1 bond
-            type1_indices = find(candidate_types == 1);
-            if isempty(type1_indices)
-                %no_progress = no_progress + 1;
-                continue; % invalid
-            end
-            select_idx = type1_indices(randi(length(type1_indices)));
-        end
-    end
-
-    r2 = candidate_list(select_idx);
-    bond_type = candidate_types(select_idx);
-    L  = sqrt((x(r2)-x(r1))^2 + (y(r2)-y(r1))^2);
-
-    % Bond bookkeeping
+    % book-keeping
     nbond = nbond + 1;
-    Bonds(nbond,:) = [nbond, ids(r1), ids(r2), sqrt(L), bond_type];
-        
-    Atoms(r1,5) = Atoms(r1,5) + 1;
-    Atoms(r1,5 + Atoms(r1,5)) = ids(r2);
+    Btmp(nbond,:) = [nbond, r1, r2, L, 1];
 
-    Atoms(r2,5) = Atoms(r2,5) + 1;
-    Atoms(r2,5 + Atoms(r2,5)) = ids(r1);
+    Atoms(r1,5) = Atoms(r1,5) + 1;  Atoms(r1, 5+Atoms(r1,5)) = ids(r2);
+    Atoms(r2,5) = Atoms(r2,5) + 1;  Atoms(r2, 5+Atoms(r2,5)) = ids(r1);
+    if Atoms(r1,5) >= Max_peratom_bond, eligible(r1) = false; end
+    if Atoms(r2,5) >= Max_peratom_bond, eligible(r2) = false; end
 
     no_progress = 0;
 end
+tA = toc;
 
-%stats
-type1 = Bonds(:,5) == 1;
-type2 = Bonds(:,5) == 2;
-Ntotal_kuhn = N1*sum(type1) + N2*sum(type2);
-Nkuhn_avg = (N1*sum(type1) + N2*sum(type2))/(sum(type1)+sum(type2));
+% ---------- PASS B: sprinkle type-2 long bonds ----------
+ntries = 0; no_progress = 0;
+tic
+while (nbond < Max_bond) && (no_progress < stall_limit) && (ntries < global_limit)
+    if (~useProb) && (countType2 >= target_N2)
+        break;
+    end
+    if useProb
+        % if we've already exceeded the expected proportion by >10%, switch to type-1 or break
+        if (countType2 > target_N2*1.1), break; end
+    end
+    ntries = ntries + 1;
 
-fprintf('   Placed %d bonds in %4.4f sec \n', nbond, toc);
-if strcmp(options.bimodal.distribution_height_mode,'fixed')
-    fprintf('   %4.0f type 2 bonds, requested %4.0f \n',sum(type2),N2_number);
-else
-    fprintf('   %4.2f percent type 2 bonds, requested %4.2f \n',sum(type2)/nbond,P2);
+    % prefer lower-degree nodes to spread long bonds
+    r1 = randi(natom);
+    if ~eligible(r1)
+        no_progress = no_progress + 1; continue;
+    end
+
+    dr2_pick = dr2 * g_mul2;
+    r2lo = max(r2_lower - (dr2 - dr2_pick), r1_upper + 0);  % keep beyond type-1 band
+    r2hi = r2_upper + (dr2_pick - dr2);
+
+    neigh = gather_neighbors(r1, Cells, cx, cy, nx, ny);
+    if isempty(neigh), no_progress = no_progress + 1; continue; end
+
+    neigh(neigh==r1) = [];
+    if isempty(neigh), no_progress = no_progress + 1; continue; end
+    freeMask = (Atoms(neigh,5) < Max_peratom_bond);
+    neigh = neigh(freeMask);
+    if isempty(neigh), no_progress = no_progress + 1; continue; end
+
+    dxv = x(neigh) - x(r1);
+    dyv = y(neigh) - y(r1);
+    d   = sqrt(dxv.^2 + dyv.^2);
+
+    in2 = (d >= r2lo) & (d <= r2hi);
+    cand2 = neigh(in2);
+    cand2 = exclude_existing(cand2, r1, Atoms, id2row);
+
+    % adaptive per-pick feedback
+    C = numel(cand2);
+    if C < Cmin
+        g_mul2 = min(2.0, g_mul2*1.15);
+        no_progress = no_progress + 1;
+        continue;
+    elseif C > Cmax
+        g_mul2 = max(0.5, g_mul2*0.85);
+    else
+        g_mul2 = 1.0;
+    end
+    if isempty(cand2), no_progress = no_progress + 1; continue; end
+
+    % bias toward lower-degree partners
+    [~,ord] = sort(Atoms(cand2,5), 'ascend');
+    cand2 = cand2(ord);
+    r2 = cand2( min(numel(cand2), randi( min(5, numel(cand2)) )) );
+
+    L  = hypot(x(r2)-x(r1), y(r2)-y(r1));
+
+    % add bond type-2
+    nbond = nbond + 1;
+    Btmp(nbond,:) = [nbond, r1, r2, L, 2];
+    countType2 = countType2 + 1;
+
+    Atoms(r1,5) = Atoms(r1,5) + 1;  Atoms(r1, 5+Atoms(r1,5)) = ids(r2);
+    Atoms(r2,5) = Atoms(r2,5) + 1;  Atoms(r2, 5+Atoms(r2,5)) = ids(r1);
+    if Atoms(r1,5) >= Max_peratom_bond, eligible(r1) = false; end
+    if Atoms(r2,5) >= Max_peratom_bond, eligible(r2) = false; end
+
+    no_progress = 0;
 end
+tB = toc;
 
-if ntries >= global_limit
-    warning('Bond creation: hit global try limit (%d).', global_limit);
-end
-if no_progress >= stall_limit
-    warning('Bond creation: local stall after %d attempts.', stall_limit);
-end
+% trim
+Btmp = Btmp(1:nbond,:);
 
-Bonds = Bonds(1:nbond,:);
-
-
-% --------- Iterative pruning (row space), no ID compaction ----------
-if ~isempty(Bonds)
+% ---------- Optional pruning ----------
+if ~isempty(Btmp) && (min_keep > 0)
     changed = true;
     while changed
-        % recompute degree from current bonds
         deg = Atoms(:,5);
-        %for k=1:size(Bonds,1)
-        %    deg(Bonds(k,1)) = deg(Bonds(k,1)) + 1;
-        %    deg(Bonds(k,2)) = deg(Bonds(k,2)) + 1;
-        %end
         to_del = find(deg <= min_keep);
-        if isempty(to_del)
-            changed = false;
-            break;
-        end
-        kill = false(size(Bonds,1),1);
+        if isempty(to_del), changed = false; break; end
+        kill = false(size(Btmp,1),1);
         mark = false(natom,1); mark(to_del) = true;
-        for k=1:size(Bonds,1)
-            if mark(Bonds(k,2)) || mark(Bonds(k,3))
-                kill(k) = true;
-            end
+        for k=1:size(Btmp,1)
+            if mark(Btmp(k,2)) || mark(Btmp(k,3)), kill(k)=true; end
         end
         if any(kill)
-            Bonds = Bonds(~kill,:);
+            Btmp = Btmp(~kill,:);
             changed = true;
         else
             changed = false;
         end
     end
-
-    % refresh lengths from coords (robust)
-    for k=1:size(Bonds,1)
-        r1 = Bonds(k,2); r2 = Bonds(k,3);
-        dxv = x(r2)-x(r1); dyv = y(r2)-y(r1);
-        Bonds(k,4) = sqrt(dxv*dxv + dyv*dyv);
-    end
 end
 
-
-% --------- Build BondsOut in ID space; renumber bond IDs -----------
-nb = size(Bonds,1);
-BondsOut = zeros(nb,4);
+% ---------- Convert row indices to IDs; renumber ----------
+nb = size(Btmp,1);
+BondsOut = zeros(nb,5);
 for k=1:nb
-    r1 = Bonds(k,2); r2 = Bonds(k,3);
-    id1 = ids(r1); id2 = ids(r2);
-    L   = Bonds(k,4);
-    BondsOut(k,:) = [k, id1, id2, L];
+    r1 = Btmp(k,2); r2 = Btmp(k,3);
+    BondsOut(k,:) = [k, ids(r1), ids(r2), Btmp(k,4), Btmp(k,5)];
 end
 
-% --------- Rebuild Atoms neighbors using **IDs** -------------------
-% Clear neighbor metadata
-Atoms(:,5) = 0;                             % num_bond
+% ---------- Rebuild Atoms neighbor lists from BondsOut ----------
+Atoms(:,5) = 0;
 if size(Atoms,2) < 5+Max_peratom_bond
-    % extend columns if needed (safeguard)
     Atoms(:, size(Atoms,2)+1 : 5+Max_peratom_bond) = 0;
 else
-    Atoms(:, 6 : 5+Max_peratom_bond) = 0;   % zero neighbor IDs
+    Atoms(:, 6 : 5+Max_peratom_bond) = 0;
 end
-
-% Populate neighbor IDs from final bonds
 for k=1:nb
-    id1 = BondsOut(k,2);  id2 = BondsOut(k,3);
-    r1  = id2row(int64(id1));
-    r2  = id2row(int64(id2));
-
-    % r1 side
+    id1 = BondsOut(k,2); id2 = BondsOut(k,3);
+    r1  = id2row(int64(id1)); r2 = id2row(int64(id2));
     nb1 = Atoms(r1,5);
     if nb1 < Max_peratom_bond
-        Atoms(r1,5) = nb1 + 1;
-        Atoms(r1,5 + Atoms(r1,5)) = id2;   % store neighbor **ID**
+        Atoms(r1,5) = nb1 + 1; Atoms(r1,5+Atoms(r1,5)) = id2;
     end
-    % r2 side
     nb2 = Atoms(r2,5);
     if nb2 < Max_peratom_bond
-        Atoms(r2,5) = nb2 + 1;
-        Atoms(r2,5 + Atoms(r2,5)) = id1;   % store neighbor **ID**
+        Atoms(r2,5) = nb2 + 1; Atoms(r2,5+Atoms(r2,5)) = id1;
     end
 end
 
-% Remove atoms with no bonds
-%del = Atoms(:,5) == 0;
-%Atoms(del,:) = [];
-
-%ndel = sum(del); natom = natom - ndel;
-
 AtomsOut = Atoms;
-fprintf('   Pruned %d atoms, and %d bonds\n',natom-length(AtomsOut),nbond-length(BondsOut));
+Atoms    = AtomsOut;
+Bonds    = BondsOut;
 
+% ---------- Stats ----------
+tTot = tA + tB;
+type1 = (Bonds(:,5)==1); type2 = (Bonds(:,5)==2);
+fprintf('   PassA(type1) %.3fs, PassB(type2) %.3fs, Total %.3fs\n', tA, tB, tTot);
+fprintf('   Bonds: %d (type1=%d, type2=%d)\n', nb, sum(type1), sum(type2));
 
+end
 
+% ===== helpers =====
+function neigh = gather_neighbors(r1, Cells, cx, cy, nx, ny)
+    Cx = cx(r1); Cy = cy(r1);
+    neigh = [];
+    for dxCell=-1:1
+        ix = Cx + dxCell; if ix<1 || ix>nx, continue; end
+        for dyCell=-1:1
+            iy = Cy + dyCell; if iy<1 || iy>ny, continue; end
+            if ~isempty(Cells{ix,iy})
+                neigh = [neigh, Cells{ix,iy}]; %#ok<AGROW>
+            end
+        end
+    end
+end
+
+function cand = exclude_existing(cand, r1, Atoms, id2row)
+    nb1 = Atoms(r1,5);
+    if nb1 <= 0, return; end
+    nbrIDs = Atoms(r1, 6:5+nb1);
+    nbrIDs = nbrIDs(nbrIDs~=0);
+    if isempty(nbrIDs), return; end
+    nbrRows = zeros(size(nbrIDs));
+    for jj=1:numel(nbrIDs)
+        nbrRows(jj) = id2row(int64(nbrIDs(jj)));
+    end
+    % set difference
+    if ~isempty(cand) && ~isempty(nbrRows)
+        cand = setdiff(cand, nbrRows);
+    end
 end
