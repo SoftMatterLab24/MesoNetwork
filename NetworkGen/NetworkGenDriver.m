@@ -25,8 +25,8 @@ Nreplicates = 1;
 b = 1.6;     % Kuhn length (in nm)
 
 % Domain size
-Lx = 100;    % Domain size in x (in units of b)
-Ly = 100;    % Domain size in y (in units of b)
+Lx = 1000;    % Domain size in x (in units of b)
+Ly = 1000;    % Domain size in y (in units of b)
 
 % Seed options
 imanualseed = false;  % true: manual seed; false: random seed
@@ -47,18 +47,22 @@ write_location     = './networks';                              % Location to wr
 distribution_assignment_mode_poly = 'pmf';  % Kuhn segment assigment method: 'geom' | 'range' | 'pmf'
 
 %% --------------------- Bimodal Options ---------------------------
-N1 = 50; 
+N1 = 20; 
 N2 = 250;
 
-distribution_assignment_mode = 'gaussian';    % Kuhn segment assigment method: 'single' or 'geom' or 'gaussian'
-distribution_height_mode = 'fixed';          % Distribution height method: 'prob' or 'fixed'
-options.bimodal.long_first = true;          % enable long-first mode
-options.bimodal.distribution_height_mode = 'fixed';
-% options.bimodal.N2_number = 500;            % place exactly 500 long bonds first
+bin_window_method = 'manual';             % Method for determining bin width of bimodal dist: 'manual' or 'adaptive'               
+
+distribution_assignment_mode = 'gaussian';  % Kuhn segment assigment method: 'single' or 'geom' or 'gaussian'
+distribution_height_mode = 'fixed';         % Distribution height method: 'prob' or 'fixed'
+long_first = true;                          % enable long-first mode
 
 % Height mode settings (only one is used)
 P = 0.2;        % Prob: desired fraction of type 2 bonds
-N2_bonds = 500; % Fixed: desired number of type 2 bonds
+N2_bonds = 0; % Fixed: desired number of type 2 bonds
+
+% Manual Window parameters (if bin_window_method = manual)
+dr1 = 5;
+dr2 = 5;
 
 %% --------------------- Advanced Options --------------------------
 iadvancedoptions = false;
@@ -110,8 +114,13 @@ options.polydisperse.integerize_rule = 'largest_remainder'; % allocation method
 % ------------------------------------------------------------------
 options.bimodal.N1                 = N1;
 options.bimodal.N2                 = N2;
+options.bimodal.dr1                = dr1;
+options.bimodal.dr2                = dr2;
 options.bimodal.min_N              = 1;        % lower bound for all modes
 options.bimodal.kuhn_rounding      = 'round';  % 'round' | 'ceil' | 'floor' (used in 'geom')
+
+options.bimodal.long_first         = long_first;    
+options.bimodal.bin_window_method  = bin_window_method; 
 
 % --- mode selection ---
 % 'single' mode: applies N1 and N2 directly based on geometry (N ≈ (L/b)^2)

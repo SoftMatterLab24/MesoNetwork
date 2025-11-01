@@ -24,6 +24,7 @@ N1  = options.bimodal.N1;
 N2  = options.bimodal.N2;
 
 useProb     = strcmpi(options.bimodal.distribution_height_mode,'prob');
+useManual   = strcmpi(options.bimodal.bin_window_method,'manual');
 long_first  = isfield(options.bimodal,'long_first') && options.bimodal.long_first;
 
 if useProb
@@ -43,7 +44,7 @@ Cmin = 4; Cmax = 24;
 r1_avg = b*sqrt(N1);
 r2_avg = b*sqrt(N2);
 
-r_min_allowed = max(dmin * 1.8, b * 0.5);
+r_min_allowed = max(dmin * 1.2, b * 0.5);
 if r1_avg < r_min_allowed
     warning('r1_avg=%.3g below min separation %.3g; lifting to %.3g.', r1_avg, dmin, r_min_allowed);
     r1_avg = r_min_allowed;
@@ -65,8 +66,13 @@ end
 A   = (xhi-xlo)*(yhi-ylo);
 rho = natom / max(A, eps);
 
-dr1 = targetC1 / max(2*pi*rho*max(r1_avg,eps), eps);
-dr2 = targetC2 / max(2*pi*rho*max(r2_avg,eps), eps);
+if useManual
+    dr1 = options.bimodal.dr1;
+    dr2 = options.bimodal.dr2;
+else
+    dr1 = targetC1 / max(2*pi*rho*max(r1_avg,eps), eps);
+    dr2 = targetC2 / max(2*pi*rho*max(r2_avg,eps), eps);
+end
 
 r1_lower = max(r1_avg - dr1, dmin + epsr);
 r1_upper = r1_avg + dr1;
@@ -127,7 +133,7 @@ if long_first
         if deg2(r1) >= (Max_peratom_bond-1)
             no_progress = no_progress + 1; continue;
         end
-
+        
         dr2_pick = dr2 * g_mul2;
         r2lo = max(r2_lower - (dr2 - dr2_pick), r1_upper + 0);
         r2hi = r2_upper + (dr2_pick - dr2);
@@ -150,16 +156,19 @@ if long_first
         cand2 = neigh(in2);
         cand2 = exclude_existing_any(cand2, r1, Atoms, id2row); % exclude any existing edge (any type)
 
-        % adaptive width
-        C = numel(cand2);
-        if C < Cmin
-            g_mul2 = min(2.0, g_mul2*1.15);
-            no_progress = no_progress + 1; continue;
-        elseif C > Cmax
-            g_mul2 = max(0.5, g_mul2*0.85);
-        else
-            g_mul2 = 1.0;
+        if ~ useManual
+            % adaptive width
+            C = numel(cand2);
+            if C < Cmin
+                g_mul2 = min(2.0, g_mul2*1.15);
+                no_progress = no_progress + 1; continue;
+            elseif C > Cmax
+                g_mul2 = max(0.5, g_mul2*0.85);
+            else
+                g_mul2 = 1.0;
+            end
         end
+
         if isempty(cand2), no_progress = no_progress + 1; continue; end
 
         % bias to lower deg2 partner
@@ -225,16 +234,18 @@ if long_first
         in1 = (d >= rlo) & (d <= rhi);
         cand = neigh(in1);
         cand = exclude_existing_any(cand, r1, Atoms, id2row); % exclude any existing edge (long or short)
-
-        % adaptive width
-        C = numel(cand);
-        if C < Cmin
-            g_mul1 = min(2.0, g_mul1*1.15);
-            no_progress = no_progress + 1; continue;
-        elseif C > Cmax
-            g_mul1 = max(0.5, g_mul1*0.85);
-        else
-            g_mul1 = 1.0;
+        
+        if ~ useManual
+            % adaptive width
+            C = numel(cand);
+            if C < Cmin
+                g_mul1 = min(2.0, g_mul1*1.15);
+                no_progress = no_progress + 1; continue;
+            elseif C > Cmax
+                g_mul1 = max(0.5, g_mul1*0.85);
+            else
+                g_mul1 = 1.0;
+            end
         end
         if isempty(cand), no_progress = no_progress + 1; continue; end
 
@@ -290,14 +301,16 @@ else
         cand = neigh(in1);
 
         cand = exclude_existing_any(cand, r1, Atoms, id2row);
-
-        C = numel(cand);
-        if C < Cmin
-            g_mul1 = min(2.0, g_mul1*1.15); no_progress = no_progress + 1; continue;
-        elseif C > Cmax
-            g_mul1 = max(0.5, g_mul1*0.85);
-        else
-            g_mul1 = 1.0;
+        
+        if ~ useManual
+            C = numel(cand);
+            if C < Cmin
+                g_mul1 = min(2.0, g_mul1*1.15); no_progress = no_progress + 1; continue;
+            elseif C > Cmax
+                g_mul1 = max(0.5, g_mul1*0.85);
+            else
+                g_mul1 = 1.0;
+            end
         end
         if isempty(cand), no_progress = no_progress + 1; continue; end
 
@@ -347,14 +360,16 @@ else
         in2 = (d >= r2lo) & (d <= r2hi);
         cand2 = neigh(in2);
         cand2 = exclude_existing_any(cand2, r1, Atoms, id2row);
-
-        C = numel(cand2);
-        if C < Cmin
-            g_mul2 = min(2.0, g_mul2*1.15); no_progress = no_progress + 1; continue;
-        elseif C > Cmax
-            g_mul2 = max(0.5, g_mul2*0.85);
-        else
-            g_mul2 = 1.0;
+        
+        if ~ useManual
+            C = numel(cand2);
+            if C < Cmin
+                g_mul2 = min(2.0, g_mul2*1.15); no_progress = no_progress + 1; continue;
+            elseif C > Cmax
+                g_mul2 = max(0.5, g_mul2*0.85);
+            else
+                g_mul2 = 1.0;
+            end
         end
         if isempty(cand2), no_progress = no_progress + 1; continue; end
 
