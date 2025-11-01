@@ -53,10 +53,6 @@ methods
         addlistener(obj,'log','PostSet',@(src,ev) notify(obj,'logUpdated'));
     end
 
-    function triggerEvent(obj)
-        notify(obj,'logUpdated')
-    end
-
     function [Domain,Atoms,Bonds,Nvec] = generateNetwork(obj)
 
         % prepare options structure
