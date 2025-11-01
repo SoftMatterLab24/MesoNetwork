@@ -1,4 +1,4 @@
-function Nvec = NetworkGenAssignKuhnPolydisperse(Bonds, options)
+function [Nvec,obj] = NetworkGenAssignKuhnPolydisperse(Bonds, options,obj)
 %NETWORKGENASSIGNKUHNPOLYDISPERSE
 % Assign per-bond Kuhn segment counts N for a polydisperse network.
 % 

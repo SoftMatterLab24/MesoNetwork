@@ -1,4 +1,4 @@
-function Nvec = NetworkGenAssignKuhnBimodal(Bonds, options)
+function [Nvec,obj] = NetworkGenAssignKuhnBimodal(Bonds, options,obj)
 % NetworkGenAssignKuhnBimodal - Assign Kuhn segment numbers to bonds in a bimodal network
 %
 % INPUT

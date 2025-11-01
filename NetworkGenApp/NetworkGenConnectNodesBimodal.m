@@ -1,4 +1,4 @@
-function [Atoms,Bonds] = NetworkGenConnectNodesBimodal(Domain,Atoms,options,advancedOptions)
+function [Atoms,Bonds,obj] = NetworkGenConnectNodesBimodal(Domain,Atoms,options,advancedOptions,obj)
 % NetworkGenConnectNodesBimodal (adaptive, grid-accelerated)
 % Adds 'long_first' mode: place type-2 bonds first (fixed N2_number),
 % then place type-1 bonds as if type-2 bonds don't consume capacity.
@@ -46,10 +46,14 @@ r2_avg = b*sqrt(N2);
 
 r_min_allowed = max(dmin * 1.2, b * 0.5);
 if r1_avg < r_min_allowed
+    newline = sprintf('   Warning: r1_avg=%.3g below min separation %.3g; lifting to %.3g.\n', r1_avg, dmin, r_min_allowed);
+    obj.log = append(obj.log, newline);
     warning('r1_avg=%.3g below min separation %.3g; lifting to %.3g.', r1_avg, dmin, r_min_allowed);
     r1_avg = r_min_allowed;
 end
 if r2_avg < 1.8 * r1_avg
+    newline = sprintf('   Warning: r2_avg too close to r1_avg (%.3g vs %.3g). Adjusting r2_avg.\n', r2_avg, r1_avg);
+    obj.log = append(obj.log, newline);
     warning('r2_avg too close to r1_avg (%.3g vs %.3g). Adjusting r2_avg.', r2_avg, r1_avg);
     r2_avg = 1.8 * r1_avg;
 end
@@ -58,6 +62,8 @@ Lx = xhi - xlo; Ly = yhi - ylo;
 domain_diag = hypot(Lx, Ly);
 r2_max_allowed = 0.4 * domain_diag;
 if r2_avg > r2_max_allowed
+    newline = sprintf('   Warning: r2_avg=%.3g exceeds domain size %.3g; capping to %.3g.\n', r2_avg, domain_diag, r2_max_allowed);
+    obj.log = append(obj.log, newline);
     warning('r2_avg=%.3g exceeds domain size %.3g; capping to %.3g.', r2_avg, domain_diag, r2_max_allowed);
     r2_avg = r2_max_allowed;
 end
@@ -451,8 +457,8 @@ Bonds    = BondsOut;
 % ------------------ Stats ------------------
 tTot = tL + tS + tA + tB;
 type1 = (Bonds(:,5)==1); type2 = (Bonds(:,5)==2);
-%fprintf('   LongFirst=%d | T_long %.3fs, T_short %.3fs (Alt: T1 %.3fs, T2 %.3fs) | Total %.3fs\n', ...
-%        long_first, tL, tS, tA, tB, tTot);
+newline = sprintf('   Placed %d bonds with %d type1, %d type2 in %4.4f sec \n', nb, sum(type1), sum(type2), tTot);
+obj.log = append(obj.log, newline);
 fprintf('   Placed %d bonds with %d type1, %d type2 in %4.4f sec \n', nb, sum(type1), sum(type2), toc);
 
 

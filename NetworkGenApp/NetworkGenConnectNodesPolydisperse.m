@@ -1,4 +1,4 @@
-function [AtomsOut, BondsOut] = NetworkGenConnectNodesPolydisperse(Domain, Atoms, options)
+function [AtomsOut, BondsOut,obj] = NetworkGenConnectNodesPolydisperse(Domain, Atoms, options,obj)
 % NetworkGenConnectNodesPolydisperse - Connect Atoms nodes with Bonds
 % INPUT:
 %   Atoms layout: [ ID | X | Y | Z | num_bond | nbr1 | nbr2 | nbr3 | nbr4 | ... ]
@@ -140,12 +140,18 @@ while (nbond < Max_bond) && (no_progress < stall_limit) && (ntries < global_limi
 
     no_progress = 0;
 end
+newline = sprintf('   Placed %d bonds in %4.4f sec \n', nbond, toc);
+obj.log = append(obj.log, newline);
 fprintf('   Placed %d bonds in %4.4f sec \n', nbond, toc);
 
 if ntries >= global_limit
+    newline = sprintf('   Warning: Bond creation hit global try limit (%d).\n', global_limit);
+    obj.log = append(obj.log, newline);
     warning('Bond creation: hit global try limit (%d).', global_limit);
 end
 if no_progress >= stall_limit
+    newline = sprintf('   Warning: Bond creation stalled after %d attempts.\n', stall_limit);
+    obj.log = append(obj.log, newline);
     warning('Bond creation: local stall after %d attempts.', stall_limit);
 end
 
@@ -230,6 +236,8 @@ for k=1:nb
 end
 
 AtomsOut = Atoms;
+newline = sprintf('   Pruned %d atoms, and %d bonds\n',natom-length(AtomsOut),nbond-length(BondsOut));
+obj.log = append(obj.log, newline);
 fprintf('   Pruned %d atoms, and %d bonds\n',natom-length(AtomsOut),nbond-length(BondsOut));
 
 end

@@ -1,4 +1,4 @@
-function [Atoms] = NetworkGenScatterNodes(Domain)
+function [Atoms,obj] = NetworkGenScatterNodes(Domain,obj)
 % NetworkGenScatterNodes - Scatter nodes in 2D with minimum spacing using a uniform grid (fast)
 %
 % INPUT:  Domain with fields:
@@ -128,13 +128,19 @@ while (N_atom < Max_atom) && (global_scatter_tries < node_scatter_max_tries)
     % Insert into grid
     insert_into_grid(N_atom);
 end
+newline = sprintf('   Placed %d atoms in %4.4f sec \n', N_atom, toc);
+obj.log = append(obj.log, newline);
 
 fprintf('   Placed %d atoms in %4.4f sec \n', N_atom, toc);
 
 % Trim / warn
 if N_atom < Max_atom
+    newline = sprintf('   Warning: Requested %d atoms, placed %d atoms.\n', Max_atom, N_atom);
+    obj.log = append(obj.log, newline);
     warning('Requested %d atoms, placed %d atoms.', Max_atom, N_atom);
     if N_atom == 0
+        newline = sprintf('Error: No atoms placed—aborting.\n');
+        obj.log = append(obj.log, newline);
         error('No atoms placed—aborting.');
     end
 end

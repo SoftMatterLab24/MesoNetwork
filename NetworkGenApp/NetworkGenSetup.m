@@ -1,4 +1,4 @@
-function [Domain] = NetworkGenSetup(options,advancedOptions)
+function [Domain,obj] = NetworkGenSetup(options,advancedOptions,obj)
 % NetworkGenSetup - Setup the simulation domain and parameters
 %
 % INPUT:
@@ -6,6 +6,9 @@ function [Domain] = NetworkGenSetup(options,advancedOptions)
 %   advancedOptions: structure with advanced options
 % OUTPUT:
 %   Domain: structure with domain and parameter settings
+
+newline = sprintf('   Setting up the network generation domain and parameters...\n');
+obj.log = append(obj.log, newline);
 
 %% Extract relevant options
 Lx = options.Lx;

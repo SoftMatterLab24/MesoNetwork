@@ -143,18 +143,23 @@ methods
             advancedOptions.bimodal.bin_width2_factor = 2.355;
         end
 
+        obj.log = sprintf("Starting network generation...\n");
 
-        ii = 1;
+        for ii = 1:options.Nreplicates;
+
+        newline = sprintf('----------------------------------------\n');
+        obj.log = append(obj.log, newline);
+
         fprintf('Generating network replicate %d of %d...\n',ii,options.Nreplicates);
-        obj.log = sprintf('Generating network replicate %d of %d...\n',ii,options.Nreplicates);
-
-        newline = sprintf('Hey there\n');
+        newline = sprintf('Generating network replicate %d of %d...\n',ii,options.Nreplicates);
         obj.log = append(obj.log, newline);
 
         %% A. Prepare replicate-specific information
         % 1. Set seed
         if options.imanualseed
             if length(options.seed) ~= options.Nreplicates
+                newline = sprintf('Error: not enough manual seeds provided for the number of replicates Expected %d, got %d\n', options.Nreplicates, length(options.seed));
+                obj.log = append(obj.log, newline);
                 error('Error: not enough manual seeds provided for the number of replicates Expected %d, got %d', options.Nreplicates, length(options.seed));
             end
             options.seed = seed(ii);
@@ -171,24 +176,36 @@ methods
         %end
 
         %% B. Setup the system
-        [Domain] = NetworkGenSetup(options,advancedOptions);
+        [Domain,obj] = NetworkGenSetup(options,advancedOptions,obj);
 
         %% C. Scatter nodes with minimum spacing
-        [Atoms] = NetworkGenScatterNodes(Domain);
+        [Atoms,obj] = NetworkGenScatterNodes(Domain,obj);
 
         %% D. Connect nodes within bonds
         if strcmp(options.dist_type,'polydisperse')
             % Polydisperse network
-            [Atoms,Bonds] = NetworkGenConnectNodesPolydisperse(Domain,Atoms,options);
-            [Nvec] = NetworkGenAssignKuhnPolydisperse(Bonds, options);
+            [Atoms,Bonds,obj] = NetworkGenConnectNodesPolydisperse(Domain,Atoms,options,obj);
+            [Nvec,obj] = NetworkGenAssignKuhnPolydisperse(Bonds, options,obj);
         elseif strcmp(options.dist_type,'bimodal')
             % Bimodal network
-            [Atoms,Bonds] = NetworkGenConnectNodesBimodal(Domain,Atoms,options,advancedOptions);
-            [Nvec] = NetworkGenAssignKuhnBimodal(Bonds, options);
+            [Atoms,Bonds,obj] = NetworkGenConnectNodesBimodal(Domain,Atoms,options,advancedOptions,obj);
+            [Nvec] = NetworkGenAssignKuhnBimodal(Bonds, options,obj);
         else
+            newline = sprintf('Error: distribution type: %s not recognized\n', options.dist_type);
+            obj.log = append(obj.log, newline);
             error('Error: distribution type: %s not recognized', options.dist_type);
         end
 
+
+    end
+        newline = sprintf('----------------------------------------\n\n');
+        obj.log = append(obj.log, newline);
+
+        newline = sprintf("Done!\n\n");
+        obj.log = append(obj.log, newline);
+
+        newline = sprintf('Visualizing last generated network... (this may take a minute)\n');
+        obj.log = append(obj.log, newline);
     end
 
 end
