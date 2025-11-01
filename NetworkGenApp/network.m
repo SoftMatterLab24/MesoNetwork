@@ -1,6 +1,7 @@
 classdef network < handle
 
 properties
+    % general options
     dist_type
     Nreplicates
     b
@@ -14,8 +15,12 @@ properties
     %lammps_visual_file
     %bond_table_file
     %write_location
-
+    % log is declared in an observable properties block below so listeners
+    % can attach to its PostSet event. (See new properties block.)
+    % polydisperse options
     distribution_assignment_mode_poly
+
+    % bimodal options
     N1
     N2
     bin_window_method
@@ -29,11 +34,28 @@ properties
     iadvancedoptions
 end
 
-properties (Constant)
+properties (SetObservable)
+    % observable log property: changes fire PostSet which we forward to
+    % the logUpdated event via a small constructor listener below
+    log
+end
 
+events
+    logUpdated
 end
 
 methods
+
+    function obj = network()
+        % Constructor: forward changes to the observable `log` property as
+        % the `logUpdated` event so external listeners can subscribe to
+        % either the property's PostSet or the event.
+        addlistener(obj,'log','PostSet',@(src,ev) notify(obj,'logUpdated'));
+    end
+
+    function triggerEvent(obj)
+        notify(obj,'logUpdated')
+    end
 
     function [Domain,Atoms,Bonds,Nvec] = generateNetwork(obj)
 
@@ -124,7 +146,10 @@ methods
 
         ii = 1;
         fprintf('Generating network replicate %d of %d...\n',ii,options.Nreplicates);
-    
+        obj.log = sprintf('Generating network replicate %d of %d...\n',ii,options.Nreplicates);
+
+        newline = sprintf('Hey there\n');
+        obj.log = append(obj.log, newline);
 
         %% A. Prepare replicate-specific information
         % 1. Set seed
