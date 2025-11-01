@@ -52,6 +52,9 @@ N2 = 250;
 
 distribution_assignment_mode = 'gaussian';    % Kuhn segment assigment method: 'single' or 'geom' or 'gaussian'
 distribution_height_mode = 'fixed';          % Distribution height method: 'prob' or 'fixed'
+options.bimodal.long_first = true;          % enable long-first mode
+options.bimodal.distribution_height_mode = 'fixed';
+% options.bimodal.N2_number = 500;            % place exactly 500 long bonds first
 
 % Height mode settings (only one is used)
 P = 0.2;        % Prob: desired fraction of type 2 bonds
@@ -113,7 +116,7 @@ options.bimodal.kuhn_rounding      = 'round';  % 'round' | 'ceil' | 'floor' (use
 % --- mode selection ---
 % 'single' mode: applies N1 and N2 directly based on geometry (N ≈ (L/b)^2)
 % 'range' mode: uses: b (global), kuhn_rounding, min_N
-options.bimodal.distribution_assignment_mode = distribution_assignment_mode; % 'single' | 'geom'
+options.bimodal.distribution_assignment_mode = distribution_assignment_mode; % 'single' | 'geom' | 'gaussian'
 
 % --- distribution height mode selection ---
 options.bimodal.distribution_height_mode = distribution_height_mode; % 'prob' | 'fixed'
