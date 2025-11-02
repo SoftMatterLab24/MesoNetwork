@@ -82,7 +82,7 @@ for i = 1:Bond_count
 end
 
 fclose(fid);
-newline = sprintf('    Wrote %s with %d atoms and %d bonds.\n', data_path, Atom_count, Bond_count);
+newline = sprintf('   Wrote %s with %d atoms and %d bonds.\n', data_path, Atom_count, Bond_count);
 obj.log = append(obj.log, newline);
 fprintf('   Wrote %s with %d atoms and %d bonds.\n', data_path, Atom_count, Bond_count);
 
@@ -123,7 +123,7 @@ if Bond_count > 0
     end
 
     fclose(fidBT);
-    newline = sprintf('    Wrote %s with %d entries. b = %.6g\n', bondtable_path, Bond_count, b);
+    newline = sprintf('   Wrote %s with %d entries. b = %.6g\n', bondtable_path, Bond_count, b);
     obj.log = append(obj.log, newline);
     fprintf('   Wrote %s with %d entries. b = %.6g\n', bondtable_path, Bond_count, b);
 else
@@ -135,7 +135,7 @@ else
         fprintf(fidBT, 'N 0\n\n');
         fclose(fidBT);
     end
-    newline = sprintf('    No bonds; wrote empty %s.\n', bondtable_path);
+    newline = sprintf('   No bonds; wrote empty %s.\n', bondtable_path);
     obj.log = append(obj.log, newline);
     fprintf('   No bonds; wrote empty %s.\n', bondtable_path);
 

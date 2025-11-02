@@ -14,9 +14,18 @@ properties
     lammps_data_file
     bond_table_file
     write_location
-    iadvancedoptions
+    
     % polydisperse options
     distribution_assignment_mode_poly
+    min_N_poly
+    align_to_length_poly
+    kuhn_rounding_poly
+    N_range_method_poly
+    N_target_min_poly
+    N_target_max_poly
+    pmf_nu0_poly
+    pmf_meanN_poly
+    pmf_nu_max_poly
 
     % bimodal options
     N1
@@ -29,7 +38,16 @@ properties
     N2_bonds
     dr1
     dr2
-    
+
+    % advanced options
+    iadvancedoptions
+    rho_atom
+    max_peratom_bond
+    bond_global_try_limit_multiplier
+    max_attempts_without_progress_multiplier
+    min_degree_keep
+    cutoff_multiply
+
 end
 
 properties (SetObservable)
@@ -73,23 +91,23 @@ methods
         options.polydisperse.distribution_assignment_mode = obj.distribution_assignment_mode_poly;   % 'geom' | 'range' | 'pmf'
 
         % --- shared / guards ---
-        options.polydisperse.min_N           = 1;        % lower bound for all modes
-        options.polydisperse.align_to_length = 'ascend'; % 'ascend' (shortest→smallest N) | 'none'
-        options.polydisperse.kuhn_rounding   = 'round';  % 'round' | 'ceil' | 'floor' (used in 'geom')
+        options.polydisperse.min_N           = obj.min_N_poly;            % lower bound for all modes
+        options.polydisperse.align_to_length = obj.align_to_length_poly;  % 'ascend' (shortest→smallest N) | 'none'
+        options.polydisperse.kuhn_rounding   = obj.kuhn_rounding_poly;    % 'round' | 'ceil' | 'floor' (used in 'geom')
 
         % --- 'geom' mode (N ≈ (L/b)^2) ---
         % uses: b (global), kuhn_rounding, min_N
 
         % --- 'range' mode (map lengths → [N_min,N_max]) ---
-        options.polydisperse.N_range_method  = 'rank';   % 'rank' | 'linear'
-        options.polydisperse.N_target_min    = 20;       % integer lower target
-        options.polydisperse.N_target_max    = 120;      % integer upper target
+        options.polydisperse.N_range_method  = obj.N_range_method_poly;   % 'rank' | 'linear'
+        options.polydisperse.N_target_min    = obj.N_target_min_poly;       % integer lower target
+        options.polydisperse.N_target_max    = obj.N_target_min_poly;      % integer upper target
 
         % --- 'pmf' mode (truncated geometric with hard cap based on exp distribution) ---
-        options.polydisperse.pmf_nu0         = 20;       % ν0 (minimum)
-        options.polydisperse.pmf_meanN       = 30;       % target mean of ν after truncation
+        options.polydisperse.pmf_nu0         = obj.pmf_nu0_poly;       % ν0 (minimum)
+        options.polydisperse.pmf_meanN       = obj.pmf_meanN_poly;       % target mean of ν after truncation
         options.polydisperse.pmf_cut_mode    = 'cap';    % keep as 'cap'
-        options.polydisperse.pmf_nu_max      = 60;       % hard maximum ν (≥ ν0)
+        options.polydisperse.pmf_nu_max      = obj.pmf_nu_max_poly;       % hard maximum ν (≥ ν0)
         options.polydisperse.integerize_rule = 'largest_remainder'; % allocation method
 
         % B. Bimodal options
@@ -122,22 +140,34 @@ methods
         % ------------------------------------------------------------------
         advancedOptions.iadvancedoptions = obj.iadvancedoptions;
         if advancedOptions.iadvancedoptions
+            advancedOptions.Rho_atom = obj.rho_atom;
+            advancedOptions.Max_peratom_bond = obj.max_peratom_bond;
+            advancedOptions.bond_global_try_limit_multiplier = obj.bond_global_try_limit_multiplier;
+            advancedOptions.max_attempts_without_progress_multiplier = obj.max_attempts_without_progress_multiplier;
+            advancedOptions.min_degree_keep = obj.min_degree_keep;
+            advancedOptions.cutoff_multiply = obj.cutoff_multiply; %units of b
+        else
+            % use defaults
             advancedOptions.Rho_atom = 0.0078;
             advancedOptions.Max_peratom_bond = 5;
             advancedOptions.bond_global_try_limit_multiplier = 200;
             advancedOptions.max_attempts_without_progress_multiplier = 10;
             advancedOptions.min_degree_keep = 1;
             advancedOptions.cutoff_multiply = 6; %units of b
-
-            %Bimodal advanced
-            %advancedOptions.bimodal.bin_std1_factor = 0.4;
-            %advancedOptions.bimodal.bin_std2_factor = 0.15;
-            %advancedOptions.bimodal.bin_width1_factor = 2.355;
-            %advancedOptions.bimodal.bin_width2_factor = 2.355;
         end
-
+        
+        % Send inital log message with settings
         obj.log = sprintf("Starting network generation...\n");
-
+        if options.isave
+            newline = sprintf('Data files will be written to %s\n', options.write_location);
+            obj.log = append(obj.log, newline);
+        end
+        if advancedOptions.iadvancedoptions
+            newline = sprintf('Advanced options enabled.\n');
+            obj.log = append(obj.log, newline);
+        end
+        
+        % Loop over replicates
         for ii = 1:options.Nreplicates;
 
             newline = sprintf('----------------------------------------\n');

@@ -148,10 +148,10 @@ if iadvancedoptions
    advancedOptions.cutoff_multiply = 6; %units of b
 
    %Bimodal advanced
-   advancedOptions.bimodal.bin_std1_factor = 0.4;
-   advancedOptions.bimodal.bin_std2_factor = 0.15;
-   advancedOptions.bimodal.bin_width1_factor = 2.355;
-   advancedOptions.bimodal.bin_width2_factor = 2.355;
+   %advancedOptions.bimodal.bin_std1_factor = 0.4;
+   %advancedOptions.bimodal.bin_std2_factor = 0.15;
+   %advancedOptions.bimodal.bin_width1_factor = 2.355;
+   %advancedOptions.bimodal.bin_width2_factor = 2.355;
 end
 
 %% Loop over replicates
