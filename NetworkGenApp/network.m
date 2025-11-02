@@ -71,6 +71,7 @@ methods
 
     function [Domain,Atoms,Bonds,Nvec] = generateNetwork(obj)
 
+        %%% Options structure is now redundant with object properties; still keep for compatibility with old code
         % prepare options structure
         options.dist_type          = obj.dist_type;
         options.Nreplicates        = obj.Nreplicates;
@@ -160,6 +161,10 @@ methods
         obj.log = sprintf("Starting network generation...\n");
         if options.isave
             newline = sprintf('Data files will be written to %s\n', options.write_location);
+            obj.log = append(obj.log, newline);
+        end
+        if options.iplot
+            newline = sprintf('Statistics visualization enabled.\n');
             obj.log = append(obj.log, newline);
         end
         if advancedOptions.iadvancedoptions
