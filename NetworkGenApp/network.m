@@ -9,14 +9,12 @@ properties
     Ly
     imanualseed
     seed
-    %iplot
-    %isave
-    %lammps_data_file
-    %lammps_visual_file
-    %bond_table_file
-    %write_location
-    % log is declared in an observable properties block below so listeners
-    % can attach to its PostSet event. (See new properties block.)
+    iplot
+    isave
+    lammps_data_file
+    bond_table_file
+    write_location
+    iadvancedoptions
     % polydisperse options
     distribution_assignment_mode_poly
 
@@ -31,7 +29,7 @@ properties
     N2_bonds
     dr1
     dr2
-    iadvancedoptions
+    
 end
 
 properties (SetObservable)
@@ -63,12 +61,11 @@ methods
         options.Ly                 = obj.Ly;
         options.imanualseed        = obj.imanualseed;
         options.seed               = obj.seed;
-        %options.iplot              = obj.iplot;
-        %options.isave              = obj.isave;
-        %options.lammps_data_file   = obj.lammps_data_file;
-        %options.lammps_visual_file = obj.lammps_visual_file;
-        %options.bond_table_file    = obj.bond_table_file;
-        %options.write_location     = obj.write_location;
+        options.iplot              = obj.iplot;
+        options.isave              = obj.isave;
+        options.lammps_data_file   = obj.lammps_data_file;
+        options.bond_table_file    = obj.bond_table_file;
+        options.write_location     = obj.write_location;
 
         % A. Polydisperse options
         % ------------------------------------------------------------------
@@ -133,67 +130,75 @@ methods
             advancedOptions.cutoff_multiply = 6; %units of b
 
             %Bimodal advanced
-            advancedOptions.bimodal.bin_std1_factor = 0.4;
-            advancedOptions.bimodal.bin_std2_factor = 0.15;
-            advancedOptions.bimodal.bin_width1_factor = 2.355;
-            advancedOptions.bimodal.bin_width2_factor = 2.355;
+            %advancedOptions.bimodal.bin_std1_factor = 0.4;
+            %advancedOptions.bimodal.bin_std2_factor = 0.15;
+            %advancedOptions.bimodal.bin_width1_factor = 2.355;
+            %advancedOptions.bimodal.bin_width2_factor = 2.355;
         end
 
         obj.log = sprintf("Starting network generation...\n");
 
         for ii = 1:options.Nreplicates;
 
-        newline = sprintf('----------------------------------------\n');
-        obj.log = append(obj.log, newline);
-
-        fprintf('Generating network replicate %d of %d...\n',ii,options.Nreplicates);
-        newline = sprintf('Generating network replicate %d of %d...\n',ii,options.Nreplicates);
-        obj.log = append(obj.log, newline);
-
-        %% A. Prepare replicate-specific information
-        % 1. Set seed
-        if options.imanualseed
-            if length(options.seed) ~= options.Nreplicates
-                newline = sprintf('Error: not enough manual seeds provided for the number of replicates Expected %d, got %d\n', options.Nreplicates, length(options.seed));
-                obj.log = append(obj.log, newline);
-                error('Error: not enough manual seeds provided for the number of replicates Expected %d, got %d', options.Nreplicates, length(options.seed));
-            end
-            options.seed = seed(ii);
-        else
-            options.seed = randi(1e6);
-        end
-        rng(options.seed);
-
-        % 2. Set replicate-specific file names
-        %if options.Nreplicates > 1
-        %    options.lammps_data_file   = sprintf('%04d_%s',ii,options.lammps_data_file);
-        %    options.lammps_visual_file = sprintf('%04d_%s',ii,options.lammps_visual_file);
-        %    options.bond_table_file    = sprintf('%04d_%s',ii,options.bond_table_file);
-        %end
-
-        %% B. Setup the system
-        [Domain,obj] = NetworkGenSetup(options,advancedOptions,obj);
-
-        %% C. Scatter nodes with minimum spacing
-        [Atoms,obj] = NetworkGenScatterNodes(Domain,obj);
-
-        %% D. Connect nodes within bonds
-        if strcmp(options.dist_type,'polydisperse')
-            % Polydisperse network
-            [Atoms,Bonds,obj] = NetworkGenConnectNodesPolydisperse(Domain,Atoms,options,obj);
-            [Nvec,obj] = NetworkGenAssignKuhnPolydisperse(Bonds, options,obj);
-        elseif strcmp(options.dist_type,'bimodal')
-            % Bimodal network
-            [Atoms,Bonds,obj] = NetworkGenConnectNodesBimodal(Domain,Atoms,options,advancedOptions,obj);
-            [Nvec] = NetworkGenAssignKuhnBimodal(Bonds, options,obj);
-        else
-            newline = sprintf('Error: distribution type: %s not recognized\n', options.dist_type);
+            newline = sprintf('----------------------------------------\n');
             obj.log = append(obj.log, newline);
-            error('Error: distribution type: %s not recognized', options.dist_type);
+
+            fprintf('Generating network replicate %d of %d...\n',ii,options.Nreplicates);
+            newline = sprintf('Generating network replicate %d of %d...\n',ii,options.Nreplicates);
+            obj.log = append(obj.log, newline);
+
+            %% A. Prepare replicate-specific information
+            % 1. Set seed
+            if options.imanualseed
+                if length(options.seed) ~= options.Nreplicates
+                    newline = sprintf('Error: not enough manual seeds provided for the number of replicates Expected %d, got %d\n', options.Nreplicates, length(options.seed));
+                    obj.log = append(obj.log, newline);
+                    error('Error: not enough manual seeds provided for the number of replicates Expected %d, got %d', options.Nreplicates, length(options.seed));
+                end
+                options.seed = options.seed(ii);
+            else
+                options.seed = randi(1e6);
+            end
+            rng(options.seed);
+
+            % 2. Set replicate-specific file names
+            if options.Nreplicates > 1
+                options.lammps_data_file   = sprintf('%04d_%s',ii,obj.lammps_data_file);
+                %options.lammps_visual_file = sprintf('%04d_%s',ii,options.lammps_visual_file);
+                options.bond_table_file    = sprintf('%04d_%s',ii,obj.bond_table_file);
+            end
+
+            %% B. Setup the system
+            [Domain,obj] = NetworkGenSetup(options,advancedOptions,obj);
+
+            %% C. Scatter nodes with minimum spacing
+            [Atoms,obj] = NetworkGenScatterNodes(Domain,obj);
+
+            %% D. Connect nodes within bonds
+            if strcmp(options.dist_type,'polydisperse')
+                % Polydisperse network
+                [Atoms,Bonds,obj] = NetworkGenConnectNodesPolydisperse(Domain,Atoms,options,obj);
+                [Nvec,obj] = NetworkGenAssignKuhnPolydisperse(Bonds, options,obj);
+            elseif strcmp(options.dist_type,'bimodal')
+                % Bimodal network
+                [Atoms,Bonds,obj] = NetworkGenConnectNodesBimodal(Domain,Atoms,options,advancedOptions,obj);
+                [Nvec] = NetworkGenAssignKuhnBimodal(Bonds, options,obj);
+            else
+                newline = sprintf('Error: distribution type: %s not recognized\n', options.dist_type);
+                obj.log = append(obj.log, newline);
+                error('Error: distribution type: %s not recognized', options.dist_type);
+            end
+
+            %% E. Save data files
+            if options.isave
+                [obj] = NetworkGenWriteDataFiles(Domain,Atoms,Bonds,Nvec,options,obj);
+            else
+                newline = sprintf('   Data files not written because options.isave = false\n');
+                obj.log = append(obj.log, newline);
+            end
+
         end
 
-
-    end
         newline = sprintf('----------------------------------------\n\n');
         obj.log = append(obj.log, newline);
 

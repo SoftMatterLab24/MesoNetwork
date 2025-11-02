@@ -1,4 +1,4 @@
-function NetworkGenWriteDataFiles(Domain,Atoms,Bonds,Nvec,options)
+function [obj] = NetworkGenWriteDataFiles(Domain,Atoms,Bonds,Nvec,options,obj)
 %NetworkGenWriteDataFiles - Write LAMMPS data file and bond.table
 % 
 % Files:
@@ -16,11 +16,12 @@ function NetworkGenWriteDataFiles(Domain,Atoms,Bonds,Nvec,options)
 %   N <#bonds>
 %   <bondID> <id1> <id2> <N> <b>
 
-if options.isave ~= true
-    warning('Did not write data files because options.isave = false.');
-    return; % skip writing files
-end
-
+%if options.isave ~= true
+%    warning('Did not write data files because options.isave = false.');
+%    return; % skip writing files
+%end
+newline = sprintf('   Writing network data files to disk...\n');
+obj.log = append(obj.log, newline);
 fprintf('   Writing network to data file...\n');
 
 % ---------- Prep paths ----------
@@ -31,9 +32,9 @@ else
 end
 if ~exist(outdir,'dir'), mkdir(outdir); end
 
-if ~isfield(options,'lammps_data_file') || isempty(options.lammps_data_file)
-    error('options.lammps_data_file is required.');
-end
+%if ~isfield(options,'lammps_data_file') || isempty(options.lammps_data_file)
+%    error('options.lammps_data_file is required.');
+%end
 data_path = fullfile(outdir, options.lammps_data_file);
 
 if ~isfield(options,'bond_table_file') || isempty(options.bond_table_file)
@@ -81,6 +82,8 @@ for i = 1:Bond_count
 end
 
 fclose(fid);
+newline = sprintf('    Wrote %s with %d atoms and %d bonds.\n', data_path, Atom_count, Bond_count);
+obj.log = append(obj.log, newline);
 fprintf('   Wrote %s with %d atoms and %d bonds.\n', data_path, Atom_count, Bond_count);
 
 % ---------- Write bond.table ----------
@@ -120,6 +123,8 @@ if Bond_count > 0
     end
 
     fclose(fidBT);
+    newline = sprintf('    Wrote %s with %d entries. b = %.6g\n', bondtable_path, Bond_count, b);
+    obj.log = append(obj.log, newline);
     fprintf('   Wrote %s with %d entries. b = %.6g\n', bondtable_path, Bond_count, b);
 else
     % Still create an empty bond.table with header for consistency
@@ -130,6 +135,8 @@ else
         fprintf(fidBT, 'N 0\n\n');
         fclose(fidBT);
     end
+    newline = sprintf('    No bonds; wrote empty %s.\n', bondtable_path);
+    obj.log = append(obj.log, newline);
     fprintf('   No bonds; wrote empty %s.\n', bondtable_path);
 
 
