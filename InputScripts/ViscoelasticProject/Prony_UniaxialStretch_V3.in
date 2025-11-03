@@ -13,21 +13,21 @@ special_bonds       lj/coul 1 1 1
 newton              off off
 
 # Read data file
-read_data           PronyNetwork_500_nano_1300x800.dat
+read_data           Network.txt
 thermo_modify       flush yes 
-comm_modify         cutoff 300 vel yes
+comm_modify         cutoff 170 vel yes   #Assumming b = 1.6 (nm) and bonds can have max 100 segments
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #       Simulation settings
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Timestep multiplier (smaller = smaller timesteps)
-variable            alpha equal 0.01
+variable            alpha equal 0.05
 
 # Max bond stiffness
 variable            Kmax equal 10
 
 # Max stretch
-variable            lammax equal 5
+variable            lammax equal 4
 
 # Strain rate
 variable            erate equal 0.00001
@@ -49,17 +49,17 @@ variable            b equal 1.6     # Kuhn length (nm)
 variable            kBT equal 4.14  # Energy scale (attogram-nanometer^2/nanosecond^2) or 4.1400e-21 J or 1 kBT at 300K
 
 # Critical stretch for bond breaking (lamc < 1)
-variable            lamc equal 0.7
+variable            lamc equal 0.8
 
 # LJ parameters
 variable            e equal   0.4         # Energy scale 1
-variable            sig equal $(6*v_b)    #LJ particle diameter 
+variable            sig equal $(7*v_b)    #LJ particle diameter 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #      Assign groups
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-region              top_clamped block INF INF 1200 INF INF INF
-region              bot_clamped block INF INF INF -1200 INF INF
+region              top_clamped block INF INF 120 INF INF INF
+region              bot_clamped block INF INF INF -120 INF INF
 group               top_clamp region top_clamped
 group               bot_clamp region bot_clamped
 
@@ -67,16 +67,17 @@ group               bot_clamp region bot_clamped
 #      Assign bond and pair styles
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Pairstyles
-pair_style           harmonic/cut
-pair_coeff           * * ${e} ${sig}
+# pair_style           harmonic/cut
+# pair_coeff           * * ${e} ${sig}
 
-#pair_style          lj/cut $(2.5*v_sig)
-#pair_coeff          * * ${e} ${sig}
+pair_style          lj/cut $(2.5*v_sig)
+pair_coeff          * * ${e} ${sig}
 
 # Bondstyles
-bond_style          bpm/prony 1 break yes overlay/pair yes nonlinear yes smooth no
-bond_coeff          1 ${kBT} 1.0 0.0 prony.table KEY 1.0 ${N1} ${b} ${lamc}
-bond_coeff          2 ${kBT} 1.0 0.0 prony.table KEY 1.0 ${N2} ${b} ${lamc}
+bond_style          bpm/poly break yes overlay/pair yes smooth no
+bond_coeff          1 $(4*v_kBT) $(100*v_kBT) 0 bond.table KEY
+# bond_coeff          1 ${kBT} 1.0 0.0 prony.table KEY 1.0 ${N1} ${b} ${lamc}
+# bond_coeff          2 ${kBT} 1.0 0.0 prony.table KEY 1.0 ${N2} ${b} ${lamc}
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #     Computes for system info
@@ -87,7 +88,7 @@ compute             1 all property/local btype batom1 batom2
 compute             2 all bond/local dist force
 compute             3 all nbond/atom  
 compute             4 all reduce sum c_3
-compute             5 all count/type bond
+# compute             5 all count/type bond
 
 # Calculate stress tensors
 compute             virial all pressure NULL fix bond pair
@@ -118,14 +119,14 @@ variable            W0 equal $(xhi-xlo)                 #initial width
 variable            W equal xhi-xlo
 
 variable            stime equal time
-variable            nb1 equal c_5[1]
-variable            nb2 equal c_5[2]
+# variable            nb1 equal c_5[1]
+# variable            nb2 equal c_5[2]
 variable            ntotbonds equal c_4/2
 
 compute             Lmax all reduce max c_2[1] inputs local
 variable            Lmax equal c_Lmax 
 
-thermo              100
+thermo              10000
 thermo_style        custom step v_ntotbonds c_virial[1] c_virial[2] c_virial[4] pe ke lx ly c_virials[1] c_virials[2]
 
 dump                1 all custom 10000 atoms_equilib.dump id mol type xs ys zs fx fy fz
@@ -149,10 +150,10 @@ variable            nthermo equal $(ceil(v_nout/10))
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #     Equilibrate networks
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-timestep            0.05
+timestep            0.01
 
 fix                 1 all nve/bpm/sphere
-fix                 2 all viscous 0.005
+fix                 2 all viscous 0.5
 run                 100000 
 
 # Boundary conditions
@@ -171,7 +172,7 @@ reset_timestep      0 time 0
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #     Setup final physics and dumps
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-fix                 2 all viscous 0.0005
+fix                 2 all viscous 0.005
 fix                 5 clamps deform 1 y erate ${erate}
 
 # Final computes
@@ -187,10 +188,12 @@ dump                1 all custom ${nout} atoms1.dump id mol type xs ys zs fx fy 
 dump                2 all local ${nout} bonds.dump c_1[*] c_2[*]
 dump                3 all custom ${nout} astress.dump id type xs ys zs c_0[1] c_0[2] c_0[3] c_0[4] c_0[5] c_0[6]
 
-fix                 printF all print ${nout} "${stime} ${lamy} ${Pxx} ${Pyy} ${Pxy} ${Pxx_p} ${Pyy_p} ${Pxy_p} ${nb1} ${nb2} ${ntotbonds} ${V} ${PE} ${KE} ${top_clamp_forces} ${bot_clamp_forces}" file Pure_500_nano_harmonic.out screen no title ""
+fix                 printF all print ${nout} "${stime} ${lamy} ${Pxx} ${Pyy} ${Pxy} ${Pxx_p} ${Pyy_p} ${Pxy_p} ${ntotbonds} ${V} ${PE} ${KE} ${top_clamp_forces} ${bot_clamp_forces}" file Pure_500_nano_harmonic.out screen no title ""
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #               Run
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+comm_style tiled
+balance             1.2 rcb
 timestep            ${dt}
 run                 ${Nrun}
