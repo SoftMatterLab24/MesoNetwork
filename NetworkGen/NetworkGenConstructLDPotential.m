@@ -27,7 +27,7 @@ drho = rho_max - rho_min / (N_rho - 1); % density step
 % ---------- Construct local density potential ----------
 
 sig_c = b*(Total_kuhn_segment/Atom_count)^(1/2); % desired equlibrium length
-atom_density = Atom_count / (xhi - xlo)*(yhi - ylo); % number density
+atom_density = Atom_count / ((xhi - xlo)*(yhi - ylo)); % number density
 
 R2 = 3*sig_c; % outer radius of density calculation
 rho0 = atom_density*pi*R2^2; % desired equilibrium density for given R2
@@ -47,6 +47,7 @@ LDpot.N_rho         = N_rho; % number of density points
 LDpot.R_lower       = R1; % 10% overlap with other repulisve potentials 
 LDpot.R_upper       = R2;
 LDpot.rho_min       = rho_min;
+LDpot.rho0          = rho0;
 LDpot.rho_max       = rho_max;
 LDpot.drho          = drho;
 LDpot.pot_density   = pot_density;

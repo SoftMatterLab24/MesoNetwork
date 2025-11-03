@@ -44,10 +44,9 @@ write_location     = './networks';                              % Location to wr
 
 %% --------------------- Local Density Potential ----------------------
 kLD     = 0.1;    % strength factor
-N_rho   = 1000;    % number of density points
+N_rho   = 1000;   % number of density points
 rho_min = 0.0;    % minimum density
 rho_max = 100;    % maximum density
-
 
 %% --------------------- Polydisperse Options ----------------------
 
