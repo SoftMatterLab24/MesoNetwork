@@ -19,7 +19,7 @@ kLD = options.LDpot_strength; % strength factor
 N_rho = options.LDpot_N_rho; % number of density points
 rho_min = options.LDpot_rho_min; % minimum density
 rho_max = options.LDpot_rho_max; % maximum density
-drho = rho_max - rho_min / (N_rho - 1); % density step
+drho = (rho_max - rho_min) / (N_rho - 1); % density step
 
 
 % 
@@ -42,11 +42,12 @@ pot_density = kLD * (rho_vec - rho0).^2; % harmonic potential around rho0
 
 
 % ----------- Pack LDpot struct ----------
-LDpot.N_LD          = 1; % single local density potential
-LDpot.N_rho         = N_rho; % number of density points
-LDpot.R_lower       = R1; % 10% overlap with other repulisve potentials 
-LDpot.R_upper       = R2;
-LDpot.rho_min       = rho_min;
+LDpot.N_LD          = 1;        % single local density potential
+LDpot.N_rho         = N_rho;    % number of density points
+LDpot.R_lower       = R1;       % 10% overlap with other repulisve potentials 
+LDpot.R_upper       = R2;       % outer radius of density calculation
+LDpot.rc            = rc;       % cutoff radius for bpm/spring repulsion
+LDpot.rho_min       = rho_min; 
 LDpot.rho0          = rho0;
 LDpot.rho_max       = rho_max;
 LDpot.drho          = drho;
