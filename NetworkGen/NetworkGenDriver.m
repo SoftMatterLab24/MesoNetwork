@@ -42,6 +42,13 @@ lammps_visual_file = 'PronyVisual_10000_nano_1300x800.dat';     % Prefix file na
 bond_table_file    = 'bond.table';                              % File name for bond table output   
 write_location     = './networks';                              % Location to write output files
 
+%% --------------------- Local Density Potential ----------------------
+kLD     = 0.1;    % strength factor
+N_rho   = 1000;    % number of density points
+rho_min = 0.0;    % minimum density
+rho_max = 100;    % maximum density
+
+
 %% --------------------- Polydisperse Options ----------------------
 
 distribution_assignment_mode_poly = 'pmf';  % Kuhn segment assigment method: 'geom' | 'range' | 'pmf'
@@ -84,6 +91,11 @@ options.lammps_data_file   = lammps_data_file;
 options.lammps_visual_file = lammps_visual_file;
 options.bond_table_file    = bond_table_file;
 options.write_location     = write_location;
+
+options.LDpot_strength     = kLD;        % strength factor
+options.LDpot_N_rho        = N_rho;      % number of density points
+options.LDpot_rho_min      = rho_min;    % minimum density
+options.LDpot_rho_max      = rho_max;    % maximum density
 
 % A. Polydisperse options
 % ------------------------------------------------------------------
@@ -196,6 +208,9 @@ for ii = 1:Nreplicates
     else
         error('Error: distribution type: %s not recognized', dist_type);
     end
+
+    % contruct local density potential
+    [LDpot] = NetworkGenConstructLDPotential(Domain,Atoms,Bonds,Nvec,options);
 
     %% E. Show visualization and statistics
     NetworkGenVisualize(Domain,Atoms,Bonds,Nvec,options);
