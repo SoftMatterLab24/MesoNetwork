@@ -72,7 +72,11 @@ group               bot_clamp region bot_clamped
 
 
 pair_style hybrid/overlay bpm/spring local/density
+<<<<<<< HEAD
+pair_coeff * * bpm/spring $(v_e) ${sig} 0
+=======
 pair_coeff * * bpm/spring ${e} ${sig}
+>>>>>>> e2b63c332693cd24ef609b03289e6b6634887490
 pair_coeff * * local/density mytab.localdensity.table
 
 # pair_style          lj/cut $(2.5*v_sig)
