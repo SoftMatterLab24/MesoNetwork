@@ -1,4 +1,4 @@
-function NetworkGenWriteDataFiles(Domain,Atoms,Bonds,Nvec,options)
+function NetworkGenWriteDataFiles(Domain,Atoms,Bonds,Nvec,LDpot,options)
 %NetworkGenWriteDataFiles - Write LAMMPS data file and bond.table
 % 
 % Files:
