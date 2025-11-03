@@ -24,6 +24,7 @@ end
 fprintf('   Writing network to data file...\n');
 
 % ---------- Prep paths ----------
+% Output directory
 if isfield(options,'write_location') && ~isempty(options.write_location)
     outdir = options.write_location;
 else
@@ -31,17 +32,22 @@ else
 end
 if ~exist(outdir,'dir'), mkdir(outdir); end
 
+% LAMMPS data file path
 if ~isfield(options,'lammps_data_file') || isempty(options.lammps_data_file)
     error('options.lammps_data_file is required.');
 end
 data_path = fullfile(outdir, options.lammps_data_file);
 
+% bond.table path
 if ~isfield(options,'bond_table_file') || isempty(options.bond_table_file)
     bond_table_file = 'bond.table';
 else
     bond_table_file = options.bond_table_file;
 end
 bondtable_path = fullfile(outdir, bond_table_file);
+
+% manybody potential path
+potfile_path = fullfile(outdir,'mytab.localdensity.table');
 
 % ---------- Gather counts & domain ----------
 Atom_count = size(Atoms,1);
@@ -138,4 +144,33 @@ else
     Node_assigned_radius =(Total_kuhn_segment/Atom_count)^(1/2);
     sigma = Node_assigned_radius / (2^(1/6));                      % convert to LJ sigma parameter
     fprintf('The 6-12 Lennard-Jones radius is equal to %g\n',sigma);
+end
+
+% LD pot is struct with fields:
+% LDpot.N_LD
+% LDpot.N_rho
+% LDpot.R_lower
+% LDpot.R_upper
+% LDpot.rho_min
+% LDpot.rho_max
+% LDpot.drho
+% LDpot.pot_density
+
+% ---------- Write manybody pot file ----------
+fidP = fopen(potfile_path,'w');
+
+if fidP < 0 
+    error('Could not open %s for writing.',potfile_path);
+end
+
+fprintf(fidP, '\n\n');
+fprintf(fidP, '%d %d \n',N_LD,N_rho);
+fprintf(fidP, '\n');
+fprintf(fidP, '%2.4f %2.4f \n',R_lower,R_upper);
+fprintf(fidP, '1 \n');
+fprintf(fidP, '1 \n');
+fprintf(fidP, '%2.4f %2.4f %2.4f \n',rho_min,rho_max,drho);
+
+for i = 1:N_rho
+    fprintf(fidP, '%2.8f \n', pot_density(i));
 end
