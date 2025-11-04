@@ -54,7 +54,7 @@ distribution_assignment_mode_poly = 'pmf';  % Kuhn segment assigment method: 'ge
 
 %% --------------------- Bimodal Options ---------------------------
 N1 = 50; 
-N2 = 200;
+N2 = 50;
 
 bin_window_method = 'manual';               % Method for determining bin width of bimodal dist: 'manual' or 'adaptive'               
 
@@ -69,7 +69,7 @@ N2_bonds = 3000; % Fixed: desired number of type 2 bonds
 
 % Manual mode settings
 lam1 = 1/sqrt(N1);   % Prestretched length of type 1 bonds: lam1 = [0 1], 1/sqrt(N1) (default)
-lam2 = 1/sqrt(N2);   % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
+lam2 = 0.4;   % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
 
 std1 = 10; % std of N1 Kuhn segment distribution
 std2 = 10; % std of N2 Kuhn segment distribution
@@ -144,8 +144,8 @@ options.bimodal.kuhn_rounding      = 'round';  % 'round' | 'ceil' | 'floor' (use
 
 options.bimodal.long_first         = long_first;    
 options.bimodal.bin_window_method  = bin_window_method; 
-options.double_network.flag = double_network_flag
-options.double_network.alpha = alpha;
+options.double_network.flag        = double_network_flag;
+options.double_network.alpha       = alpha;
 
 % --- mode selection ---
 % 'single' mode: applies N1 and N2 directly based on geometry (N ≈ (L/b)^2)

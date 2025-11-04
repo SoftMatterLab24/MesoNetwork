@@ -66,12 +66,13 @@ Cmin = 4; Cmax = 24;
 
 % ---------- Apply checks to the prestretch variables ----------
 if lam1 <0 || lam1 >1
-    lam1 = 1/sqrt(N1);
     warning('lam1=%.3g out of range [0,1]; reverting to default: 1/sqrt(N1)=%.3g.', lam1, 1/sqrt(N1));
+    lam1 = 1/sqrt(N1);
 end
 if lam2 <0 || lam2 >1
-    lam2 = 1/sqrt(N2);
+    
     warning('lam2=%.3g out of range [0,1]; reverting to default: 1/sqrt(N2)=%.3g.', lam2, 1/sqrt(N2));
+    lam2 = 1/sqrt(N2);
 end
 
 % ---------- Refine r1_avg and r2_avg based on geometry ----------
