@@ -56,7 +56,7 @@ distribution_assignment_mode_poly = 'pmf';  % Kuhn segment assigment method: 'ge
 N1 = 20; 
 N2 = 250;
 
-bin_window_method = 'manual';             % Method for determining bin width of bimodal dist: 'manual' or 'adaptive'               
+bin_window_method = 'manual';               % Method for determining bin width of bimodal dist: 'manual' or 'adaptive'               
 
 distribution_assignment_mode = 'gaussian';  % Kuhn segment assigment method: 'single' or 'geom' or 'gaussian'
 distribution_height_mode = 'fixed';         % Distribution height method: 'prob' or 'fixed'
@@ -66,9 +66,16 @@ long_first = true;                          % enable long-first mode
 P = 0.2;        % Prob: desired fraction of type 2 bonds
 N2_bonds = 0; % Fixed: desired number of type 2 bonds
 
+% Manual mode settings
+lam1 = 1/sqrt(N1);   % Prestretched length of type 1 bonds: lam1 = [0 1], 1/sqrt(N1) (default)
+lam2 = 1/sqrt(N2);   % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
+
+sig1 = 1; % std of N1 Kuhn segment distribution
+sig2 = 1; % std of N2 Kuhn segment distribution
+
 % Manual Window parameters (if bin_window_method = manual)
-dr1 = 5;
-dr2 = 5;
+%dr1 = 5;
+%dr2 = 5;
 
 %% --------------------- Advanced Options --------------------------
 iadvancedoptions = false;
@@ -125,8 +132,12 @@ options.polydisperse.integerize_rule = 'largest_remainder'; % allocation method
 % ------------------------------------------------------------------
 options.bimodal.N1                 = N1;
 options.bimodal.N2                 = N2;
-options.bimodal.dr1                = dr1;
-options.bimodal.dr2                = dr2;
+options.bimodal.std1               = std1;
+options.bimodal.std2               = std2;
+options.bimodal.lam1               = lam1;
+options.bimodal.lam2               = lam2;
+%options.bimodal.dr1                = dr1;
+%options.bimodal.dr2                = dr2;
 options.bimodal.min_N              = 1;        % lower bound for all modes
 options.bimodal.kuhn_rounding      = 'round';  % 'round' | 'ceil' | 'floor' (used in 'geom')
 

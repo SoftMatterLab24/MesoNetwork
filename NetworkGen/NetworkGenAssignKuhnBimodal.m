@@ -11,7 +11,7 @@ function Nvec = NetworkGenAssignKuhnBimodal(Bonds, options)
 %       .bimodal.N_cap                 (optional; upper cap)
 %       .bimodal.distribution_assignment_mode  ('single'|'geom'|'gaussian')
 %       .bimodal.kuhn_rounding         ('round'|'ceil'|'floor')   % used in 'geom'
-%       % For 'typed_gaussian' you may specify widths by std OR FWHM:
+%        % For 'typed_gaussian' you may specify widths by std OR FWHM:
 %       .bimodal.gauss_std1,  .bimodal.gauss_std2
 %       .bimodal.gauss_fwhm1, .bimodal.gauss_fwhm2
 %
@@ -31,6 +31,7 @@ type = Bonds(:,5);
 % defaults
 if ~isfield(bd,'min_N'),   bd.min_N = 1; end
 has_cap = isfield(bd,'N_cap') && ~isempty(bd.N_cap);
+is_manual = strcmpi(bd.bin_window_method,'manual');
 
 mode = lower(bd.distribution_assignment_mode);
 
@@ -57,16 +58,16 @@ switch mode
         N1 = bd.N1;  N2 = bd.N2;
 
         % Resolve widths (std priority, else FWHM/2.355, else sensible defaults)
-        if isfield(bd,'gauss_std1') && ~isempty(bd.gauss_std1)
-            s1 = bd.gauss_std1;
+        if isfield(bd,'std1') && ~isempty(bd.std1) && is_manual
+            s1 = bd.std1;
         elseif isfield(bd,'gauss_fwhm1') && ~isempty(bd.gauss_fwhm1)
             s1 = bd.gauss_fwhm1 / 2.355;
         else
             s1 = max(1, 0.15*N1);   % default ~15% of mean
         end
 
-        if isfield(bd,'gauss_std2') && ~isempty(bd.gauss_std2)
-            s2 = bd.gauss_std2;
+        if isfield(bd,'std2') && ~isempty(bd.std2) && is_manual
+            s2 = bd.std2;
         elseif isfield(bd,'gauss_fwhm2') && ~isempty(bd.gauss_fwhm2)
             s2 = bd.gauss_fwhm2 / 2.355;
         else

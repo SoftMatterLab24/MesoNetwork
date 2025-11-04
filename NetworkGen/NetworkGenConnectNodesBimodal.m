@@ -19,10 +19,15 @@ if isfield(Domain,'min_node_sep'), dmin = Domain.min_node_sep; else, dmin = 0; e
 epsr = 1e-9;
 
 % ---------- Options ----------
-b   = options.b;
-N1  = options.bimodal.N1;
-N2  = options.bimodal.N2;
+b    = options.b;
+N1   = options.bimodal.N1;
+N2   = options.bimodal.N2;
+sig1 = options.bimodal.std1;
+sig2 = options.bimodal.std2;
+lam1 = options.bimodal.lam1;
+lam2 = options.bimodal.lam2;
 
+% Read mode options
 useProb     = strcmpi(options.bimodal.distribution_height_mode,'prob');
 useManual   = strcmpi(options.bimodal.bin_window_method,'manual');
 long_first  = isfield(options.bimodal,'long_first') && options.bimodal.long_first;
@@ -40,9 +45,19 @@ if isfield(options.bimodal,'targetC1'), targetC1 = options.bimodal.targetC1; els
 if isfield(options.bimodal,'targetC2'), targetC2 = options.bimodal.targetC2; else, targetC2 = 12; end
 Cmin = 4; Cmax = 24;
 
+% ---------- Apply checks to the prestretch variables ----------
+if lam1 <0 || lam1 >1
+    lam1 = 1/sqrt(N1);
+    warning('lam1=%.3g out of range [0,1]; reverting to default: 1/sqrt(N1)=%.3g.', lam1, 1/sqrt(N1));
+end
+if lam2 <0 || lam2 >1
+    lam2 = 1/sqrt(N2);
+    warning('lam2=%.3g out of range [0,1]; reverting to default: 1/sqrt(N2)=%.3g.', lam2, 1/sqrt(N2));
+end
+
 % ---------- Refine r1_avg and r2_avg based on geometry ----------
-r1_avg = b*sqrt(N1);
-r2_avg = b*sqrt(N2);
+r1_avg = lam1*b*N1;
+r2_avg = lam2*b*N2;
 
 r_min_allowed = max(dmin * 1.2, b * 0.5);
 if r1_avg < r_min_allowed
@@ -62,14 +77,17 @@ if r2_avg > r2_max_allowed
     r2_avg = r2_max_allowed;
 end
 
-% ---------- Density-based window widths ----------
-A   = (xhi-xlo)*(yhi-ylo);
-rho = natom / max(A, eps);
+% ---------- Window widths ----------
 
 if useManual
-    dr1 = options.bimodal.dr1;
-    dr2 = options.bimodal.dr2;
+    % manual widths
+    dr1 = lam1*b*(N1 + 2.355*sig1); % +/- 1 FWHM
+    dr2 = lam2*b*(N2 + 2.355*sig2);
 else
+    % density based (adaptive)
+    A   = (xhi-xlo)*(yhi-ylo);
+    rho = natom / max(A, eps);
+
     dr1 = targetC1 / max(2*pi*rho*max(r1_avg,eps), eps);
     dr2 = targetC2 / max(2*pi*rho*max(r2_avg,eps), eps);
 end
