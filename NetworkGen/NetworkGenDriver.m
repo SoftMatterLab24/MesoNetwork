@@ -61,7 +61,8 @@ bin_window_method = 'manual';               % Method for determining bin width o
 distribution_assignment_mode = 'gaussian';  % Kuhn segment assigment method: 'single' or 'geom' or 'gaussian'
 distribution_height_mode = 'fixed';         % Distribution height method: 'prob' or 'fixed'
 long_first = true;                          % enable long-first mode
-
+double_network_flag = true;                 % enable double network style
+alpha = 4;                                  % spacing ratio of large mesh to small mesh
 % Height mode settings (only one is used)
 P = 0.2;        % Prob: desired fraction of type 2 bonds
 N2_bonds = 0; % Fixed: desired number of type 2 bonds
@@ -143,6 +144,8 @@ options.bimodal.kuhn_rounding      = 'round';  % 'round' | 'ceil' | 'floor' (use
 
 options.bimodal.long_first         = long_first;    
 options.bimodal.bin_window_method  = bin_window_method; 
+options.double_network.flag = double_network_flag
+options.double_network.alpha = alpha;
 
 % --- mode selection ---
 % 'single' mode: applies N1 and N2 directly based on geometry (N ≈ (L/b)^2)

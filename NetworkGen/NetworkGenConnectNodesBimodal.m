@@ -2,6 +2,10 @@ function [Atoms,Bonds] = NetworkGenConnectNodesBimodal(Domain,Atoms,options,adva
 % NetworkGenConnectNodesBimodal (adaptive, grid-accelerated)
 % Adds 'long_first' mode: place type-2 bonds first (fixed N2_number),
 % then place type-1 bonds as if type-2 bonds don't consume capacity.
+% Adds 'double_network' mode (in the same spirit as long_first):
+%   - pick a sparse subset of nodes (2–3x larger spacing),
+%   - place type-2 bonds only among that sparse subset,
+%   - (optional) size long-bond window using the sparse density.
 %
 % Returns Bonds(:,5) = 1 or 2 for type.
 
@@ -31,6 +35,21 @@ lam2 = options.bimodal.lam2;
 useProb     = strcmpi(options.bimodal.distribution_height_mode,'prob');
 useManual   = strcmpi(options.bimodal.bin_window_method,'manual');
 long_first  = isfield(options.bimodal,'long_first') && options.bimodal.long_first;
+
+% --- Double-network flag & params (minimal style like long_first) ---
+double_network = isfield(options,'double_network') && (options.double_network.flag);
+if double_network
+    dn = options.double_network;
+    % Either specify alpha (spacing multiplier wrt small mesh) or sparse_fraction directly
+    if isfield(dn,'sparse_fraction') && ~isempty(dn.sparse_fraction)
+        f_sparse = max(0,min(1,dn.sparse_fraction));
+    else
+        if ~isfield(dn,'alpha') || isempty(dn.alpha), dn.alpha = 2.5; end % default spacing ~2.5x
+        f_sparse = min(1, 1/(dn.alpha^2)); % 2D: spacing ~ 1/sqrt(rho)
+    end
+else
+    f_sparse = 1.0; % degenerate: long pass can touch all nodes
+end
 
 if useProb
     P2 = options.bimodal.P;
@@ -78,18 +97,20 @@ if r2_avg > r2_max_allowed
 end
 
 % ---------- Window widths ----------
+A   = (xhi-xlo)*(yhi-ylo);
+rho_all = natom / max(A, epsr);
 
 if useManual
-    % manual widths
-    dr1 = lam1*b*(N1 + 2.355*sig1); % +/- 1 FWHM
+    % manual widths (FWHM-like)
+    dr1 = lam1*b*(N1 + 2.355*sig1);
     dr2 = lam2*b*(N2 + 2.355*sig2);
 else
-    % density based (adaptive)
-    A   = (xhi-xlo)*(yhi-ylo);
-    rho = natom / max(A, eps);
-
-    dr1 = targetC1 / max(2*pi*rho*max(r1_avg,eps), eps);
-    dr2 = targetC2 / max(2*pi*rho*max(r2_avg,eps), eps);
+    % density-based (adaptive)
+    dr1 = targetC1 / max(2*pi*rho_all*max(r1_avg,epsr), epsr);
+    % For double network, size long window using sparse density to match larger spacing
+    Nsparse_est = max(1, round(f_sparse * natom));
+    rho_long = double_network ? (Nsparse_est / max(A, epsr)) : rho_all;
+    dr2 = targetC2 / max(2*pi*rho_long*max(r2_avg,epsr), epsr);
 end
 
 r1_lower = max(r1_avg - dr1, dmin + epsr);
@@ -106,6 +127,18 @@ y   = Atoms(:,3);
 
 id2row = containers.Map('KeyType','int64','ValueType','int32');
 for r=1:natom, id2row(int64(ids(r))) = int32(r); end
+
+% ---------- Sparse subset (for double network long bonds) ----------
+if double_network
+    alpha = options.double_network.alpha; % desired spacing multiplier, e.g. 2.5
+    avg_nn_spacing = sqrt((xhi-xlo)*(yhi-ylo)/natom); % crude estimate
+    target_spacing = alpha * avg_nn_spacing;
+    isSparse = pick_uniform_sparse_nodes(x, y, f_sparse, target_spacing);
+    sparse_idx = find(isSparse);
+else
+    isSparse = true(natom,1);
+    sparse_idx = 1:natom;
+end
 
 % ---------- Grid (cell list) ----------
 rmax = max(r1_upper, r2_upper);
@@ -146,18 +179,31 @@ if long_first
         if countType2 >= target_N2, break; end
         ntries = ntries + 1;
 
+        % pick r1 (if double network, from sparse subset)
+        if double_network
+            r1 = sparse_idx(randi(numel(sparse_idx)));
+        else
+            r1 = randi(natom);
+        end
+
         % capacity for long pass: keep deg2 < Max_peratom_bond (sanity)
-        r1 = randi(natom);
         if deg2(r1) >= (Max_peratom_bond-1)
             no_progress = no_progress + 1; continue;
         end
-        
+
         dr2_pick = dr2 * g_mul2;
-        r2lo = max(r2_lower - (dr2 - dr2_pick), r1_upper + 0);
+        % keep a dynamic gap vs short upper
+        r2lo = max(r2_lower - (dr2 - dr2_pick), r1_upper + gap);
         r2hi = r2_upper + (dr2_pick - dr2);
 
         neigh = gather_neighbors(r1, Cells, cx, cy, nx, ny);
         if isempty(neigh), no_progress = no_progress + 1; continue; end
+
+        % if double network: candidate partners must also be sparse
+        if double_network
+            neigh = neigh(isSparse(neigh));
+            if isempty(neigh), no_progress = no_progress + 1; continue; end
+        end
 
         neigh(neigh==r1) = [];
         if isempty(neigh), no_progress = no_progress + 1; continue; end
@@ -174,7 +220,7 @@ if long_first
         cand2 = neigh(in2);
         cand2 = exclude_existing_any(cand2, r1, Atoms, id2row); % exclude any existing edge (any type)
 
-        if ~ useManual
+        if ~useManual
             % adaptive width
             C = numel(cand2);
             if C < Cmin
@@ -205,6 +251,14 @@ if long_first
         deg2(r1) = deg2(r1) + 1;
         deg2(r2) = deg2(r2) + 1;
 
+        % --- ensure neighbor list capacity before writing (avoid overflow) ---
+        needCol_r1 = 5 + (Atoms(r1,5) + 1);
+        needCol_r2 = 5 + (Atoms(r2,5) + 1);
+        curCols = size(Atoms,2);
+        if needCol_r1 > curCols || needCol_r2 > curCols
+            growBy = max(16, max(needCol_r1, needCol_r2) - curCols);
+            Atoms(:, curCols+1 : curCols+growBy) = 0;
+        end
         % Update Atoms neighbor IDs for bookkeeping (IDs)
         Atoms(r1,5) = Atoms(r1,5) + 1;  Atoms(r1, 5+Atoms(r1,5)) = ids(r2);
         Atoms(r2,5) = Atoms(r2,5) + 1;  Atoms(r2, 5+Atoms(r2,5)) = ids(r1);
@@ -252,8 +306,8 @@ if long_first
         in1 = (d >= rlo) & (d <= rhi);
         cand = neigh(in1);
         cand = exclude_existing_any(cand, r1, Atoms, id2row); % exclude any existing edge (long or short)
-        
-        if ~ useManual
+
+        if ~useManual
             % adaptive width
             C = numel(cand);
             if C < Cmin
@@ -277,6 +331,14 @@ if long_first
         deg1(r1) = deg1(r1) + 1;
         deg1(r2) = deg1(r2) + 1;
 
+        % --- ensure neighbor list capacity before writing ---
+        needCol_r1 = 5 + (Atoms(r1,5) + 1);
+        needCol_r2 = 5 + (Atoms(r2,5) + 1);
+        curCols = size(Atoms,2);
+        if needCol_r1 > curCols || needCol_r2 > curCols
+            growBy = max(16, max(needCol_r1, needCol_r2) - curCols);
+            Atoms(:, curCols+1 : curCols+growBy) = 0;
+        end
         Atoms(r1,5) = Atoms(r1,5) + 1;  Atoms(r1, 5+Atoms(r1,5)) = ids(r2);
         Atoms(r2,5) = Atoms(r2,5) + 1;  Atoms(r2, 5+Atoms(r2,5)) = ids(r1);
 
@@ -285,7 +347,7 @@ if long_first
     tS = toc;
 
 else
-    % ---------- Your original order (type-1 scaffold, then type-2) ----------
+    % ---------- Original order (type-1 scaffold, then type-2) ----------
     % PASS A: type-1 scaffold (on total degree Atoms(:,5))
     ntries = 0; no_progress = 0;
     tic
@@ -319,8 +381,8 @@ else
         cand = neigh(in1);
 
         cand = exclude_existing_any(cand, r1, Atoms, id2row);
-        
-        if ~ useManual
+
+        if ~useManual
             C = numel(cand);
             if C < Cmin
                 g_mul1 = min(2.0, g_mul1*1.15); no_progress = no_progress + 1; continue;
@@ -338,6 +400,14 @@ else
         nbond = nbond + 1;
         Btmp(nbond,:) = [nbond, r1, r2, L, 1];
 
+        % --- ensure neighbor list capacity before writing ---
+        needCol_r1 = 5 + (Atoms(r1,5) + 1);
+        needCol_r2 = 5 + (Atoms(r2,5) + 1);
+        curCols = size(Atoms,2);
+        if needCol_r1 > curCols || needCol_r2 > curCols
+            growBy = max(16, max(needCol_r1, needCol_r2) - curCols);
+            Atoms(:, curCols+1 : curCols+growBy) = 0;
+        end
         Atoms(r1,5) = Atoms(r1,5) + 1;  Atoms(r1, 5+Atoms(r1,5)) = ids(r2);
         Atoms(r2,5) = Atoms(r2,5) + 1;  Atoms(r2, 5+Atoms(r2,5)) = ids(r1);
 
@@ -353,17 +423,27 @@ else
         if useProb && (countType2 > target_N2*1.1), break; end
         ntries = ntries + 1;
 
-        r1 = randi(natom);
+        % if double network, long bonds only among sparse nodes
+        if double_network
+            r1 = sparse_idx(randi(numel(sparse_idx)));
+        else
+            r1 = randi(natom);
+        end
         if Atoms(r1,5) >= Max_peratom_bond
             no_progress = no_progress + 1; continue;
         end
 
         dr2_pick = dr2 * g_mul2;
-        r2lo = max(r2_lower - (dr2 - dr2_pick), r1_upper + 0);
+        r2lo = max(r2_lower - (dr2 - dr2_pick), r1_upper + gap); % keep dynamic gap
         r2hi = r2_upper + (dr2_pick - dr2);
 
         neigh = gather_neighbors(r1, Cells, cx, cy, nx, ny);
         if isempty(neigh), no_progress = no_progress + 1; continue; end
+
+        if double_network
+            neigh = neigh(isSparse(neigh));
+            if isempty(neigh), no_progress = no_progress + 1; continue; end
+        end
 
         neigh(neigh==r1) = [];
         if isempty(neigh), no_progress = no_progress + 1; continue; end
@@ -378,8 +458,8 @@ else
         in2 = (d >= r2lo) & (d <= r2hi);
         cand2 = neigh(in2);
         cand2 = exclude_existing_any(cand2, r1, Atoms, id2row);
-        
-        if ~ useManual
+
+        if ~useManual
             C = numel(cand2);
             if C < Cmin
                 g_mul2 = min(2.0, g_mul2*1.15); no_progress = no_progress + 1; continue;
@@ -401,6 +481,14 @@ else
         Btmp(nbond,:) = [nbond, r1, r2, L, 2];
         countType2 = countType2 + 1;
 
+        % --- ensure neighbor list capacity before writing ---
+        needCol_r1 = 5 + (Atoms(r1,5) + 1);
+        needCol_r2 = 5 + (Atoms(r2,5) + 1);
+        curCols = size(Atoms,2);
+        if needCol_r1 > curCols || needCol_r2 > curCols
+            growBy = max(16, max(needCol_r1, needCol_r2) - curCols);
+            Atoms(:, curCols+1 : curCols+growBy) = 0;
+        end
         Atoms(r1,5) = Atoms(r1,5) + 1;  Atoms(r1, 5+Atoms(r1,5)) = ids(r2);
         Atoms(r2,5) = Atoms(r2,5) + 1;  Atoms(r2, 5+Atoms(r2,5)) = ids(r1);
 
@@ -442,26 +530,6 @@ for k=1:nb
     BondsOut(k,:) = [k, ids(r1), ids(r2), Btmp(k,4), Btmp(k,5)];
 end
 
-% ------------------ Rebuild Atoms neighbor lists from BondsOut -----------
-% Atoms(:,5) = 0;
-% if size(Atoms,2) < 5+Max_peratom_bond
-%     Atoms(:, size(Atoms,2)+1 : 5+Max_peratom_bond) = 0;
-% else
-%     Atoms(:, 6 : 5+Max_peratom_bond) = 0;
-% end
-% for k=1:nb
-%     id1 = BondsOut(k,2); id2 = BondsOut(k,3);
-%     r1  = id2row(int64(id1)); r2 = id2row(int64(id2));
-%     nb1 = Atoms(r1,5);
-% %     if nb1 < Max_peratom_bond
-%         Atoms(r1,5) = nb1 + 1; Atoms(r1,5+Atoms(r1,5)) = id2;
-% %     end
-%     nb2 = Atoms(r2,5);
-% %     if nb2 < Max_peratom_bond
-%         Atoms(r2,5) = nb2 + 1; Atoms(r2,5+Atoms(r2,5)) = id1;
-% %     end
-% end
-
 AtomsOut = Atoms;
 Atoms    = AtomsOut;
 Bonds    = BondsOut;
@@ -469,10 +537,9 @@ Bonds    = BondsOut;
 % ------------------ Stats ------------------
 tTot = tL + tS + tA + tB;
 type1 = (Bonds(:,5)==1); type2 = (Bonds(:,5)==2);
-%fprintf('   LongFirst=%d | T_long %.3fs, T_short %.3fs (Alt: T1 %.3fs, T2 %.3fs) | Total %.3fs\n', ...
-%        long_first, tL, tS, tA, tB, tTot);
-fprintf('   Placed %d bonds with %d type1, %d type2 in %4.4f sec \n', nb, sum(type1), sum(type2), toc);
-
+fprintf('   LongFirst=%d  DoubleNet=%d (f_sparse=%.3f, Nsparse=%d) | T_long %.3fs, T_short %.3fs (Alt: T1 %.3fs, T2 %.3fs) | Total %.3fs\n', ...
+        long_first, double_network, f_sparse, sum(isSparse), tL, tS, tA, tB, tTot);
+fprintf('   Placed %d bonds with %d type1, %d type2\n', nb, sum(type1), sum(type2));
 
 end
 
