@@ -113,10 +113,6 @@ switch mode
 
         % Check end-to-end vs contour length
         notEnoughSegments = Lvec./(Nvec*b) > 1;
-        % Overide: Use geometric scaling for chains that dont have enough
-        if any(notEnoughSegments)
-            Nvec(notEnoughSegments) = ceil( 1.1 * (Lvec(notEnoughSegments)/b) );
-        end
         
     case 'single'
         % Assign exactly N1/N2 by stored type

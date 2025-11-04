@@ -81,8 +81,9 @@ end
 
 if useManual
     % manual widths
-    dr1 = lam1*b*(N1 + 2.355*sig1); % +/- 1 FWHM
-    dr2 = lam2*b*(N2 + 2.355*sig2);
+    dr1 = lam1*b*(2.355*sig1); % +/- 1 FWHM
+    dr2 = lam2*b*(2.355*sig2);
+
 else
     % density based (adaptive)
     A   = (xhi-xlo)*(yhi-ylo);
