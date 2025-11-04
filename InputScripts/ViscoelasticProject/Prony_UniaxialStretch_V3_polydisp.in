@@ -71,9 +71,9 @@ group               bot_clamp region bot_clamped
 # pair_coeff           * * ${e} ${sig}
 
 
-pair_style hybrid/overlay bpm/spring local/density
-pair_coeff * * bpm/spring $(v_e) ${sig} 0
-pair_coeff * * local/density mytab.localdensity.table
+pair_style           hybrid/overlay bpm/spring local/density
+pair_coeff           * * bpm/spring $(v_e) ${sig} 0
+pair_coeff           * * local/density mytab.localdensity.table
 
 # pair_style          lj/cut $(2.5*v_sig)
 # pair_coeff          * * ${e} ${sig}
@@ -198,7 +198,7 @@ fix                 printF all print ${nout} "${stime} ${lamy} ${Pxx} ${Pyy} ${P
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #               Run
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-comm_style tiled
+comm_style          tiled
 balance             1.2 rcb
 timestep            ${dt}
 run                 ${Nrun}
