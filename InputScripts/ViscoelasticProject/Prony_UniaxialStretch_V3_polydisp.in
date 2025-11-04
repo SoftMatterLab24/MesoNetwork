@@ -15,13 +15,13 @@ newton              off off
 # Read data file
 read_data           Network.txt
 thermo_modify       flush yes 
-comm_modify         cutoff 170 vel yes   #Assumming b = 1.6 (nm) and bonds can have max 100 segments
+comm_modify         cutoff 100 vel yes   #Assumming b = 1.6 (nm) and bonds can have max 100 segments
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #       Simulation settings
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Timestep multiplier (smaller = smaller timesteps)
-variable            alpha equal 0.01
+variable            alpha equal 0.5
 
 # Max bond stiffness
 variable            Kmax equal 10
