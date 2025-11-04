@@ -147,14 +147,16 @@ else
 end
 
 % LD pot is struct with fields:
-% LDpot.N_LD
-% LDpot.N_rho
-% LDpot.R_lower
-% LDpot.R_upper
-% LDpot.rho_min
-% LDpot.rho_max
-% LDpot.drho
-% LDpot.pot_density
+% LDpot.N_LD          = 1;        % single local density potential
+% LDpot.N_rho         = N_rho;    % number of density points
+% LDpot.R_lower       = R1;       % 10% overlap with other repulisve potentials 
+% LDpot.R_upper       = R2;       % outer radius of density calculation
+% LDpot.rc            = rc;       % cutoff radius for bpm/spring repulsion
+% LDpot.rho_min       = rho_min; 
+% LDpot.rho0          = rho0;
+% LDpot.rho_max       = rho_max;
+% LDpot.drho          = drho;
+% LDpot.pot_density   = pot_density;
 
 % ---------- Write manybody pot file ----------
 fidP = fopen(potfile_path,'w');
@@ -164,13 +166,13 @@ if fidP < 0
 end
 
 fprintf(fidP, '\n\n');
-fprintf(fidP, '%d %d \n',N_LD,N_rho);
+fprintf(fidP, '%d %d \n',LDpot.N_LD,LDpot.N_rho);
 fprintf(fidP, '\n');
-fprintf(fidP, '%2.4f %2.4f \n',R_lower,R_upper);
+fprintf(fidP, '%2.4f %2.4f \n',LDpot.R_lower,LDpot.R_upper);
 fprintf(fidP, '1 \n');
 fprintf(fidP, '1 \n');
-fprintf(fidP, '%2.4f %2.4f %2.4f \n',rho_min,rho_max,drho);
+fprintf(fidP, '%2.4f %2.4f %2.4f \n',LDpot.rho_min,LDpot.rho_max,LDpot.drho);
 
-for i = 1:N_rho
-    fprintf(fidP, '%2.8f \n', pot_density(i));
+for i = 1:LDpot.N_rho
+    fprintf(fidP, '%2.8f \n', LDpot.pot_density(i));
 end
