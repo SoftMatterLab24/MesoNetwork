@@ -53,4 +53,9 @@ LDpot.rho_max       = rho_max;
 LDpot.drho          = drho;
 LDpot.pot_density   = pot_density;
 
+% ----------- Print summary -----------
+fprintf('   Constructed LD potential with parameters:\n');
+fprintf('   Lower Cutoff R1 = %.4f * b, Upper Cutoff R2 = %.4f * b', R1/b, R2/b);
+fprintf('   Cutoff for BPM/Spring repulsion rc = %.4f * b \n', rc/b);
+
 end

@@ -16,7 +16,7 @@ warning off backtrace  % disable stack trace for warnings
 
 %% --------------------------- Global settings ----------------------
 % Distribution type: 'bimodal' or 'polydisperse'
-dist_type = 'bimodal';
+dist_type = 'polydisperse';
 
 % Number of networks to generate
 Nreplicates = 1;
@@ -25,8 +25,8 @@ Nreplicates = 1;
 b = 1.6;     % Kuhn length (in nm)
 
 % Domain size
-Lx = 100;    % Domain size in x (in units of b)
-Ly = 100;    % Domain size in y (in units of b)
+Lx = 200;    % Domain size in x (in units of b)
+Ly = 200;    % Domain size in y (in units of b)
 
 % Seed options
 imanualseed = false;  % true: manual seed; false: random seed
@@ -37,13 +37,13 @@ iplot = true;    % Show
 
 % Save options
 isave = true;  % Save data files
-lammps_data_file   = 'PronyNetwork_nano_1300x800.dat';          % Prefix file name for LAMMPS data output
-lammps_visual_file = 'PronyVisual_10000_nano_1300x800.dat';     % Prefix file name for LAMMPS visualization output
+lammps_data_file   = 'PolyNetwork_nano_200x200.dat';          % Prefix file name for LAMMPS data output
+lammps_visual_file = 'PolyVisual_nano_200x200.dat';     % Prefix file name for LAMMPS visualization output
 bond_table_file    = 'bond.table';                              % File name for bond table output   
 write_location     = './networks';                              % Location to write output files
 
 %% --------------------- Local Density Potential ----------------------
-kLD     = 0.1;    % strength factor
+kLD     = 0.01;    % strength factor
 N_rho   = 1000;   % number of density points
 rho_min = 0.0;    % minimum density
 rho_max = 100;    % maximum density
