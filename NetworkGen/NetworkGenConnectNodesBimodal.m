@@ -16,6 +16,9 @@ Max_peratom_bond = Domain.Max_peratom_bond;
 xlo = Domain.xlo; xhi = Domain.xhi;
 ylo = Domain.ylo; yhi = Domain.yhi;
 
+Lx = xhi - xlo; Ly = yhi - ylo;
+domain_diag = hypot(Lx, Ly);
+
 if isfield(Domain,'bond_global_try_limit'), global_limit = Domain.bond_global_try_limit; else, global_limit = 5e7; end
 if isfield(Domain,'max_attempts_without_progress'), stall_limit = Domain.max_attempts_without_progress; else, stall_limit = 5e5; end
 if isfield(Domain,'min_degree_keep'), min_keep = Domain.min_degree_keep; else, min_keep = 0; end
@@ -35,6 +38,7 @@ lam2 = options.bimodal.lam2;
 useProb     = strcmpi(options.bimodal.distribution_height_mode,'prob');
 useManual   = strcmpi(options.bimodal.bin_window_method,'manual');
 long_first  = isfield(options.bimodal,'long_first') && options.bimodal.long_first;
+isPeriodic  =  strcmpi(options.boundary_box,'Periodic');
 
 % --- Double-network flag & params (minimal style like long_first) ---
 double_network = isfield(options,'double_network') && (options.double_network.flag);
@@ -89,8 +93,6 @@ if r2_avg < 1.8 * r1_avg
     r2_avg = 1.8 * r1_avg;
 end
 
-Lx = xhi - xlo; Ly = yhi - ylo;
-domain_diag = hypot(Lx, Ly);
 r2_max_allowed = 0.4 * domain_diag;
 if r2_avg > r2_max_allowed
     warning('r2_avg=%.3g exceeds domain size %.3g; capping to %.3g.', r2_avg, domain_diag, r2_max_allowed);
@@ -204,7 +206,7 @@ if long_first
         r2lo = max(r2_lower - (dr2 - dr2_pick), r1_upper + gap);
         r2hi = r2_upper + (dr2_pick - dr2);
 
-        neigh = gather_neighbors(r1, Cells, cx, cy, nx, ny);
+        neigh = gather_neighbors(r1, Cells, cx, cy, nx, ny,isPeriodic);
         if isempty(neigh), no_progress = no_progress + 1; continue; end
 
         % if double network: candidate partners must also be sparse
@@ -219,10 +221,11 @@ if long_first
         % partner must also have deg2 < Max_peratom_bond
         neigh = neigh(deg2(neigh) < (Max_peratom_bond));
         if isempty(neigh), no_progress = no_progress + 1; continue; end
-
+        
+    
         dxv = x(neigh) - x(r1);
         dyv = y(neigh) - y(r1);
-        d   = sqrt(dxv.^2 + dyv.^2);
+        d = minimum_image(isPeriodic,dxv,dyv,Lx,Ly);
 
         in2 = (d >= r2lo) & (d <= r2hi);
         cand2 = neigh(in2);
@@ -297,7 +300,7 @@ if long_first
         rlo = max(r1_lower - (dr1 - dr1_pick), dmin + epsr);
         rhi = r1_upper + (dr1_pick - dr1);
 
-        neigh = gather_neighbors(r1, Cells, cx, cy, nx, ny);
+        neigh = gather_neighbors(r1, Cells, cx, cy, nx, ny, isPeriodic);
         if isempty(neigh), no_progress = no_progress + 1; continue; end
 
         neigh(neigh==r1) = [];
@@ -309,7 +312,7 @@ if long_first
 
         dxv = x(neigh) - x(r1);
         dyv = y(neigh) - y(r1);
-        d   = sqrt(dxv.^2 + dyv.^2);
+        d = minimum_image(isPeriodic,dxv,dyv,Lx,Ly);;
 
         in1 = (d >= rlo) & (d <= rhi);
         cand = neigh(in1);
@@ -372,7 +375,7 @@ else
         rlo = max(r1_lower - (dr1 - dr1_pick), dmin + epsr);
         rhi = r1_upper + (dr1_pick - dr1);
 
-        neigh = gather_neighbors(r1, Cells, cx, cy, nx, ny);
+        neigh = gather_neighbors(r1, Cells, cx, cy, nx, ny, isPeriodic);
         if isempty(neigh), no_progress = no_progress + 1; continue; end
 
         neigh(neigh==r1) = [];
@@ -383,7 +386,7 @@ else
 
         dxv = x(neigh) - x(r1);
         dyv = y(neigh) - y(r1);
-        d   = sqrt(dxv.^2 + dyv.^2);
+        d = minimum_image(isPeriodic,dxv,dyv,Lx,Ly);
 
         in1 = (d >= rlo) & (d <= rhi);
         cand = neigh(in1);
@@ -445,7 +448,7 @@ else
         r2lo = max(r2_lower - (dr2 - dr2_pick), r1_upper + gap); % keep dynamic gap
         r2hi = r2_upper + (dr2_pick - dr2);
 
-        neigh = gather_neighbors(r1, Cells, cx, cy, nx, ny);
+        neigh = gather_neighbors(r1, Cells, cx, cy, nx, ny, isPeriodic);
         if isempty(neigh), no_progress = no_progress + 1; continue; end
 
         if double_network
@@ -461,7 +464,7 @@ else
 
         dxv = x(neigh) - x(r1);
         dyv = y(neigh) - y(r1);
-        d   = sqrt(dxv.^2 + dyv.^2);
+        d = minimum_image(isPeriodic,dxv,dyv,Lx,Ly);
 
         in2 = (d >= r2lo) & (d <= r2hi);
         cand2 = neigh(in2);
@@ -552,15 +555,36 @@ fprintf('   Placed %d bonds with %d type1, %d type2\n', nb, sum(type1), sum(type
 end
 
 % ===== helpers =====
-function neigh = gather_neighbors(r1, Cells, cx, cy, nx, ny)
+function neigh = gather_neighbors(r1, Cells, cx, cy, nx, ny, isPeriodic)
     Cx = cx(r1); Cy = cy(r1);
     neigh = [];
-    for dxCell=-1:1
-        ix = Cx + dxCell; if ix<1 || ix>nx, continue; end
-        for dyCell=-1:1
-            iy = Cy + dyCell; if iy<1 || iy>ny, continue; end
-            if ~isempty(Cells{ix,iy})
-                neigh = [neigh, Cells{ix,iy}]; %#ok<AGROW>
+    
+    if isPeriodic
+        % gather neighbors for all adjacent cells periodic boundary conditions (with wrap)
+        for dxCell=-1:1
+            ix = Cx + dxCell;
+            if ix < 1, ix = nx;
+            elseif ix > nx, ix = 1;
+            end
+            for dyCell=-1:1
+                iy = Cy + dyCell;
+                if iy < 1, iy = ny;
+                elseif iy > ny, iy = 1;
+                end
+                if ~isempty(Cells{ix,iy})
+                    neigh = [neigh, Cells{ix,iy}]; %#ok<AGROW>
+                end
+            end
+        end
+    else
+        % gather neighbors for all adjacent cells fixed boundary conditions (no wrap)
+        for dxCell=-1:1
+            ix = Cx + dxCell; if ix<1 || ix>nx, continue; end
+            for dyCell=-1:1
+                iy = Cy + dyCell; if iy<1 || iy>ny, continue; end
+                if ~isempty(Cells{ix,iy})
+                 neigh = [neigh, Cells{ix,iy}]; %#ok<AGROW>
+                end
             end
         end
     end
@@ -580,4 +604,18 @@ function cand = exclude_existing_any(cand, r1, Atoms, id2row)
     if ~isempty(cand) && ~isempty(nbrRows)
         cand = setdiff(cand, nbrRows);
     end
+end
+
+function d = minimum_image(isPeriodic,dx,dy,Lx,Ly)
+    
+    %if fixed return Euclidean distance
+    if ~isPeriodic
+        d = sqrt(dx.^2 + dy.^2);
+        return;
+    end
+
+    %otherwise apply minimum image convention
+    dx_p = dx - Lx.*round(dx./Lx);
+    dy_p = dy - Ly.*round(dy./Ly);
+    d = sqrt(dx_p.^2 + dy_p.^2);
 end

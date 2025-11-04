@@ -22,11 +22,14 @@ dist_type = 'bimodal';
 Nreplicates = 1;
 
 % Kuhn length
-b = 1.6;     % Kuhn length (in nm)
+b = 1.6;        % Kuhn length (in nm)
 
 % Domain size
-Lx = 150;    % Domain size in x (in units of b)
-Ly = 90;    % Domain size in y (in units of b)
+Lx = 100;       % Domain size in x (in units of b)
+Ly = 100;        % Domain size in y (in units of b)
+
+% Boundary Conditions
+boundary_box = 'periodic'; % 'fixed' or 'periodic' boundaries
 
 % Seed options
 imanualseed = false;  % true: manual seed; false: random seed
@@ -92,6 +95,7 @@ options.Nreplicates        = Nreplicates;
 options.b                  = b;
 options.Lx                 = Lx;
 options.Ly                 = Ly;
+options.boundary_box       = boundary_box;
 options.imanualseed        = imanualseed;
 options.seed               = seed;
 options.iplot              = iplot;

@@ -22,6 +22,8 @@ fprintf('   Visualizing network...\n');
 N_atom = length(Atoms);
 Total_bond = size(Bonds, 1);
 
+isPeriodic  =  strcmpi(options.boundary_box,'Periodic');
+
 % --------------------- Plot final bonds ---------------------
 if strcmp(options.dist_type,'bimodal')
     figure; hold on;
