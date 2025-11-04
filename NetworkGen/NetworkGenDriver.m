@@ -62,9 +62,9 @@ distribution_assignment_mode = 'gaussian';  % Kuhn segment assigment method: 'si
 distribution_height_mode = 'prob';         % Distribution height method: 'prob' or 'fixed'
 long_first = true;                          % enable long-first mode
 double_network_flag = true;                 % enable double network style
-alpha = 4;                                  % spacing ratio of large mesh to small mesh
+alpha = 3;                                  % spacing ratio of large mesh to small mesh
 % Height mode settings (only one is used)
-P = 0.3;        % Prob: desired fraction of type 2 bonds
+P = 0.5;        % Prob: desired fraction of type 2 bonds
 N2_bonds = 3000; % Fixed: desired number of type 2 bonds
 
 % Manual mode settings

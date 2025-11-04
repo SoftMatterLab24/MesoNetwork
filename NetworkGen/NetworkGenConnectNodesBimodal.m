@@ -217,7 +217,7 @@ if long_first
         if isempty(neigh), no_progress = no_progress + 1; continue; end
 
         % partner must also have deg2 < Max_peratom_bond
-        neigh = neigh(deg2(neigh) < (Max_peratom_bond-1));
+        neigh = neigh(deg2(neigh) < (Max_peratom_bond));
         if isempty(neigh), no_progress = no_progress + 1; continue; end
 
         dxv = x(neigh) - x(r1);

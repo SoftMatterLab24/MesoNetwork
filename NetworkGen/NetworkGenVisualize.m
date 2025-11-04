@@ -95,7 +95,7 @@ if strcmp(options.dist_type,'bimodal')
     axis tight
     xlabel('Prestretch \lambda = L/(N*b)'); ylabel('Count'); title('Prestretch distribution (final)')
     set(gca,'FontSize',16,'LineWidth',2)
-    axis([0 1 0 600])
+    axis([0 1 0 1000])
 end
 
 
