@@ -21,7 +21,7 @@ comm_modify         cutoff 170 vel yes   #Assumming b = 1.6 (nm) and bonds can h
 #       Simulation settings
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Timestep multiplier (smaller = smaller timesteps)
-variable            alpha equal 0.05
+variable            alpha equal 0.01
 
 # Max bond stiffness
 variable            Kmax equal 10
@@ -80,7 +80,7 @@ pair_coeff * * local/density mytab.localdensity.table
 
 # Bondstyles
 bond_style          bpm/poly break yes overlay/pair yes smooth no
-bond_coeff          1 $(4*v_kBT) $(100*v_kBT) 0 bond.table KEY
+bond_coeff          1 $(v_kBT) $(100*v_kBT) 0 bond.table KEY
 # bond_coeff          1 ${kBT} 1.0 0.0 prony.table KEY 1.0 ${N1} ${b} ${lamc}
 # bond_coeff          2 ${kBT} 1.0 0.0 prony.table KEY 1.0 ${N2} ${b} ${lamc}
 
@@ -177,7 +177,7 @@ reset_timestep      0 time 0
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #     Setup final physics and dumps
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-fix                 2 all viscous 0.005
+fix                 2 all viscous 0.5
 fix                 5 clamps deform 1 y erate ${erate}
 
 # Final computes
