@@ -82,7 +82,7 @@ switch mode
             n_draw1 = max(n_draw1, bd.min_N);
             if has_cap, n_draw1 = min(n_draw1, bd.N_cap); end
 
-            N_list = sort(n_draw1,"ascend"); 
+            N_list = sort(n_draw1,'ascend'); 
             
             [~, idxL] = sort(Lvec(idx1), 'ascend');
             
@@ -98,7 +98,7 @@ switch mode
             if has_cap, n_draw2 = min(n_draw2, bd.N_cap); end
             Nvec(idx2) = n_draw2;
 
-            N_list = sort(n_draw2,"ascend");
+            N_list = sort(n_draw2,'ascend');
             [~, idxL] = sort(Lvec(idx2), 'ascend'); 
 
             n_draw2_sorted(idxL) = N_list;

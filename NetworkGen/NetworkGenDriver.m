@@ -25,8 +25,8 @@ Nreplicates = 1;
 b = 1.6;     % Kuhn length (in nm)
 
 % Domain size
-Lx = 150;    % Domain size in x (in units of b)
-Ly = 150;    % Domain size in y (in units of b)
+Lx = 150*3;    % Domain size in x (in units of b)
+Ly = 90*3;    % Domain size in y (in units of b)
 
 % Seed options
 imanualseed = false;  % true: manual seed; false: random seed
@@ -53,10 +53,10 @@ rho_max = 100;    % maximum density
 distribution_assignment_mode_poly = 'pmf';  % Kuhn segment assigment method: 'geom' | 'range' | 'pmf'
 
 %% --------------------- Bimodal Options ---------------------------
-N1 = 50; 
-N2 = 50;
+N1 = 30; 
+N2 = 150;
 
-bin_window_method = 'manual';               % Method for determining bin width of bimodal dist: 'manual' or 'adaptive'               
+bin_window_method = 'adaptive';               % Method for determining bin width of bimodal dist: 'manual' or 'adaptive'               
 
 distribution_assignment_mode = 'gaussian';  % Kuhn segment assigment method: 'single' or 'geom' or 'gaussian'
 distribution_height_mode = 'prob';         % Distribution height method: 'prob' or 'fixed'
@@ -233,4 +233,4 @@ for ii = 1:Nreplicates
     
 end
 
-fprintf("Done!\n")
+fprintf('Done!\n')
