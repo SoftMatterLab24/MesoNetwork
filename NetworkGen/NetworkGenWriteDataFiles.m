@@ -173,6 +173,6 @@ fprintf(fidP, '1 \n');
 fprintf(fidP, '1 \n');
 fprintf(fidP, '%2.4f %2.4f %2.4f \n',LDpot.rho_min,LDpot.rho_max,LDpot.drho);
 
-for i = 1:LDpot.N_rho
+for i = 1:length(LDpot.pot_density)
     fprintf(fidP, '%2.8f \n', LDpot.pot_density(i));
 end

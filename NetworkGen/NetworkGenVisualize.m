@@ -90,12 +90,18 @@ if strcmp(options.dist_type,'bimodal')
 
 
     dlam = 0.01;
-    histogram(lamvec1,ceil((max(lamvec1) - min(lamvec1))/dlam),'FaceColor',[0.2 0.2 0.2],'FaceAlpha',0.8,'LineWidth',0.0005);
-    histogram(lamvec2,ceil((max(lamvec2) - min(lamvec2))/dlam),'FaceColor',[1 0 0],'FaceAlpha',0.8,'LineWidth',0.0005);
+    if sum(type1) > 1
+        histogram(lamvec1,ceil((max(lamvec1) - min(lamvec1))/dlam),'FaceColor',[0.2 0.2 0.2],'FaceAlpha',0.8,'LineWidth',0.0005);
+    end
+    if sum(~type1) > 1
+        histogram(lamvec2,ceil((max(lamvec2) - min(lamvec2))/dlam),'FaceColor',[1 0 0],'FaceAlpha',0.8,'LineWidth',0.0005);
+    end
     axis tight
     xlabel('Prestretch \lambda = L/(N*b)'); ylabel('Count'); title('Prestretch distribution (final)')
     set(gca,'FontSize',16,'LineWidth',2)
     axis([0 1 0 1000])
+
+ 
 end
 
 

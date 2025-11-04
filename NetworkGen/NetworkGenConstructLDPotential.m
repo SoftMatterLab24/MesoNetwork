@@ -36,7 +36,7 @@ R1 = 0.8*sig_c; % inner radius of density calculation
 rc = 1.1*R1;    % cutoff radius for bpm/spring repulsion
 
 % Construct potential density function
-rho_vec = linspace(rho_min, rho_max, N_rho)'; % density vector
+rho_vec = linspace(rho_min, rho_max, N_rho+1)'; % density vector
 
 pot_density = kLD * (rho_vec - rho0).^2; % harmonic potential around rho0
 

@@ -25,8 +25,8 @@ Nreplicates = 1;
 b = 1.6;     % Kuhn length (in nm)
 
 % Domain size
-Lx = 150*3;    % Domain size in x (in units of b)
-Ly = 90*3;    % Domain size in y (in units of b)
+Lx = 150;    % Domain size in x (in units of b)
+Ly = 90;    % Domain size in y (in units of b)
 
 % Seed options
 imanualseed = false;  % true: manual seed; false: random seed
@@ -53,23 +53,25 @@ rho_max = 100;    % maximum density
 distribution_assignment_mode_poly = 'pmf';  % Kuhn segment assigment method: 'geom' | 'range' | 'pmf'
 
 %% --------------------- Bimodal Options ---------------------------
-N1 = 30; 
-N2 = 150;
+N1 = 50; 
+N2 = 50;
 
-bin_window_method = 'adaptive';               % Method for determining bin width of bimodal dist: 'manual' or 'adaptive'               
-
+bin_window_method            = 'adaptive';  % Method for determining bin width of bimodal dist: 'manual' or 'adaptive'               
 distribution_assignment_mode = 'gaussian';  % Kuhn segment assigment method: 'single' or 'geom' or 'gaussian'
-distribution_height_mode = 'prob';         % Distribution height method: 'prob' or 'fixed'
-long_first = true;                          % enable long-first mode
-double_network_flag = true;                 % enable double network style
+distribution_height_mode     = 'fixed';      % Distribution height method: 'prob' or 'fixed'
+long_first                   = true;        % enable long-first mode
+
+% Double network params
+double_network_flag = false;                % enable double network style
 alpha = 3;                                  % spacing ratio of large mesh to small mesh
+
 % Height mode settings (only one is used)
-P = 0.5;        % Prob: desired fraction of type 2 bonds
-N2_bonds = 3000; % Fixed: desired number of type 2 bonds
+P = 0;        % Prob: desired fraction of type 2 bonds
+N2_bonds = 2; % Fixed: desired number of type 2 bonds
 
 % Manual mode settings
 lam1 = 1/sqrt(N1);   % Prestretched length of type 1 bonds: lam1 = [0 1], 1/sqrt(N1) (default)
-lam2 = 0.4;   % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
+lam2 = 1/sqrt(N2);   % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
 
 std1 = 10; % std of N1 Kuhn segment distribution
 std2 = 10; % std of N2 Kuhn segment distribution
