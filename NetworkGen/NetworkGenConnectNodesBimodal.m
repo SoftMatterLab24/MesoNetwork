@@ -111,7 +111,13 @@ else
     dr1 = targetC1 / max(2*pi*rho_all*max(r1_avg,epsr), epsr);
     % For double network, size long window using sparse density to match larger spacing
     Nsparse_est = max(1, round(f_sparse * natom));
-    rho_long = double_network ? (Nsparse_est / max(A, epsr)) : rho_all;
+    % For double network, size long window using sparse density to match larger spacing
+    Nsparse_est = max(1, round(f_sparse * natom));
+    if double_network
+        rho_long = Nsparse_est / max(A, epsr);
+    else
+        rho_long = rho_all;
+    end
     dr2 = targetC2 / max(2*pi*rho_long*max(r2_avg,epsr), epsr);
 end
 
@@ -189,7 +195,7 @@ if long_first
         end
 
         % capacity for long pass: keep deg2 < Max_peratom_bond (sanity)
-        if deg2(r1) >= (Max_peratom_bond-1)
+        if deg2(r1) >= (Max_peratom_bond)
             no_progress = no_progress + 1; continue;
         end
 
@@ -211,7 +217,7 @@ if long_first
         if isempty(neigh), no_progress = no_progress + 1; continue; end
 
         % partner must also have deg2 < Max_peratom_bond
-        neigh = neigh(deg2(neigh) < (Max_peratom_bond-1));
+        neigh = neigh(deg2(neigh) < (Max_peratom_bond));
         if isempty(neigh), no_progress = no_progress + 1; continue; end
 
         dxv = x(neigh) - x(r1);

@@ -31,9 +31,9 @@ if strcmp(options.dist_type,'bimodal')
         if Bonds(k,1) == 0, continue; end
         i1 = Bonds(k,2); i2 = Bonds(k,3);
         if Bonds(k,5) == 1
-            plot([Atoms(i1,2) Atoms(i2,2)], [Atoms(i1,3) Atoms(i2,3)], 'k-');
+            plot([Atoms(i1,2) Atoms(i2,2)], [Atoms(i1,3) Atoms(i2,3)], 'k-','LineWidth',0.25);
         else
-            plot([Atoms(i1,2) Atoms(i2,2)], [Atoms(i1,3) Atoms(i2,3)], 'r-');
+            plot([Atoms(i1,2) Atoms(i2,2)], [Atoms(i1,3) Atoms(i2,3)], 'r-','LineWidth',1.75);
         end
     
     end
@@ -83,8 +83,11 @@ if strcmp(options.dist_type,'bimodal')
     N2 = options.bimodal.N2;
 
     figure; hold on;
-    xline(1/sqrt(N1),'LineWidth',2,'Color',[0.2 0.2 0.2],'LineStyle','--')
-    xline(1/sqrt(N2),'LineWidth',2,'Color',[1 0 0],'LineStyle','--')
+    hold on
+    yl = ylim;  % get current y-axis limits
+    plot([1/sqrt(N1) 1/sqrt(N1)], yl, '--', 'LineWidth', 2, 'Color', [0.2 0.2 0.2]);
+    plot([1/sqrt(N2) 1/sqrt(N2)], yl, '--', 'LineWidth', 2, 'Color', [1 0 0]);
+
 
     dlam = 0.01;
     histogram(lamvec1,ceil((max(lamvec1) - min(lamvec1))/dlam),'FaceColor',[0.2 0.2 0.2],'FaceAlpha',0.8,'LineWidth',0.0005);
@@ -92,7 +95,7 @@ if strcmp(options.dist_type,'bimodal')
     axis tight
     xlabel('Prestretch \lambda = L/(N*b)'); ylabel('Count'); title('Prestretch distribution (final)')
     set(gca,'FontSize',16,'LineWidth',2)
-    axis([0 1 0 600])
+    axis([0 1 0 1000])
 end
 
 
