@@ -16,7 +16,7 @@ warning off backtrace  % disable stack trace for warnings
 
 %% --------------------------- Global settings ----------------------
 % Distribution type: 'bimodal' or 'polydisperse'
-dist_type = 'polydisperse';
+dist_type = 'bimodal';
 
 % Number of networks to generate
 Nreplicates = 1;
@@ -25,8 +25,8 @@ Nreplicates = 1;
 b = 1.6;     % Kuhn length (in nm)
 
 % Domain size
-Lx = 200;    % Domain size in x (in units of b)
-Ly = 200;    % Domain size in y (in units of b)
+Lx = 150;    % Domain size in x (in units of b)
+Ly = 150;    % Domain size in y (in units of b)
 
 % Seed options
 imanualseed = false;  % true: manual seed; false: random seed
@@ -53,28 +53,28 @@ rho_max = 100;    % maximum density
 distribution_assignment_mode_poly = 'pmf';  % Kuhn segment assigment method: 'geom' | 'range' | 'pmf'
 
 %% --------------------- Bimodal Options ---------------------------
-N1 = 20; 
-N2 = 250;
+N1 = 50; 
+N2 = 50;
 
 bin_window_method = 'manual';               % Method for determining bin width of bimodal dist: 'manual' or 'adaptive'               
 
 distribution_assignment_mode = 'gaussian';  % Kuhn segment assigment method: 'single' or 'geom' or 'gaussian'
-distribution_height_mode = 'fixed';         % Distribution height method: 'prob' or 'fixed'
+distribution_height_mode = 'prob';         % Distribution height method: 'prob' or 'fixed'
 long_first = true;                          % enable long-first mode
 double_network_flag = true;                 % enable double network style
 alpha = 4;                                  % spacing ratio of large mesh to small mesh
 % Height mode settings (only one is used)
-P = 0.2;        % Prob: desired fraction of type 2 bonds
-N2_bonds = 0; % Fixed: desired number of type 2 bonds
+P = 0.3;        % Prob: desired fraction of type 2 bonds
+N2_bonds = 3000; % Fixed: desired number of type 2 bonds
 
 % Manual mode settings
 lam1 = 1/sqrt(N1);   % Prestretched length of type 1 bonds: lam1 = [0 1], 1/sqrt(N1) (default)
-lam2 = 1/sqrt(N2);   % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
+lam2 = 0.4;   % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
 
-sig1 = 1; % std of N1 Kuhn segment distribution
-sig2 = 1; % std of N2 Kuhn segment distribution
+std1 = 10; % std of N1 Kuhn segment distribution
+std2 = 10; % std of N2 Kuhn segment distribution
 
-% Manual Window parameters (if bin_window_method = manual)
+% Manual Window parameters (if bin_window_method = manual) (depreciated)
 %dr1 = 5;
 %dr2 = 5;
 
@@ -144,8 +144,8 @@ options.bimodal.kuhn_rounding      = 'round';  % 'round' | 'ceil' | 'floor' (use
 
 options.bimodal.long_first         = long_first;    
 options.bimodal.bin_window_method  = bin_window_method; 
-options.double_network.flag = double_network_flag
-options.double_network.alpha = alpha;
+options.double_network.flag        = double_network_flag;
+options.double_network.alpha       = alpha;
 
 % --- mode selection ---
 % 'single' mode: applies N1 and N2 directly based on geometry (N ≈ (L/b)^2)
