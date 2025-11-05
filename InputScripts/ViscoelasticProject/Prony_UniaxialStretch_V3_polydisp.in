@@ -53,7 +53,7 @@ variable            lamc equal 0.8
 
 # LJ parameters
 variable            e equal   $(0.1*v_kBT)         # Energy scale 1
-variable            sig equal $(7.5*v_b)    #LJ particle diameter 
+variable            sig equal $(10.5*v_b)    # objective equilibrium seperation (decrease if you have not scaled)
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #      Assign groups
@@ -176,7 +176,7 @@ run                 200000
 
 unfix 2
 fix                 2 all viscous 1
-run                 400000
+run                 1000000
 
 
 unfix 2
