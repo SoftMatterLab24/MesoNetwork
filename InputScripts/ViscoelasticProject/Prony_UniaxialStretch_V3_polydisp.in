@@ -13,7 +13,7 @@ special_bonds       lj/coul 1 1 1
 newton              off off
 
 # Read data file
-read_data           Network.txt
+read_data           PolyNetwork_nano_200x200.dat
 thermo_modify       flush yes 
 comm_modify         cutoff 100 vel yes   #Assumming b = 1.6 (nm) and bonds can have max 100 segments
 
@@ -52,8 +52,8 @@ variable            kBT equal 4.14  # Energy scale (attogram-nanometer^2/nanosec
 variable            lamc equal 0.8
 
 # LJ parameters
-variable            e equal   0.4         # Energy scale 1
-variable            sig equal $(7*v_b)    #LJ particle diameter 
+variable            e equal   $(0.1*v_kBT)         # Energy scale 1
+variable            sig equal $(7.5*v_b)    #LJ particle diameter 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #      Assign groups
@@ -72,7 +72,7 @@ group               bot_clamp region bot_clamped
 
 
 pair_style hybrid/overlay bpm/spring anharmonic yes local/density
-pair_coeff * * bpm/spring $(v_e) ${sig} 0 $(v_e)
+pair_coeff * * bpm/spring $(v_e) ${sig} 0 $(2*v_e)
 pair_coeff * * local/density mytab.localdensity.table
 
 # pair_style          lj/cut $(2.5*v_sig)
@@ -155,11 +155,19 @@ variable            nthermo equal $(ceil(v_nout/10))
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #     Equilibrate networks
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-timestep            0.01
+timestep            0.001
 
 fix                 1 all nve/bpm/sphere
+fix                 2 all viscous 20
+run                 200000
+
+unfix 2
+fix                 2 all viscous 5
+run                 200000
+
+unfix 2
 fix                 2 all viscous 1
-run                 100000 
+run                 600000
 
 # Boundary conditions
 fix                 3 top_clamp setforce NULL 0 0 

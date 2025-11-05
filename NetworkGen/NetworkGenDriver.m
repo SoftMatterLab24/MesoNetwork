@@ -25,8 +25,8 @@ Nreplicates = 1;
 b = 1.6;        % Kuhn length (in nm)
 
 % Domain size
-Lx = 150*2;       % Domain size in x (in units of b)
-Ly = 90*2;        % Domain size in y (in units of b)
+Lx = 150*1.5;       % Domain size in x (in units of b)
+Ly = 90*1.5;        % Domain size in y (in units of b)
 
 % Boundary Conditions
 boundary_box = 'fixed'; % 'fixed' or 'periodic' boundaries
