@@ -16,7 +16,7 @@ warning off backtrace  % disable stack trace for warnings
 
 %% --------------------------- Global settings ----------------------
 % Distribution type: 'bimodal' or 'polydisperse'
-dist_type = 'bimodal';
+dist_type = 'polydisperse';
 
 % Number of networks to generate
 Nreplicates = 1;

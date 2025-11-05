@@ -52,6 +52,56 @@ end
 
 % ---------- Optional histogram ----------
 
+if strcmp(options.dist_type,'polydisperse')
+    % --- Kuhn-segment distribution ---
+    nbinsN = max(10, min(80, ceil(sqrt(numel(Nvec)))));
+    figure; hold on
+    histogram(Nvec, nbinsN, ...
+        'FaceColor', [0.2 0.2 0.2], 'FaceAlpha', 0.8, 'LineWidth', 0.0005);
+    xlabel('Assigned N per bond');
+    ylabel('Count');
+    title('N distribution (polydisperse)');
+    set(gca, 'FontSize', 16, 'LineWidth', 2);
+    hold off
+
+    % --- Bond-length distribution ---
+    figure; hold on
+    nbinsL = 60;
+    histogram(Bonds(:,4), nbinsL, ...
+        'FaceColor', [0.1 0.1 0.9], 'FaceAlpha', 0.8, 'LineWidth', 0.0005);
+    axis tight
+    xlabel('Bond length L');
+    ylabel('Count');
+    title('Length distribution (polydisperse)');
+    set(gca, 'FontSize', 16, 'LineWidth', 2);
+    hold off
+
+    % --- Prestretch distribution ---
+    b = options.b;
+    lamvec = Bonds(:,4) ./ (Nvec * b);   % ? = L/(N·b)
+    dlam = 0.01;
+    lam_min = min(lamvec);
+    lam_max = max(lamvec);
+    nbinsLam = max(10, min(100, ceil((lam_max - lam_min)/dlam)));
+
+    figure; hold on
+    histogram(lamvec, nbinsLam, ...
+        'FaceColor', [0.0 0.6 0.0], 'FaceAlpha', 0.8, 'LineWidth', 0.0005);
+    axis tight
+    xlabel('Prestretch \lambda = L/(N*b)');
+    ylabel('Count');
+    title('Prestretch distribution (polydisperse)');
+    set(gca, 'FontSize', 16, 'LineWidth', 2);
+
+    % Optional reference lines (R2016-safe)
+    yl = ylim;
+    lam_med = median(lamvec);
+    lam_ref = 1 / sqrt(mean(Nvec));  % approximate reference
+    plot([lam_med lam_med], yl, '-',  'LineWidth', 1.5, 'Color', [0.3 0.3 0.3]);
+    plot([lam_ref lam_ref], yl, '--', 'LineWidth', 1.5, 'Color', [0.85 0.33 0.10]);
+    legend('All bonds','median \lambda','1/\surd(mean N)','Location','best');
+    hold off
+end
 
 % Bimodal histograms
 if strcmp(options.dist_type,'bimodal')
