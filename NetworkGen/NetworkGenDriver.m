@@ -46,10 +46,10 @@ bond_table_file    = 'bond.table';                              % File name for 
 write_location     = './networks';                              % Location to write output files
 
 %% --------------------- Local Density Potential ----------------------
-kLD     = 0.01;    % strength factor
+kLD     = 1;    % strength factor
 N_rho   = 1000;   % number of density points
 rho_min = 0.0;    % minimum density
-rho_max = 100;    % maximum density
+rho_max = 500;    % maximum density
 
 %% --------------------- Polydisperse Options ----------------------
 

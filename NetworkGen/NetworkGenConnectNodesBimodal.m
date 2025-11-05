@@ -222,7 +222,6 @@ if long_first
         neigh = neigh(deg2(neigh) < (Max_peratom_bond));
         if isempty(neigh), no_progress = no_progress + 1; continue; end
         
-    
         dxv = x(neigh) - x(r1);
         dyv = y(neigh) - y(r1);
         d = minimum_image(isPeriodic,dxv,dyv,Lx,Ly);
@@ -251,7 +250,7 @@ if long_first
         cand2 = cand2(ord);
         r2 = cand2( min(numel(cand2), randi( min(5, numel(cand2)) )) );
 
-        L  = hypot(x(r2)-x(r1), y(r2)-y(r1));
+        L = minimum_image(isPeriodic,x(r2)-x(r1),y(r2)-y(r1),Lx,Ly);
 
         % add type-2 bond
         nbond = nbond + 1;
@@ -333,7 +332,7 @@ if long_first
         if isempty(cand), no_progress = no_progress + 1; continue; end
 
         r2 = cand(randi(numel(cand)));
-        L  = hypot(x(r2)-x(r1), y(r2)-y(r1));
+        L = minimum_image(isPeriodic,x(r2)-x(r1),y(r2)-y(r1),Lx,Ly);
 
         % add type-1 bond
         nbond = nbond + 1;
@@ -406,7 +405,7 @@ else
         if isempty(cand), no_progress = no_progress + 1; continue; end
 
         r2 = cand(randi(numel(cand)));
-        L  = hypot(x(r2)-x(r1), y(r2)-y(r1));
+        L = minimum_image(isPeriodic,x(r2)-x(r1),y(r2)-y(r1),Lx,Ly);
 
         nbond = nbond + 1;
         Btmp(nbond,:) = [nbond, r1, r2, L, 1];
@@ -486,7 +485,7 @@ else
         cand2 = cand2(ord);
         r2 = cand2( min(numel(cand2), randi( min(5, numel(cand2)) )) );
 
-        L  = hypot(x(r2)-x(r1), y(r2)-y(r1));
+        L = minimum_image(isPeriodic,x(r2)-x(r1),y(r2)-y(r1),Lx,Ly);
 
         nbond = nbond + 1;
         Btmp(nbond,:) = [nbond, r1, r2, L, 2];
