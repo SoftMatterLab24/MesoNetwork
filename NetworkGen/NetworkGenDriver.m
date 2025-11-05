@@ -29,7 +29,7 @@ Lx = 100;       % Domain size in x (in units of b)
 Ly = 100;        % Domain size in y (in units of b)
 
 % Boundary Conditions
-boundary_box = 'periodic'; % 'fixed' or 'periodic' boundaries
+boundary_box = 'fixed'; % 'fixed' or 'periodic' boundaries
 
 % Seed options
 imanualseed = false;  % true: manual seed; false: random seed

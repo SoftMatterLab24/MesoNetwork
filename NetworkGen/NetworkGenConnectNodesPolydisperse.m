@@ -31,7 +31,7 @@ isPeriodic  =  strcmpi(options.boundary_box,'Periodic');
 if isfield(Domain,'Rcut')
     Rcut = Domain.Rcut;
 else
-    Rcut = 2 * Domain.min_node_sep;   % fallback
+    Rcut = 3.5 * Domain.min_node_sep;   % fallback
 end
 Rcut2 = Rcut*Rcut;
 
