@@ -103,6 +103,52 @@ if strcmp(options.dist_type,'polydisperse')
     plot([lam_ref lam_ref], yl, '--', 'LineWidth', 1.5, 'Color', [0.85 0.33 0.10]);
     legend('All bonds','median \lambda','1/\surd(mean N)','Location','best');
     hold off
+    
+    % --- 3D histogram: joint distribution of N and ? ---
+    % --- 3D histogram: joint distribution of N and ? ---
+    figure; hold on
+
+    % Define bins for N and ?
+    nbinsN3D = 40;
+    nbinsLam3D = 40;
+
+    edgesN = linspace(min(Nvec), max(Nvec), nbinsN3D+1);
+    edgesLam = linspace(min(lamvec), max(lamvec), nbinsLam3D+1);
+
+    % Compute 2D histogram (count matrix)
+    [counts, edgesN, edgesLam] = histcounts2(Nvec, lamvec, edgesN, edgesLam);
+
+    % Convert to bin centers for plotting
+    centersN   = 0.5*(edgesN(1:end-1) + edgesN(2:end));
+    centersLam = 0.5*(edgesLam(1:end-1) + edgesLam(2:end));
+
+    % Create surface plot
+    surf(centersN, centersLam, counts', ...
+        'EdgeColor', 'none', 'FaceColor', 'interp');
+
+    % --- Custom black?red colormap ---
+    nColors = 256;
+    cmap = [linspace(0,1,nColors)', zeros(nColors,1), zeros(nColors,1)]; % RGB: black?red
+    colormap(cmap);
+
+    colorbar;
+    caxis([0 max(counts(:))]);   % normalize color scale to counts
+
+    % --- Clean aesthetics ---
+    xlabel('Kuhn segments N');
+    ylabel('Prestretch \lambda = L/(N b)');
+    zlabel('Count');
+    title('Joint distribution of N and prestretch (\lambda)');
+
+    set(gcf,'Color','w');   % white figure background
+    set(gca,'Color','w');   % white axis background
+    set(gca,'FontSize',16,'LineWidth',1.5,'Box','on');
+    grid on;
+    axis tight;
+    view(45,30);
+    hold off;
+
+
 end
 
 % Bimodal histograms

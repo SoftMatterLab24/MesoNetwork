@@ -129,10 +129,10 @@ options.polydisperse.N_target_min    = 20;       % integer lower target
 options.polydisperse.N_target_max    = 120;      % integer upper target
 
 % --- 'pmf' mode (truncated geometric with hard cap based on exp distribution) ---
-options.polydisperse.pmf_nu0         = 15;       % ν0 (minimum)
-options.polydisperse.pmf_meanN       = 25;       % target mean of ν after truncation
+options.polydisperse.pmf_nu0         = 30;       % ν0 (minimum)
+options.polydisperse.pmf_meanN       = 45;       % target mean of ν after truncation
 options.polydisperse.pmf_cut_mode    = 'cap';    % keep as 'cap'
-options.polydisperse.pmf_nu_max      = 60;       % hard maximum ν (≥ ν0)
+options.polydisperse.pmf_nu_max      = 100;       % hard maximum ν (≥ ν0)
 options.polydisperse.integerize_rule = 'largest_remainder'; % allocation method
 
 % B. Bimodal options
