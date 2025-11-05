@@ -28,6 +28,9 @@ b = 1.6;        % Kuhn length (in nm)
 Lx = 150*1.5;       % Domain size in x (in units of b)
 Ly = 90*1.5;        % Domain size in y (in units of b)
 
+% Domain size scaler
+scale = 1.1;  % e.g., halve the system dimensions
+
 % Boundary Conditions
 boundary_box = 'fixed'; % 'fixed' or 'periodic' boundaries
 
@@ -230,7 +233,11 @@ for ii = 1:Nreplicates
 
     % contruct local density potential
     [LDpot] = NetworkGenConstructLDPotential(Domain,Atoms,Bonds,Nvec,options);
-
+    
+    %% E. Scale domain if needed
+    if (scale ~= 1.0)
+        [Domain, Atoms, Bonds] = NetworkScaleDomain(Domain, Atoms, Bonds, scale);
+    end
     %% E. Show visualization and statistics
     NetworkGenVisualize(Domain,Atoms,Bonds,Nvec,options);
 
