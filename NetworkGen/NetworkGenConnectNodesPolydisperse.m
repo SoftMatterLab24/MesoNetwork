@@ -50,8 +50,8 @@ hx = Rcut; hy = Rcut;
 nx = max(1, floor((xhi - xlo)/hx));
 ny = max(1, floor((yhi - ylo)/hy));
 
-cx = floor((x - xlo)/cellSize) + 1; cx = max(1, min(nx, cx));
-cy = floor((y - ylo)/cellSize) + 1; cy = max(1, min(ny, cy));
+cx = floor((x - xlo)/hx) + 1; cx = max(1, min(nx, cx));
+cy = floor((y - ylo)/hy) + 1; cy = max(1, min(ny, cy));
 
 Cells = cell(nx, ny);
 for i=1:natom
