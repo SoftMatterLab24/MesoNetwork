@@ -25,8 +25,8 @@ Nreplicates = 1;
 b = 1.6;        % Kuhn length (in nm)
 
 % Domain size
-Lx = 100;       % Domain size in x (in units of b)
-Ly = 100;        % Domain size in y (in units of b)
+Lx = 150*2;       % Domain size in x (in units of b)
+Ly = 90*2;        % Domain size in y (in units of b)
 
 % Boundary Conditions
 boundary_box = 'fixed'; % 'fixed' or 'periodic' boundaries
@@ -46,8 +46,8 @@ bond_table_file    = 'bond.table';                              % File name for 
 write_location     = './networks';                              % Location to write output files
 
 %% --------------------- Local Density Potential ----------------------
-kLD     = 1;    % strength factor
-N_rho   = 1000;   % number of density points
+kLD     = 0.1*4.14;    % strength factor
+N_rho   = 100000;   % number of density points
 rho_min = 0.0;    % minimum density
 rho_max = 500;    % maximum density
 
@@ -129,8 +129,8 @@ options.polydisperse.N_target_min    = 20;       % integer lower target
 options.polydisperse.N_target_max    = 120;      % integer upper target
 
 % --- 'pmf' mode (truncated geometric with hard cap based on exp distribution) ---
-options.polydisperse.pmf_nu0         = 20;       % ν0 (minimum)
-options.polydisperse.pmf_meanN       = 30;       % target mean of ν after truncation
+options.polydisperse.pmf_nu0         = 15;       % ν0 (minimum)
+options.polydisperse.pmf_meanN       = 25;       % target mean of ν after truncation
 options.polydisperse.pmf_cut_mode    = 'cap';    % keep as 'cap'
 options.polydisperse.pmf_nu_max      = 60;       % hard maximum ν (≥ ν0)
 options.polydisperse.integerize_rule = 'largest_remainder'; % allocation method

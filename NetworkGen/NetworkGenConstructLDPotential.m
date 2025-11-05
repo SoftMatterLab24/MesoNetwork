@@ -29,11 +29,11 @@ drho = (rho_max - rho_min) / (N_rho - 1); % density step
 sig_c = 0.5*b*(Total_kuhn_segment/Atom_count)^(1/2)   % desired equlibrium length
 atom_density = Atom_count / ((xhi - xlo)*(yhi - ylo)); % number density
 
-R2 = 3*sig_c; % outer radius of density calculation
-rho0 = atom_density*pi*R2^2 % desired equilibrium density for given R2
+R2 = 4*sig_c; % outer radius of density calculation
+rho0 = (R2/sig_c)^2 % desired equilibrium density for given R2
 
-R1 = 0.8*0*sig_c; % inner radius of density calculation
-rc = 1.1*R1;    % cutoff radius for bpm/spring repulsion
+R1 = 0.8*sig_c; % inner radius of density calculation
+rc = 1.0*2*sig_c;    % cutoff radius for bpm/spring repulsion
 
 % Construct potential density function
 rho_vec = linspace(rho_min, rho_max, N_rho+1)'; % density vector
