@@ -128,11 +128,20 @@ variable            stime equal time
 # variable            nb2 equal c_5[2]
 variable            ntotbonds equal c_4/2
 
+# KE/|PE| ratio (should be tiny, e.g., < 1e-4 to 1e-6)
+variable kper equal ke/abs(pe)
+
+# Max force per atom (falls when relaxed)
+variable fmag atom  (sqrt(fx*fx+fy*fy+fz*fz))
+compute fmax all reduce max v_fmag
+compute favg all reduce ave v_fmag
+
+
 compute             Lmax all reduce max c_2[1] inputs local
 variable            Lmax equal c_Lmax 
 
 thermo              10000
-thermo_style        custom step v_ntotbonds c_virial[1] c_virial[2] c_virial[4] pe ke lx ly c_virials[1] c_virials[2]
+thermo_style        custom step v_ntotbonds c_virial[1] c_virial[2] c_virial[4] pe ke v_kper c_fmax lx ly c_virials[1] c_virials[2]
 
 dump                1 all custom 10000 atoms_equilib.dump id mol type xs ys zs fx fy fz
 dump                2 all local 10000 bonds_equilib.dump c_1[*] c_2[*]
