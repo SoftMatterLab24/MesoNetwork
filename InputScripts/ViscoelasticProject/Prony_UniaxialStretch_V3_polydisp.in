@@ -167,7 +167,12 @@ run                 200000
 
 unfix 2
 fix                 2 all viscous 1
-run                 600000
+run                 400000
+
+
+unfix 2
+fix                 2 all viscous 5
+run                 400000
 
 # Boundary conditions
 fix                 3 top_clamp setforce NULL 0 0 
@@ -185,7 +190,7 @@ reset_timestep      0 time 0
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #     Setup final physics and dumps
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-fix                 2 all viscous 0.5
+fix                 2 all viscous 5
 fix                 5 clamps deform 1 y erate ${erate}
 
 # Final computes
