@@ -21,16 +21,16 @@ comm_modify         cutoff 100 vel yes   #Assumming b = 1.6 (nm) and bonds can h
 #       Simulation settings
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Timestep multiplier (smaller = smaller timesteps)
-variable            alpha equal 0.5
+variable            alpha equal 0.1
 
 # Max bond stiffness
 variable            Kmax equal 10
 
 # Max stretch
-variable            lammax equal 4
+variable            lammax equal 2.5
 
 # Strain rate
-variable            erate equal 0.00001
+variable            erate equal 0.000005
 
 # Weissenberg number
 variable            Wi equal 0.1
@@ -71,16 +71,16 @@ group               bot_clamp region bot_clamped
 # pair_coeff           * * ${e} ${sig}
 
 
-pair_style           hybrid/overlay bpm/spring local/density
-pair_coeff           * * bpm/spring $(v_e) ${sig} 0
-pair_coeff           * * local/density mytab.localdensity.table
+pair_style hybrid/overlay bpm/spring anharmonic yes local/density
+pair_coeff * * bpm/spring $(v_e) ${sig} 0 $(v_e)
+pair_coeff * * local/density mytab.localdensity.table
 
 # pair_style          lj/cut $(2.5*v_sig)
 # pair_coeff          * * ${e} ${sig}
 
 # Bondstyles
 bond_style          bpm/poly break yes overlay/pair yes smooth no
-bond_coeff          1 $(v_kBT) $(100*v_kBT) 0 bond.table KEY
+bond_coeff          1 $(v_kBT) $(100*v_kBT) 0 bond.table KEY stretch $(v_lamc)
 # bond_coeff          1 ${kBT} 1.0 0.0 prony.table KEY 1.0 ${N1} ${b} ${lamc}
 # bond_coeff          2 ${kBT} 1.0 0.0 prony.table KEY 1.0 ${N2} ${b} ${lamc}
 
@@ -158,7 +158,7 @@ variable            nthermo equal $(ceil(v_nout/10))
 timestep            0.01
 
 fix                 1 all nve/bpm/sphere
-fix                 2 all viscous 0.5
+fix                 2 all viscous 1
 run                 100000 
 
 # Boundary conditions
@@ -198,7 +198,7 @@ fix                 printF all print ${nout} "${stime} ${lamy} ${Pxx} ${Pyy} ${P
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #               Run
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-comm_style          tiled
+comm_style tiled
 balance             1.2 rcb
 timestep            ${dt}
 run                 ${Nrun}
