@@ -22,6 +22,10 @@ min_keep          = Domain.min_degree_keep;
 
 xlo = Domain.xlo; xhi = Domain.xhi;
 ylo = Domain.ylo; yhi = Domain.yhi;
+Lx = xhi - xlo; Ly = yhi - ylo;
+
+% Mode options
+isPeriodic  =  strcmpi(options.boundary_box,'Periodic');
 
 % Cutoff selection (prefer explicit Domain.Rcut if provided)
 if isfield(Domain,'Rcut')
@@ -46,18 +50,25 @@ hx = Rcut; hy = Rcut;
 nx = max(1, floor((xhi - xlo)/hx));
 ny = max(1, floor((yhi - ylo)/hy));
 
-% Compute cell indices for each row
-cx = floor((x - xlo) / hx) + 1;   % 1..nx
-cy = floor((y - ylo) / hy) + 1;   % 1..ny
-% Clamp to domain
-cx(cx < 1) = 1; cx(cx > nx) = nx;
-cy(cy < 1) = 1; cy(cy > ny) = ny;
+cx = floor((x - xlo)/cellSize) + 1; cx = max(1, min(nx, cx));
+cy = floor((y - ylo)/cellSize) + 1; cy = max(1, min(ny, cy));
 
-% Linear bin index
-binIdx = int32(cx + (cy-1)*nx);  % 1..nx*ny
+Cells = cell(nx, ny);
+for i=1:natom
+    Cells{cx(i), cy(i)}(end+1) = i; %#ok<AGROW>
+end
+%% Compute cell indices for each row
+%cx = floor((x - xlo) / hx) + 1;   % 1..nx
+%cy = floor((y - ylo) / hy) + 1;   % 1..ny
+%% Clamp to domain
+%cx(cx < 1) = 1; cx(cx > nx) = nx;
+%cy(cy < 1) = 1; cy(cy > ny) = ny;
 
-% Build bins as cell array: bins{bin} = [row indices]
-bins = accumarray(double(binIdx), (1:natom)', [nx*ny, 1], @(v){v});
+%% Linear bin index
+%binIdx = int32(cx + (cy-1)*nx);  % 1..nx*ny
+
+%% Build bins as cell array: bins{bin} = [row indices]
+%bins = accumarray(double(binIdx), (1:natom)', [nx*ny, 1], @(v){v});
 
 % --------- Bond creation in ROW space (store rows internally) ---------
 deg = zeros(natom,1);             % degrees by row
@@ -66,8 +77,8 @@ adj = sparse(natom,natom);        % 0/1 symmetric
 BondsRows = zeros(Max_bond,3);    % [row1,row2,L]; bondID assigned later
 
 nbond = 0;
-no_progress = 0;
-ntries = 0;
+ntries = 0; no_progress = 0;
+
 tic
 while (nbond < Max_bond) && (no_progress < stall_limit) && (ntries < global_limit)
     ntries = ntries + 1;
@@ -79,42 +90,41 @@ while (nbond < Max_bond) && (no_progress < stall_limit) && (ntries < global_limi
         continue;
     end
 
-    % 3x3 neighborhood bins around r1's cell
-    c1x = cx(r1); c1y = cy(r1);
+    %c1x = cx(r1); c1y = cy(r1);
 
     % Gather candidate rows from neighbor cells
-    candRows = []; % will grow; typical size small
-    for dyc = -1:1
-        yy = c1y + dyc;
-        if (yy < 1) || (yy > ny), continue; end
-        for dxc = -1:1
-            xx = c1x + dxc;
-            if (xx < 1) || (xx > nx), continue; end
-            bId = xx + (yy-1)*nx;
-            list = bins{bId};
-            if ~isempty(list)
-                candRows = [candRows; list]; %#ok<AGROW>
-            end
-        end
-    end
+    %candRows = []; % will grow; typical size small
+    %for dyc = -1:1
+    %    yy = c1y + dyc;
+    %    if (yy < 1) || (yy > ny), continue; end
+    %    for dxc = -1:1
+    %        xx = c1x + dxc;
+    %        if (xx < 1) || (xx > nx), continue; end
+    %        bId = xx + (yy-1)*nx;
+    %        list = bins{bId};
+    %        if ~isempty(list)
+    %            candRows = [candRows; list]; %#ok<AGROW>
+    %        end
+    %    end
+    %end
 
-    if isempty(candRows)
-        no_progress = no_progress + 1;
-        continue;
-    end
+    % 3x3 neighborhood bins around r1's cell
+    neigh = gather_neighbors(r1, Cells, cx, cy, nx, ny,isPeriodic);
+    if isempty(neigh), no_progress = no_progress + 1; continue; end
 
     % Filter candidates: not self, unsaturated, not already connected, within Rcut
     x1 = x(r1); y1 = y(r1);
     cand = zeros(16,1); ncan = 0;
 
     % Iterate over local list only (fast)
-    for idx = 1:numel(candRows)
-        r2 = candRows(idx);
+    for idx = 1:numel(neigh)
+        r2 = neigh(idx);
         if r2 == r1, continue; end
         if deg(r2) >= Max_peratom_bond, continue; end
         if adj(r1,r2) ~= 0, continue; end
         dxv = x(r2) - x1; dyv = y(r2) - y1;
-        if (dxv*dxv + dyv*dyv) < Rcut2
+        d = minimum_image(isPeriodic,dxv,dyv,Lx,Ly);
+        if (d*d) < Rcut2
             ncan = ncan + 1;
             if ncan > numel(cand), cand = [cand; zeros(numel(cand),1)]; end %#ok<AGROW>
             cand(ncan) = r2;
@@ -128,8 +138,8 @@ while (nbond < Max_bond) && (no_progress < stall_limit) && (ntries < global_limi
 
     % choose random neighbor among candidates
     r2 = cand(randi(ncan));
-    L  = sqrt((x(r2)-x(r1))^2 + (y(r2)-y(r1))^2);
-
+    L = minimum_image(isPeriodic, x(r2)-x(r1), y(r2)-y(r1), Lx, Ly);
+    
     nbond = nbond + 1;
     BondsRows(nbond,1) = r1;
     BondsRows(nbond,2) = r2;
@@ -232,4 +242,55 @@ end
 AtomsOut = Atoms;
 fprintf('   Pruned %d atoms, and %d bonds\n',natom-length(AtomsOut),nbond-length(BondsOut));
 
+end
+
+
+% ===== helpers =====
+function neigh = gather_neighbors(r1, Cells, cx, cy, nx, ny, isPeriodic)
+    Cx = cx(r1); Cy = cy(r1);
+    neigh = [];
+    
+    if isPeriodic
+        % gather neighbors for all adjacent cells periodic boundary conditions (with wrap)
+        for dxCell=-1:1
+            ix = Cx + dxCell;
+            if ix < 1, ix = nx;
+            elseif ix > nx, ix = 1;
+            end
+            for dyCell=-1:1
+                iy = Cy + dyCell;
+                if iy < 1, iy = ny;
+                elseif iy > ny, iy = 1;
+                end
+                if ~isempty(Cells{ix,iy})
+                    neigh = [neigh, Cells{ix,iy}]; %#ok<AGROW>
+                end
+            end
+        end
+    else
+        % gather neighbors for all adjacent cells fixed boundary conditions (no wrap)
+        for dxCell=-1:1
+            ix = Cx + dxCell; if ix<1 || ix>nx, continue; end
+            for dyCell=-1:1
+                iy = Cy + dyCell; if iy<1 || iy>ny, continue; end
+                if ~isempty(Cells{ix,iy})
+                 neigh = [neigh, Cells{ix,iy}]; %#ok<AGROW>
+                end
+            end
+        end
+    end
+end
+
+function d = minimum_image(isPeriodic,dx,dy,Lx,Ly)
+    
+    %if fixed return Euclidean distance
+    if ~isPeriodic
+        d = sqrt(dx.^2 + dy.^2);
+        return;
+    end
+
+    %otherwise apply minimum image convention
+    dx_p = dx - Lx.*round(dx./Lx);
+    dy_p = dy - Ly.*round(dy./Ly);
+    d = sqrt(dx_p.^2 + dy_p.^2);
 end
