@@ -21,7 +21,7 @@ comm_modify         cutoff 100 vel yes   #Assumming b = 1.6 (nm) and bonds can h
 #       Simulation settings
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Timestep multiplier (smaller = smaller timesteps)
-variable            alpha equal 0.1
+variable            alpha equal 0.25
 
 # Max bond stiffness
 variable            Kmax equal 10
@@ -141,7 +141,7 @@ compute             Lmax all reduce max c_2[1] inputs local
 variable            Lmax equal c_Lmax 
 
 thermo              10000
-thermo_style        custom step v_ntotbonds c_virial[1] c_virial[2] c_virial[4] pe ke v_kper c_fmax lx ly c_virials[1] c_virials[2]
+thermo_style        custom step v_ntotbonds c_virial[1] c_virial[2] c_virial[4] pe ke v_kper c_fmax c_favg lx ly c_virials[1] c_virials[2]
 
 dump                1 all custom 10000 atoms_equilib.dump id mol type xs ys zs fx fy fz
 dump                2 all local 10000 bonds_equilib.dump c_1[*] c_2[*]
