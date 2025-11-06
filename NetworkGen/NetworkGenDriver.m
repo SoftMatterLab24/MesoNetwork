@@ -32,7 +32,7 @@ Ly = 90*1.5;        % Domain size in y (in units of b)
 scale = 1.6;  % e.g., halve the system dimensions
 
 % Boundary Conditions
-boundary_box = 'periodic'; % 'fixed' or 'periodic' boundaries
+boundary_box = 'fixed'; % 'fixed' or 'periodic' boundaries
 
 % Seed options
 imanualseed = false;  % true: manual seed; false: random seed
@@ -49,7 +49,7 @@ bond_table_file    = 'bond.table';                            % File name for bo
 write_location     = './networks';                            % Location to write output files
 
 %% --------------------- Local Density Potential ----------------------
-kLD     = 10*4.14;    % strength factor
+kLD     = 2*4.14;    % strength factor
 N_rho   = 100000;   % number of density points
 rho_min = 0.0;    % minimum density
 rho_max = 500;    % maximum density
