@@ -29,7 +29,7 @@ Lx = 150*1.5;       % Domain size in x (in units of b)
 Ly = 90*1.5;        % Domain size in y (in units of b)
 
 % Domain size scaler
-scale = 1.5;  % e.g., halve the system dimensions
+scale = 1.6;  % e.g., halve the system dimensions
 
 % Boundary Conditions
 boundary_box = 'periodic'; % 'fixed' or 'periodic' boundaries
