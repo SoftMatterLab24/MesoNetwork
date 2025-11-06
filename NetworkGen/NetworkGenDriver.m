@@ -29,10 +29,10 @@ Lx = 150*1.5;       % Domain size in x (in units of b)
 Ly = 90*1.5;        % Domain size in y (in units of b)
 
 % Domain size scaler
-scale = 1.1;  % e.g., halve the system dimensions
+scale = 1.5;  % e.g., halve the system dimensions
 
 % Boundary Conditions
-boundary_box = 'fixed'; % 'fixed' or 'periodic' boundaries
+boundary_box = 'periodic'; % 'fixed' or 'periodic' boundaries
 
 % Seed options
 imanualseed = false;  % true: manual seed; false: random seed
@@ -44,12 +44,12 @@ iplot = true;    % Show
 % Save options
 isave = true;  % Save data files
 lammps_data_file   = 'PolyNetwork_nano_200x200.dat';          % Prefix file name for LAMMPS data output
-lammps_visual_file = 'PolyVisual_nano_200x200.dat';     % Prefix file name for LAMMPS visualization output
-bond_table_file    = 'bond.table';                              % File name for bond table output   
-write_location     = './networks';                              % Location to write output files
+lammps_visual_file = 'PolyVisual_nano_200x200.dat';           % Prefix file name for LAMMPS visualization output
+bond_table_file    = 'bond.table';                            % File name for bond table output   
+write_location     = './networks';                            % Location to write output files
 
 %% --------------------- Local Density Potential ----------------------
-kLD     = 0.1*4.14;    % strength factor
+kLD     = 10*4.14;    % strength factor
 N_rho   = 100000;   % number of density points
 rho_min = 0.0;    % minimum density
 rho_max = 500;    % maximum density
