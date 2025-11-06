@@ -167,7 +167,8 @@ variable            nthermo equal $(ceil(v_nout/10))
 timestep            0.001
 
 fix                 1 all nve/bpm/sphere
-fix                 2 all viscous 800
+fix                 2 all viscous 200
+# fix                 2 all brownian 1 123 gamma_t 9999 rng none
 run                 200000
 
 unfix 2

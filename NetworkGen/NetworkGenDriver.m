@@ -49,7 +49,7 @@ bond_table_file    = 'bond.table';                            % File name for bo
 write_location     = './networks';                            % Location to write output files
 
 %% --------------------- Local Density Potential ----------------------
-kLD     = 10*4.14;    % strength factor
+kLD     = 2*4.14;    % strength factor
 N_rho   = 100000;   % number of density points
 rho_min = 0.0;    % minimum density
 rho_max = 500;    % maximum density
