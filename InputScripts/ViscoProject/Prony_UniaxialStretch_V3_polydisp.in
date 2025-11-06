@@ -67,22 +67,33 @@ group               bot_clamp region bot_clamped
 #      Assign bond and pair styles
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Pairstyles
-pair_style           hybrid/overlay bpm/spring anharmonic yes local/density
-pair_coeff           * * bpm/spring $(v_e) ${sig} 0 $(2*v_e)
-pair_coeff           * * local/density mytab.localdensity.table
+# pair_style           harmonic/cut
+# pair_coeff           * * ${e} ${sig}
+
+
+pair_style             hybrid/overlay bpm/spring anharmonic yes local/density
+pair_coeff             * * bpm/spring $(v_e) ${sig} 0 $(2*v_e)
+pair_coeff             * * local/density mytab.localdensity.table
+
+# pair_style          lj/cut $(2.5*v_sig)
+# pair_coeff          * * ${e} ${sig}
 
 # Bondstyles
 bond_style          bpm/poly break yes overlay/pair yes smooth no
 bond_coeff          1 $(v_kBT) $(100*v_kBT) 0 bond.table KEY stretch $(v_lamc)
+# bond_coeff          1 ${kBT} 1.0 0.0 prony.table KEY 1.0 ${N1} ${b} ${lamc}
+# bond_coeff          2 ${kBT} 1.0 0.0 prony.table KEY 1.0 ${N2} ${b} ${lamc}
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #     Computes for system info
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 compute             0 all stress/atom NULL fix bond pair
 compute             1 all property/local btype batom1 batom2 
 compute             2 all bond/local dist force
 compute             3 all nbond/atom  
 compute             4 all reduce sum c_3
+# compute             5 all count/type bond
 
 # Calculate stress tensors
 compute             virial all pressure NULL fix bond pair
@@ -113,15 +124,18 @@ variable            W0 equal $(xhi-xlo)                 #initial width
 variable            W equal xhi-xlo
 
 variable            stime equal time
+# variable            nb1 equal c_5[1]
+# variable            nb2 equal c_5[2]
 variable            ntotbonds equal c_4/2
 
 # KE/|PE| ratio (should be tiny, e.g., < 1e-4 to 1e-6)
-variable            kper equal ke/abs(pe)
+variable kper equal ke/abs(pe)
 
 # Max force per atom (falls when relaxed)
-variable            fmag atom  (sqrt(fx*fx+fy*fy+fz*fz))
-compute             fmax all reduce max v_fmag
-compute             favg all reduce ave v_fmag
+variable fmag atom  (sqrt(fx*fx+fy*fy+fz*fz))
+compute fmax all reduce max v_fmag
+compute favg all reduce ave v_fmag
+
 
 compute             Lmax all reduce max c_2[1] inputs local
 variable            Lmax equal c_Lmax 
@@ -164,6 +178,7 @@ unfix 2
 fix                 2 all viscous 1
 run                 1000000
 
+
 unfix 2
 fix                 2 all viscous 5
 run                 400000
@@ -205,9 +220,7 @@ fix                 printF all print ${nout} "${stime} ${lamy} ${Pxx} ${Pyy} ${P
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #               Run
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# Set core balancing to tiled
-comm_style          tiled
+comm_style tiled
 balance             1.2 rcb
-
 timestep            ${dt}
 run                 ${Nrun}
