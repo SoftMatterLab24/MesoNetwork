@@ -25,8 +25,8 @@ Nreplicates = 1;
 b = 1.6;        % Kuhn length (in nm)
 
 % Domain size
-Lx = 150*1.5;       % Domain size in x (in units of b)
-Ly = 90*1.5;        % Domain size in y (in units of b)
+Lx = 150*8;       % Domain size in x (in units of b)
+Ly = 90*8;        % Domain size in y (in units of b)
 
 % Domain size scaler
 scale = 1.4;  % e.g., halve the system dimensions

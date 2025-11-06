@@ -7,3 +7,6 @@ NetworkGen/networks/PolyNetwork_nano_200x200.dat
 NetworkGen/networks/
 NetworkGen/networks/bond.table
 NetworkGen/NetworkGenDriver.asv
+NetworkGen/networks/bond.table
+NetworkGen/networks/mytab.localdensity.table
+NetworkGen/networks/PolyNetwork_nano_200x200.dat
