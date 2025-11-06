@@ -15,7 +15,7 @@ newton              off off
 # Read data file
 read_data           PolyNetwork_nano_200x200.dat
 thermo_modify       flush yes 
-comm_modify         cutoff 100 vel yes   #Assumming b = 1.6 (nm) and bonds can have max 100 segments
+comm_modify         cutoff 160 vel yes   #Assumming b = 1.6 (nm) and bonds can have max 100 segments
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #       Simulation settings
@@ -30,7 +30,7 @@ variable            Kmax equal 10
 variable            lammax equal 2.5
 
 # Strain rate
-variable            erate equal 0.000005
+variable            erate equal 0.00001
 
 # Weissenberg number
 variable            Wi equal 0.1
@@ -53,13 +53,13 @@ variable            lamc equal 0.8
 
 # LJ parameters
 variable            e equal   $(0.1*v_kBT)         # Energy scale 1
-variable            sig equal $(10.5*v_b)    # objective equilibrium seperation (decrease if you have not scaled)
+variable            sig equal $(10.5*v_b)    #LJ particle diameter 
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #      Assign groups
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-region              top_clamped block INF INF 120 INF INF INF
-region              bot_clamped block INF INF INF -120 INF INF
+region              top_clamped block INF INF 250 INF INF INF
+region              bot_clamped block INF INF INF -250 INF INF
 group               top_clamp region top_clamped
 group               bot_clamp region bot_clamped
 
@@ -167,7 +167,7 @@ variable            nthermo equal $(ceil(v_nout/10))
 timestep            0.001
 
 fix                 1 all nve/bpm/sphere
-fix                 2 all viscous 20
+fix                 2 all viscous 800
 run                 200000
 
 unfix 2
