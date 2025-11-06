@@ -12,7 +12,7 @@ clc; clear; close all;
 
 %% --------------------------- USER INPUTS --------------------------------
 
-xi = 1.6; %mesh size (LJ lengthscale)
+xi = 1.6; %mesh size (lengthscale = set to Kuhn length)
 
 %inital notch size
 c = 200*xi;
@@ -32,6 +32,7 @@ ivisual = 0; %create visual dump
 
 %new write names
 lammps_data_file   = 'PolyNetworkCrack_nano_200x200.dat';
+lammps_table_file  = 'bondC.table';
 %lammps_visual_file = 'PronyNetworkCrack_VISUAL2_1000.dat';
 %% --------------------------- Create Crack -------------------------------
 
@@ -113,8 +114,8 @@ idx = out.intAdjacencyMatrix;
 %update
 Atom_count = length(ID);
 Bond_count = sum(~idx);
-%sum(idx)
 
+%% Update bond table
 ikeep = logical(zeros([length(idx) 1]));
 % loop through bonds
 for i = 1:length(idx)
@@ -140,7 +141,7 @@ for ii = 1:length(id_t)
     id_t(ii) = ii;
 end
 
-%%% Sanity check to see if bond vector crosses network 
+%% Sanity check to see if bond vector crosses network 
     figure; hold on
     for mm = 1:length(XY1)
         plot([XY1(mm,1) XY1(mm,3)],[XY1(mm,2) XY1(mm,4)])
@@ -183,7 +184,7 @@ fclose(fid);
 fprintf('Wrote %s with %d atoms and %d bonds.\n', lammps_data_file, Atom_count, Bond_count);
 
 %% ------------ REWRITE Bond.table ------------
-fidt = fopen('bondC.table','w');
+fidt = fopen(lammps_table_file,'w');
 fprintf(fidt,'Chain statistics\n\n');
 fprintf(fidt,'KEY\n');
 fprintf(fidt,'N %d\n\n', length(id_t));
