@@ -172,7 +172,7 @@ if ~isempty(BondsRows)
             deg(BondsRows(k,1)) = deg(BondsRows(k,1)) + 1;
             deg(BondsRows(k,2)) = deg(BondsRows(k,2)) + 1;
         end
-        to_del = find(deg < min_keep);
+        to_del = find(deg <= min_keep);
         if isempty(to_del)
             changed = false;
             break;
