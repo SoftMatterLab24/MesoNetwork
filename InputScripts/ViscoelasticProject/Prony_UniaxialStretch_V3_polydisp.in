@@ -30,7 +30,7 @@ variable            Kmax equal 10
 variable            lammax equal 2.5
 
 # Strain rate
-variable            erate equal 0.00001
+variable            erate equal 0.000001
 
 # Weissenberg number
 variable            Wi equal 0.1
