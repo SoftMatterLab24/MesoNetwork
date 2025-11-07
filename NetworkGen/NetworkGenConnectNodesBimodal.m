@@ -628,10 +628,6 @@ end
 % wipe degree + neighbors
 Atoms(:,5:end) = 0;
 
-% ensure capacity as we add neighbors
-ensureCols = @(need) ...
-    (size(Atoms,2) < need && (Atoms(:, size(Atoms,2)+1:need) = 0));
-
 for k = 1:size(Bonds,1)
     ii = Bonds(k,2);
     jj = Bonds(k,3);
@@ -640,7 +636,13 @@ for k = 1:size(Bonds,1)
 
     need_i = 5 + (Atoms(ri,5)+1);
     need_j = 5 + (Atoms(rj,5)+1);
-    ensureCols(max(need_i, need_j));
+    need   = max(need_i, need_j);
+
+    % grow columns if needed (R2016a-safe)
+    curC = size(Atoms,2);
+    if need > curC
+        Atoms(:, curC+1:need) = 0;
+    end
 
     Atoms(ri,5) = Atoms(ri,5) + 1;  Atoms(ri, 5+Atoms(ri,5)) = jj;
     Atoms(rj,5) = Atoms(rj,5) + 1;  Atoms(rj, 5+Atoms(rj,5)) = ii;

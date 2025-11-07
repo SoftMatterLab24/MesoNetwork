@@ -16,7 +16,7 @@ warning off backtrace  % disable stack trace for warnings
 
 %% --------------------------- Global settings ----------------------
 % Distribution type: 'bimodal' or 'polydisperse'
-dist_type = 'polydisperse';
+dist_type = 'bimodal';
 
 % Number of networks to generate
 Nreplicates = 1;
@@ -25,8 +25,8 @@ Nreplicates = 1;
 b = 1.6;        % Kuhn length (in nm)
 
 % Domain size
-Lx = 150*2;       % Domain size in x (in units of b)
-Ly = 90*2;        % Domain size in y (in units of b)
+Lx = 150*8;       % Domain size in x (in units of b)
+Ly = 90*8;        % Domain size in y (in units of b)
 
 % Domain size scaler
 scale = 1.4;  % e.g., halve the system dimensions
@@ -59,8 +59,8 @@ rho_max = 500;    % maximum density
 distribution_assignment_mode_poly = 'pmf';  % Kuhn segment assigment method: 'geom' | 'range' | 'pmf'
 
 %% --------------------- Bimodal Options ---------------------------
-N1 = 50; 
-N2 = 50;
+N1 = 30; 
+N2 = 120;
 
 bin_window_method            = 'adaptive';  % Method for determining bin width of bimodal dist: 'manual' or 'adaptive'               
 distribution_assignment_mode = 'gaussian';  % Kuhn segment assigment method: 'single' or 'geom' or 'gaussian'
