@@ -68,9 +68,9 @@ group               bot_clamp region bot_clamped
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Pairstyles
 
-pair_style hybrid/overlay bpm/spring anharmonic yes local/density
-pair_coeff * * bpm/spring $(v_e) ${sig} 0 $(2*v_e)
-pair_coeff * * local/density mytab.localdensity.table
+pair_style          hybrid/overlay bpm/spring anharmonic yes local/density
+pair_coeff          * * bpm/spring $(v_e) ${sig} 0 $(2*v_e)
+pair_coeff          * * local/density mytab.localdensity.table
 
 
 # Bondstyles
@@ -120,12 +120,12 @@ variable            stime equal time
 variable            ntotbonds equal c_4/2
 
 # KE/|PE| ratio (should be tiny, e.g., < 1e-4 to 1e-6)
-variable kper equal ke/abs(pe)
+variable            kper equal ke/abs(pe)
 
 # Max force per atom (falls when relaxed)
-variable fmag atom  (sqrt(fx*fx+fy*fy+fz*fz))
-compute fmax all reduce max v_fmag
-compute favg all reduce ave v_fmag
+variable            fmag atom  (sqrt(fx*fx+fy*fy+fz*fz))
+compute             fmax all reduce max v_fmag
+compute             favg all reduce ave v_fmag
 
 
 compute             Lmax all reduce max c_2[1] inputs local
@@ -161,16 +161,16 @@ fix                 1 all nve/bpm/sphere
 fix                 2 all viscous 200
 run                 200000
 
-unfix 2
+unfix               2
 fix                 2 all viscous 5
 run                 200000
 
-unfix 2
+unfix               2
 fix                 2 all viscous 1
 run                 1000000
 
 
-unfix 2
+unfix               2
 fix                 2 all viscous 5
 run                 400000
 
