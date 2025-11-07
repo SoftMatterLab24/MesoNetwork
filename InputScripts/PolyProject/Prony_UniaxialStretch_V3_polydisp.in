@@ -30,7 +30,7 @@ variable            Kmax equal 10
 variable            lammax equal 2.5
 
 # Strain rate
-variable            erate equal 0.00001
+variable            erate equal 0.000001
 
 # Weissenberg number
 variable            Wi equal 0.1
@@ -153,7 +153,8 @@ variable            nthermo equal $(ceil(v_nout/10))
 timestep            0.001
 
 fix                 1 all nve/bpm/sphere
-fix                 2 all viscous 800
+fix                 2 all viscous 200
+# fix                 2 all brownian 1 123 gamma_t 9999 rng none
 run                 200000
 
 unfix 2

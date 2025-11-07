@@ -1,0 +1,217 @@
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   Initialize simulation domain
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Some general info
+units               nano
+boundary            s f p
+dimension           2
+
+# Specify atoms and bond attributes
+atom_style          bpm/sphere
+special_bonds       lj/coul 1 1 1
+newton              off off
+
+# Read data file
+read_data           PolyNetwork_nano_200x200.dat
+thermo_modify       flush yes 
+comm_modify         cutoff 160 vel yes   #Assumming b = 1.6 (nm) and bonds can have max 100 segments
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       Simulation settings
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Timestep multiplier (smaller = smaller timesteps)
+variable            alpha equal 0.25
+
+# Max bond stiffness
+variable            Kmax equal 10
+
+# Max stretch
+variable            lammax equal 2.5
+
+# Strain rate
+variable            erate equal 0.000001
+
+# Weissenberg number
+variable            Wi equal 0.1
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#       Material Properties
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Kuhn segment/chain
+variable            N1 equal 50
+variable            N2 equal 50
+
+# Kuhn segment length
+variable            b equal 1.6     # Kuhn length (nm)
+
+# Energy scale
+variable            kBT equal 4.14  # Energy scale (attogram-nanometer^2/nanosecond^2) or 4.1400e-21 J or 1 kBT at 300K
+
+# Critical stretch for bond breaking (lamc < 1)
+variable            lamc equal 0.8
+
+# LJ parameters
+variable            e equal   $(0.1*v_kBT)         # Energy scale 1
+variable            sig equal $(10.5*v_b)    #LJ particle diameter 
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#      Assign groups
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+region              top_clamped block INF INF 250 INF INF INF
+region              bot_clamped block INF INF INF -250 INF INF
+group               top_clamp region top_clamped
+group               bot_clamp region bot_clamped
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#      Assign bond and pair styles
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# Pairstyles
+
+pair_style          hybrid/overlay bpm/spring anharmonic yes local/density
+pair_coeff          * * bpm/spring $(v_e) ${sig} 0 $(2*v_e)
+pair_coeff          * * local/density mytab.localdensity.table
+
+
+# Bondstyles
+bond_style          bpm/poly break yes overlay/pair yes smooth no
+bond_coeff          1 $(v_kBT) $(100*v_kBT) 0 bond.table KEY stretch $(v_lamc)
+
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#     Computes for system info
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+compute             0 all stress/atom NULL fix bond pair
+compute             1 all property/local btype batom1 batom2 
+compute             2 all bond/local dist force
+compute             3 all nbond/atom  
+compute             4 all reduce sum c_3
+
+# Calculate stress tensors
+compute             virial all pressure NULL fix bond pair
+compute             virials all pressure NULL fix pair
+
+variable            Pxx equal c_virial[1]
+variable            Pyy equal c_virial[2]
+variable            Pxy equal c_virial[4]
+
+variable            Pxx_p equal c_virials[1]
+variable            Pyy_p equal c_virials[2]
+variable            Pxy_p equal c_virials[4]
+
+variable            V equal vol
+
+# Calculate minimum mass
+compute             getmass all property/atom mass
+compute             minmass all reduce min c_getmass
+
+run                 0       
+
+# Get box dimensions
+variable            H0 equal $(yhi-ylo)                 #inital height
+variable            H equal yhi-ylo
+variable            Hf equal $(v_H0*v_lammax)           #final height
+
+variable            W0 equal $(xhi-xlo)                 #initial width
+variable            W equal xhi-xlo
+
+variable            stime equal time
+variable            ntotbonds equal c_4/2
+
+# KE/|PE| ratio (should be tiny, e.g., < 1e-4 to 1e-6)
+variable            kper equal ke/abs(pe)
+
+# Max force per atom (falls when relaxed)
+variable            fmag atom  (sqrt(fx*fx+fy*fy+fz*fz))
+compute             fmax all reduce max v_fmag
+compute             favg all reduce ave v_fmag
+
+
+compute             Lmax all reduce max c_2[1] inputs local
+variable            Lmax equal c_Lmax 
+
+thermo              10000
+thermo_style        custom step v_ntotbonds c_virial[1] c_virial[2] c_virial[4] pe ke v_kper c_fmax c_favg lx ly c_virials[1] c_virials[2]
+
+dump                1 all custom 10000 atoms_equilib.dump id mol type xs ys zs fx fy fz
+dump                2 all local 10000 bonds_equilib.dump c_1[*] c_2[*]
+dump                3 all custom 10000 atoms_stress.dump id type xs ys zs c_0[1] c_0[2] c_0[3] c_0[4] c_0[5] c_0[6]
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#   Setup final settings
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+# Timestep (in microseconds)
+variable            dt equal $(v_alpha*sqrt(c_minmass/v_Kmax))
+
+# Timesteps to reach max stretch
+variable            Nrun equal $(ceil((v_lammax-1)/v_erate/v_dt))
+
+# Output frequency
+variable            nout equal $(ceil(v_Nrun/2000))
+variable            nthermo equal $(ceil(v_nout/10)) 
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#     Equilibrate networks
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+timestep            0.001
+
+fix                 1 all nve/bpm/sphere
+fix                 2 all viscous 200
+run                 200000
+
+unfix               2
+fix                 2 all viscous 5
+run                 200000
+
+unfix               2
+fix                 2 all viscous 1
+run                 1000000
+
+
+unfix               2
+fix                 2 all viscous 5
+run                 400000
+
+# Boundary conditions
+fix                 3 top_clamp setforce NULL 0 0 
+fix                 4 bot_clamp setforce NULL 0 0 
+
+group               clamps union top_clamp bot_clamp
+
+undump              1
+undump              2
+undump              3
+
+unfix               2
+
+reset_timestep      0 time 0
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#     Setup final physics and dumps
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+fix                 2 all viscous 5
+fix                 5 clamps deform 1 y erate ${erate}
+
+# Final computes
+variable            top_clamp_forces equal f_3[2]
+variable            bot_clamp_forces equal f_4[2]
+
+variable            lamy equal v_H/v_H0
+variable            PE equal pe
+variable            KE equal ke    
+
+# Dumps and prints
+dump                1 all custom ${nout} atoms1.dump id mol type xs ys zs fx fy fz
+dump                2 all local ${nout} bonds.dump c_1[*] c_2[*]
+dump                3 all custom ${nout} astress.dump id type xs ys zs c_0[1] c_0[2] c_0[3] c_0[4] c_0[5] c_0[6]
+
+fix                 printF all print ${nout} "${stime} ${lamy} ${Pxx} ${Pyy} ${Pxy} ${Pxx_p} ${Pyy_p} ${Pxy_p} ${ntotbonds} ${V} ${PE} ${KE} ${top_clamp_forces} ${bot_clamp_forces}" file Pure_500_nano_harmonic.out screen no title ""
+
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#               Run
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+comm_style          tiled
+balance             1.2 rcb
+timestep            ${dt}
+run                 ${Nrun}
