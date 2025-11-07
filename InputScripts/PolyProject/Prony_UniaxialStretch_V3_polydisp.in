@@ -30,7 +30,7 @@ variable            Kmax equal 10
 variable            lammax equal 2.5
 
 # Strain rate
-variable            erate equal 0.000001
+variable            erate equal 1e-6
 
 # Weissenberg number
 variable            Wi equal 0.1
@@ -49,7 +49,7 @@ variable            b equal 1.6     # Kuhn length (nm)
 variable            kBT equal 4.14  # Energy scale (attogram-nanometer^2/nanosecond^2) or 4.1400e-21 J or 1 kBT at 300K
 
 # Critical stretch for bond breaking (lamc < 1)
-variable            lamc equal 0.8
+variable            lamc equal 0.95
 
 # LJ parameters
 variable            e equal   $(0.1*v_kBT)         # Energy scale 1
@@ -58,8 +58,8 @@ variable            sig equal $(10.5*v_b)    #LJ particle diameter
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #      Assign groups
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-region              top_clamped block INF INF 250 INF INF INF
-region              bot_clamped block INF INF INF -250 INF INF
+region              top_clamped block INF INF 1500 INF INF INF
+region              bot_clamped block INF INF INF -1500 INF INF
 group               top_clamp region top_clamped
 group               bot_clamp region bot_clamped
 
@@ -67,9 +67,9 @@ group               bot_clamp region bot_clamped
 #      Assign bond and pair styles
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Pairstyles
-pair_style           hybrid/overlay bpm/spring anharmonic yes local/density
-pair_coeff           * * bpm/spring $(v_e) ${sig} 0 $(2*v_e)
-pair_coeff           * * local/density mytab.localdensity.table
+pair_style          hybrid/overlay bpm/spring anharmonic yes local/density
+pair_coeff          * * bpm/spring $(v_e) ${sig} 0 $(2*v_e)
+pair_coeff          * * local/density mytab.localdensity.table
 
 # Bondstyles
 bond_style          bpm/poly break yes overlay/pair yes smooth no
@@ -185,7 +185,7 @@ reset_timestep      0 time 0
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #     Setup final physics and dumps
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-fix                 2 all viscous 5
+fix                 2 all viscous 1
 fix                 5 clamps deform 1 y erate ${erate}
 
 # Final computes
