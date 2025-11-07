@@ -21,7 +21,7 @@ domain_diag = hypot(Lx, Ly);
 
 if isfield(Domain,'bond_global_try_limit'), global_limit = Domain.bond_global_try_limit; else, global_limit = 5e7; end
 if isfield(Domain,'max_attempts_without_progress'), stall_limit = Domain.max_attempts_without_progress; else, stall_limit = 5e5; end
-if isfield(Domain,'min_degree_keep'), min_keep = Domain.min_degree_keep; else, min_keep = 0; end
+if isfield(Domain,'min_degree_keep'), min_keep = Domain.min_degree_keep; else, min_keep = 1; end
 if isfield(Domain,'min_node_sep'), dmin = Domain.min_node_sep; else, dmin = 0; end
 epsr = 1e-9;
 
@@ -543,6 +543,109 @@ end
 AtomsOut = Atoms;
 Atoms    = AtomsOut;
 Bonds    = BondsOut;
+
+% ================== PRUNING: remove low-degree nodes + incident bonds ==================
+% Requires: Atoms, Bonds are in ID-space (your AtomsOut/BondsOut); min_keep already set.
+% R2016a-safe (no implicit expansion)
+
+if min_keep > 0
+    changed = true;
+    while changed
+        changed = false;
+
+        if isempty(Bonds)
+            % no bonds ? all degrees 0 < min_keep ? drop all atoms
+            Atoms = []; Bonds = [];
+            break
+        end
+
+        % Map atom IDs -> row indices
+        id2row = containers.Map('KeyType','int64','ValueType','int32');
+        for r = 1:size(Atoms,1)
+            id2row(int64(Atoms(r,1))) = int32(r);
+        end
+
+        % Build degree from Bonds
+        nA = size(Atoms,1);
+        deg = zeros(nA,1);
+        ri = zeros(size(Bonds,1),1,'int32');
+        rj = ri;
+        for k = 1:size(Bonds,1)
+            ri(k) = id2row(int64(Bonds(k,2)));
+            rj(k) = id2row(int64(Bonds(k,3)));
+        end
+        % count both endpoints
+        idx   = [ri; rj];
+        inc   = ones(numel(idx),1);
+        deg   = deg + accumarray(double(idx), inc, [nA 1], @sum, 0);
+
+        % nodes to delete this round
+        delMask = (deg < min_keep);
+        if ~any(delMask), break; end
+        delIDs  = Atoms(delMask,1);
+
+        % 1) delete bonds incident to any delIDs
+        keepBond = ~ismember(Bonds(:,2), delIDs) & ~ismember(Bonds(:,3), delIDs);
+        if any(~keepBond)
+            Bonds = Bonds(keepBond,:);
+            changed = true;
+        end
+
+        % 2) delete those atoms
+        keepAtom = ~delMask;
+        if any(~keepAtom)
+            Atoms = Atoms(keepAtom,:);
+            changed = true;
+        end
+    end
+end
+
+% If everything was pruned, stop here
+if isempty(Atoms) || isempty(Bonds)
+    % Ensure outputs are well-formed empty
+    Atoms = zeros(0,5);   % [ID x y z num_bond], adjust if your layout differs
+    Bonds = zeros(0,5);   % [bid i j L type]
+    return
+end
+
+% ================== RENNUMBER IDs consecutively (LAMMPS-friendly) ==================
+oldIDs      = Atoms(:,1);
+newIDs      = (1:size(Atoms,1))';
+Atoms(:,1)  = newIDs;
+
+% map endpoints in Bonds from oldIDs -> newIDs
+[tfI, locI] = ismember(Bonds(:,2), oldIDs);
+[tfJ, locJ] = ismember(Bonds(:,3), oldIDs);
+Bonds(tfI,2) = newIDs(locI(tfI));
+Bonds(tfJ,3) = newIDs(locJ(tfJ));
+
+% Reassign bond IDs to be consecutive 1..Nb (optional but clean)
+if ~isempty(Bonds)
+    Bonds(:,1) = (1:size(Bonds,1))';
+end
+
+% ================== REBUILD neighbor lists in Atoms(:,5:end) ==================
+% wipe degree + neighbors
+Atoms(:,5:end) = 0;
+
+% ensure capacity as we add neighbors
+ensureCols = @(need) ...
+    (size(Atoms,2) < need && (Atoms(:, size(Atoms,2)+1:need) = 0));
+
+for k = 1:size(Bonds,1)
+    ii = Bonds(k,2);
+    jj = Bonds(k,3);
+    % ii and jj are newIDs, which equal Atoms row indices after renumbering
+    ri = ii; rj = jj;
+
+    need_i = 5 + (Atoms(ri,5)+1);
+    need_j = 5 + (Atoms(rj,5)+1);
+    ensureCols(max(need_i, need_j));
+
+    Atoms(ri,5) = Atoms(ri,5) + 1;  Atoms(ri, 5+Atoms(ri,5)) = jj;
+    Atoms(rj,5) = Atoms(rj,5) + 1;  Atoms(rj, 5+Atoms(rj,5)) = ii;
+end
+
 
 % ------------------ Stats ------------------
 tTot = tL + tS + tA + tB;
