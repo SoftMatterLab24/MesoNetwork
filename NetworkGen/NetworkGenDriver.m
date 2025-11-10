@@ -16,7 +16,7 @@ warning off backtrace  % disable stack trace for warnings
 
 %% --------------------------- Global settings ----------------------
 % Distribution type: 'bimodal' or 'polydisperse'
-dist_type = 'polydisperse';
+dist_type = 'bimodal';
 
 % Number of networks to generate
 Nreplicates = 1;
@@ -62,7 +62,7 @@ distribution_assignment_mode_poly = 'mono';  % Kuhn segment assigment method: 'g
 N1 = 50; 
 N2 = 200;
 
-bin_window_method            = 'adaptive';  % Method for determining bin width of bimodal dist: 'manual' or 'adaptive'               
+bin_window_method            = 'manual';  % Method for determining bin width of bimodal dist: 'manual' or 'adaptive'               
 distribution_assignment_mode = 'gaussian';  % Kuhn segment assigment method: 'single' or 'geom' or 'gaussian'
 distribution_height_mode     = 'prob';      % Distribution height method: 'prob' or 'fixed'
 long_first                   = true;        % enable long-first mode
@@ -79,7 +79,7 @@ N2_bonds = 2; % Fixed: desired number of type 2 bonds
 lam1 = 1/sqrt(N1);   % Prestretched length of type 1 bonds: lam1 = [0 1], 1/sqrt(N1) (default)
 lam2 = 1/sqrt(N2);   % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
 
-std1 = 5; % std of N1 Kuhn segment distribution
+std1 = 1; % std of N1 Kuhn segment distribution
 std2 = 1; % std of N2 Kuhn segment distribution
 
 % Manual Window parameters (if bin_window_method = manual) (depreciated)
