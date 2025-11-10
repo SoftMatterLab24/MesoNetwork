@@ -10,7 +10,7 @@
 %   3) Histogram: pre-stretch lambda0 = r/(N*b)
 
 clear; clc;
-
+close all
 %% ----------- User files -----------
 dataDir = 'E:\PhD\My Research\Polydisperse_fracture\PAPER\sample_alpine_huge_erate_1e-6';
 bondsDumpFile = fullfile(dataDir,'bonds.dump');
@@ -19,6 +19,11 @@ bondTableFile = fullfile(dataDir,'bond.table');
 assert(exist(bondsDumpFile,'file')==2, 'Missing: %s', bondsDumpFile);
 assert(exist(bondTableFile,'file')==2, 'Missing: %s', bondTableFile);
 fprintf('Using:\n  %s\n  %s\n', bondsDumpFile, bondTableFile);
+
+%% ----------- Plot mode knob -----------
+% 'hist' (default, your current look) or 'line' (P(x) vs x)
+plotMode = 'line';  % 'hist' or 'line'
+
 
 %% ----------- Parse bonds.dump (only timestep 0) -----------
 fprintf('Reading first (t=0) block from %s ...\n', bondsDumpFile);
@@ -165,30 +170,55 @@ fprintf('Pre-stretch lambda0:   mean = %.3f, std = %.3f, min = %.3f, max = %.3f\
     mean(lambda0), std(lambda0), min(lambda0), max(lambda0));
 
 %% ----------- Plots -----------
-% 1) End-to-end length distribution
+% Common color you chose
+col = [86 184 112]/255;
+
+% 1) End-to-end length distribution (r)
 figure('Name','End-to-end length distribution'); hold on;
-nbins_r = max(30, min(200, round(sqrt(numel(r)))));
-histogram(r, nbins_r, 'FaceColor',[0.2 0.2 0.2], 'FaceAlpha',0.9, 'EdgeColor','none','Normalization','probability');
-xlabel('End-to-end length r'); ylabel('Count');
+nbins_r = max(30, min(50, round(sqrt(numel(r)))));
+switch plotMode
+    case 'hist'
+        histogram(r, nbins_r, 'FaceColor',col, 'FaceAlpha',0.9, ...
+            'EdgeColor',[0 0 0], 'Normalization','probability');
+    case 'line'
+        [xc_r, pdf_r] = binned_pdf_cont(r, nbins_r); % PDF using same binning spirit
+        plot(xc_r, pdf_r, 'LineWidth',1.5, 'Color',col);
+end
+xlabel('End-to-end length r'); ylabel('Count'); % label kept per your settings
 title('End-to-end Length Distribution (all bonds)');
-box on; grid on;
+box on; grid off;
 
 % 2) Contour-length distribution (Kuhn segments N)
 figure('Name','Contour length (Kuhn segments)'); hold on;
 Nmin = floor(min(Nkuhn)); Nmax = ceil(max(Nkuhn));
 edgesN = (Nmin-0.5):(Nmax+0.5); % integer-centered bins
-histogram(Nkuhn, edgesN, 'FaceColor',[0.8 0 0], 'FaceAlpha',0.85, 'EdgeColor','none','Normalization','probability');
+switch plotMode
+    case 'hist'
+        histogram(Nkuhn, edgesN, 'FaceColor',col, 'FaceAlpha',0.85, ...
+            'EdgeColor',[0 0 0], 'Normalization','probability');
+    case 'line'
+        [xc_N, pmf_N] = binned_pmf_discrete(Nkuhn, edgesN); % PMF at integer centers
+        plot(xc_N, pmf_N, 'LineWidth',1.5, 'Color',col, 'LineStyle','-');
+end
 xlabel('Kuhn segments N per bond'); ylabel('Count');
 title('Contour-length (N) Distribution');
-box on; grid on;
+box on; grid off;
 
 % 3) Pre-stretch at equilibrium lambda0 = r/(N*b)
 figure('Name','Pre-stretch distribution'); hold on;
-nbins_l = max(30, min(200, round(sqrt(numel(lambda0)))));
-histogram(lambda0, nbins_l, 'FaceColor',[0 0 0], 'FaceAlpha',0.85, 'EdgeColor','none','Normalization','probability');
+nbins_l = max(30, min(50, round(sqrt(numel(lambda0)))));
+switch plotMode
+    case 'hist'
+        histogram(lambda0, nbins_l, 'FaceColor',col, 'FaceAlpha',0.85, ...
+            'EdgeColor',[0 0 0], 'Normalization','probability');
+    case 'line'
+        [xc_l, pdf_l] = binned_pdf_cont(lambda0, nbins_l);
+        plot(xc_l, pdf_l, 'LineWidth',1.5, 'Color',col);
+end
 xlabel('\lambda_0 = r / (N \cdot b)'); ylabel('Count');
 title('Pre-stretch at Equilibrium');
-box on; grid on;
+box on; grid off;
+
 
 %% ----------- Optional: per-type overlays (uncomment to use) -----------
 %{
@@ -207,3 +237,6 @@ for t = reshape(types,1,[])
 end
 xlabel('\lambda_0'); ylabel('Count'); title('Pre-stretch by bond type'); legend(arrayfun(@(x)sprintf('type %d',x), types,'uni',0));
 %}
+
+
+
