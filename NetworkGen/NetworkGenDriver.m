@@ -56,7 +56,7 @@ rho_max = 500;    % maximum density
 
 %% --------------------- Polydisperse Options ----------------------
 
-distribution_assignment_mode_poly = 'pmf';  % Kuhn segment assigment method: 'geom' | 'range' | 'pmf'
+distribution_assignment_mode_poly = 'mono';  % Kuhn segment assigment method: 'geom' | 'range' | 'pmf' | 'mono'
 
 %% --------------------- Bimodal Options ---------------------------
 N1 = 50; 

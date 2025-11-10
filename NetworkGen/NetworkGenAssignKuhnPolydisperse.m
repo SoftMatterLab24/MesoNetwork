@@ -6,7 +6,7 @@ function Nvec = NetworkGenAssignKuhnPolydisperse(Bonds, options)
 %   Bonds   : [BondCount x 4] -> [bondID, id1, id2, L]
 %   options : struct with fields:
 %       .b
-%       .polydisperse.distribution_assignment_mode  ('geom'|'range'|'pmf')
+%       .polydisperse.distribution_assignment_mode  ('geom'|'range'|'pmf'|'mono')
 %       .polydisperse.min_N
 %       .polydisperse.align_to_length               ('ascend'|'none')
 %       .polydisperse.kuhn_rounding                 ('round'|'ceil'|'floor')
@@ -48,9 +48,11 @@ switch lower(mode)
             case 'floor', Nvec = floor(raw);
             otherwise,    Nvec = round(raw);
         end
-%         Nvec = max(Nvec, min_N);
-        Nvec = 
-
+        Nvec = max(Nvec, min_N);
+        
+    case 'mono'
+        Nvec(:) = 45;
+        
     case 'range'
         % Map lengths monotonically to [N_target_min, N_target_max]
         Nlo = min(pd.N_target_min, pd.N_target_max);
