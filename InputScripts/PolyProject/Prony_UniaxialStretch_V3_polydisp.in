@@ -27,7 +27,7 @@ variable            alpha equal 0.25
 variable            Kmax equal 10
 
 # Max stretch
-variable            lammax equal 2.5
+variable            lammax equal 3.0
 
 # Strain rate
 variable            erate equal 1e-6
@@ -80,7 +80,7 @@ bond_coeff          1 $(v_kBT) $(100*v_kBT) 0 bond.table KEY stretch $(v_lamc)
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 compute             0 all stress/atom NULL fix bond pair
 compute             1 all property/local btype batom1 batom2 
-compute             2 all bond/local dist force
+compute             2 all bond/local dist force b1 b2
 compute             3 all nbond/atom  
 compute             4 all reduce sum c_3
 
@@ -167,7 +167,7 @@ run                 1000000
 
 unfix 2
 fix                 2 all viscous 5
-run                 400000
+run                 1400000
 
 # Boundary conditions
 fix                 3 top_clamp setforce NULL 0 0 

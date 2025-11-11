@@ -6,7 +6,7 @@ function Nvec = NetworkGenAssignKuhnPolydisperse(Bonds, options)
 %   Bonds   : [BondCount x 4] -> [bondID, id1, id2, L]
 %   options : struct with fields:
 %       .b
-%       .polydisperse.distribution_assignment_mode  ('geom'|'range'|'pmf')
+%       .polydisperse.distribution_assignment_mode  ('geom'|'range'|'pmf'|'mono')
 %       .polydisperse.min_N
 %       .polydisperse.align_to_length               ('ascend'|'none')
 %       .polydisperse.kuhn_rounding                 ('round'|'ceil'|'floor')
@@ -49,7 +49,10 @@ switch lower(mode)
             otherwise,    Nvec = round(raw);
         end
         Nvec = max(Nvec, min_N);
-
+        
+    case 'mono'
+        Nvec(:) = 45;
+        
     case 'range'
         % Map lengths monotonically to [N_target_min, N_target_max]
         Nlo = min(pd.N_target_min, pd.N_target_max);
@@ -79,7 +82,7 @@ switch lower(mode)
         Nvec = min(Nvec, max(pd.N_target_min, pd.N_target_max));
 
     case 'pmf'
-        % Truncated geometric on nu ∈ [nu0, nuMax], PMF ∝ p (1-p)^(nu-nu0)
+        % Truncated geometric on nu ∈ [nu0, nuMax], PMF �? p (1-p)^(nu-nu0)
         nu0   = pd.pmf_nu0;
         nuMax = max(pd.pmf_nu0, pd.pmf_nu_max); % ensure cap ≥ base
         K     = nuMax - nu0;                    % support in k = 0..K
@@ -182,7 +185,7 @@ end
 
 % ===== helper (nested at EOF for R2016a) =====
 function mk = mean_k_of_p(p, K)
-% Truncated geometric on k=0..K with Pk ∝ p (1-p)^k.
+% Truncated geometric on k=0..K with Pk �? p (1-p)^k.
 % Returns mean(k).
 r = 1 - p;
 num = (1-p) .* (1 - (K+1)*r.^K + K*r.^(K+1)) ./ p;

@@ -31,7 +31,7 @@ isPeriodic  =  strcmpi(options.boundary_box,'Periodic');
 if isfield(Domain,'Rcut')
     Rcut = Domain.Rcut;
 else
-    Rcut = 3.5 * Domain.min_node_sep;   % fallback
+    Rcut = 1.8 * Domain.min_node_sep;   % fallback
 end
 Rcut2 = Rcut*Rcut;
 
@@ -161,13 +161,14 @@ end
 
 BondsRows = BondsRows(1:nbond,:);
 
-% --------- Iterative pruning (row space), no ID compaction ----------
+% --------- Iterative pruning (remove low-degree nodes AND their bonds) ----------
+pruned_atom_mask = false(natom,1);
 if ~isempty(BondsRows)
     changed = true;
     while changed
-        % recompute degree from current bonds
-        deg(:) = 0;
-        for k=1:size(BondsRows,1)
+        % recompute degree from current bonds (row space)
+        deg = zeros(natom,1);
+        for k = 1:size(BondsRows,1)
             deg(BondsRows(k,1)) = deg(BondsRows(k,1)) + 1;
             deg(BondsRows(k,2)) = deg(BondsRows(k,2)) + 1;
         end
@@ -176,71 +177,115 @@ if ~isempty(BondsRows)
             changed = false;
             break;
         end
+
+        % delete bonds incident to any low-degree node this round
         kill = false(size(BondsRows,1),1);
         mark = false(natom,1); mark(to_del) = true;
-        for k=1:size(BondsRows,1)
-            if mark(BondsRows(k,1)) || mark(BondsRows(k,2))
-                kill(k) = true;
-            end
+        for k = 1:size(BondsRows,1)
+            if mark(BondsRows(k,1)) || mark(BondsRows(k,2)), kill(k) = true; end
         end
         if any(kill)
             BondsRows = BondsRows(~kill,:);
+            pruned_atom_mask(to_del) = true;   % mark these atoms for removal
             changed = true;
         else
             changed = false;
         end
     end
+end
 
-    % refresh lengths from coords (robust)
-    for k=1:size(BondsRows,1)
-        r1 = BondsRows(k,1); r2 = BondsRows(k,2);
-        dxv = x(r2)-x(r1); dyv = y(r2)-y(r1);
-        BondsRows(k,3) = sqrt(dxv*dxv + dyv*dyv);
+% After pruning, drop pruned atoms from Atoms and compact rows
+if any(pruned_atom_mask)
+    Atoms = Atoms(~pruned_atom_mask, :);
+    ids   = Atoms(:,1);          % update IDs vector to remaining atoms
+    x     = Atoms(:,2);  y = Atoms(:,3);
+    natom = size(Atoms,1);
+
+    % Build old-row -> new-row remap for BondsRows endpoints
+    old2new_row = zeros(numel(pruned_atom_mask),1,'int32');
+    old2new_row(~pruned_atom_mask) = int32(1:natom);
+
+    if ~isempty(BondsRows)
+        % Remove any bonds that referenced deleted rows (safety)
+        keepBond = ~pruned_atom_mask(BondsRows(:,1)) & ~pruned_atom_mask(BondsRows(:,2));
+        BondsRows = BondsRows(keepBond,:);
+        % Remap to new row indices
+        BondsRows(:,1) = old2new_row(BondsRows(:,1));
+        BondsRows(:,2) = old2new_row(BondsRows(:,2));
     end
+end
+
+% If everything got pruned, return empty well-formed outputs
+if isempty(Atoms) || isempty(BondsRows)
+    AtomsOut = zeros(0,5);       % [ID x y z num_bond]
+    BondsOut = zeros(0,4);       % [bondID id1 id2 L]
+    fprintf('   Pruned all atoms/bonds (min_keep=%d)\n', min_keep);
+    return
+end
+
+% Refresh bond lengths from coordinates (robust, periodic-aware)
+for k = 1:size(BondsRows,1)
+    r1 = BondsRows(k,1); r2 = BondsRows(k,2);
+    dxv = x(r2)-x(r1); dyv = y(r2)-y(r1);
+    BondsRows(k,3) = minimum_image(isPeriodic, dxv, dyv, Lx, Ly);
 end
 
 % --------- Build BondsOut in ID space; renumber bond IDs -----------
 nb = size(BondsRows,1);
 BondsOut = zeros(nb,4);
-for k=1:nb
+for k = 1:nb
     r1 = BondsRows(k,1); r2 = BondsRows(k,2);
     id1 = ids(r1); id2 = ids(r2);
     L   = BondsRows(k,3);
     BondsOut(k,:) = [k, id1, id2, L];
 end
 
-% --------- Rebuild Atoms neighbors using **IDs** -------------------
-% Clear neighbor metadata
-Atoms(:,5) = 0;                             % num_bond
+% --------- Renumber atom IDs consecutively (clean for export) -------
+oldIDs     = ids;
+newIDs     = (1:natom)';          % consecutive
+Atoms(:,1) = newIDs;
+
+% Map bond endpoints oldID -> newID
+[tfI,locI] = ismember(BondsOut(:,2), oldIDs);
+[tfJ,locJ] = ismember(BondsOut(:,3), oldIDs);
+BondsOut(tfI,2) = newIDs(locI(tfI));
+BondsOut(tfJ,3) = newIDs(locJ(tfJ));
+
+% Reassign bond IDs 1..Nb
+if ~isempty(BondsOut), BondsOut(:,1) = (1:size(BondsOut,1))'; end
+
+% --------- Rebuild Atoms neighbors using IDs ------------------------
+% Ensure neighbor columns present
 if size(Atoms,2) < 5+Max_peratom_bond
-    % extend columns if needed (safeguard)
     Atoms(:, size(Atoms,2)+1 : 5+Max_peratom_bond) = 0;
-else
-    Atoms(:, 6 : 5+Max_peratom_bond) = 0;   % zero neighbor IDs
 end
+% Clear degree + neighbor slots
+Atoms(:,5) = 0;
+Atoms(:,6:5+Max_peratom_bond) = 0;
 
-% Populate neighbor IDs from final bonds
-for k=1:nb
-    id1 = BondsOut(k,2);  id2 = BondsOut(k,3);
-    r1  = id2row(int64(id1));
-    r2  = id2row(int64(id2));
-
-    % r1 side
-    nb1 = Atoms(r1,5);
-    if nb1 < Max_peratom_bond
-        Atoms(r1,5) = nb1 + 1;
-        Atoms(r1,5 + Atoms(r1,5)) = id2;   % store neighbor **ID**
+% Since newIDs == row indices now, we can index directly
+for k = 1:size(BondsOut,1)
+    ii = BondsOut(k,2); jj = BondsOut(k,3);  % these equal row indices now
+    % ii side
+    nb1 = Atoms(ii,5) + 1;
+    if nb1 <= Max_peratom_bond
+        Atoms(ii,5) = nb1;
+        Atoms(ii,5+nb1) = jj;   % store neighbor ID (which == row)
     end
-    % r2 side
-    nb2 = Atoms(r2,5);
-    if nb2 < Max_peratom_bond
-        Atoms(r2,5) = nb2 + 1;
-        Atoms(r2,5 + Atoms(r2,5)) = id1;   % store neighbor **ID**
+    % jj side
+    nb2 = Atoms(jj,5) + 1;
+    if nb2 <= Max_peratom_bond
+        Atoms(jj,5) = nb2;
+        Atoms(jj,5+nb2) = ii;
     end
 end
 
 AtomsOut = Atoms;
-fprintf('   Pruned %d atoms, and %d bonds\n',natom-length(AtomsOut),nbond-length(BondsOut));
+
+fprintf('   Final: %d atoms, %d bonds (removed %d atoms, %d bonds by pruning; min_keep=%d)\n', ...
+    size(AtomsOut,1), size(BondsOut,1), ...
+    numel(pruned_atom_mask) - nnz(~pruned_atom_mask), ... % atoms removed
+    nbond - size(BondsOut,1), min_keep);
 
 end
 
