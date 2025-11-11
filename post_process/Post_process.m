@@ -22,7 +22,7 @@ fprintf('Using:\n  %s\n  %s\n', bondsDumpFile, bondTableFile);
 
 %% ----------- Plot mode knob -----------
 % 'hist' (default, your current look) or 'line' (P(x) vs x)
-plotMode = 'line';  % 'hist' or 'line'
+plotMode = 'hist';  % 'hist' or 'line'
 
 
 %% ----------- Parse bonds.dump (only timestep 0) -----------
