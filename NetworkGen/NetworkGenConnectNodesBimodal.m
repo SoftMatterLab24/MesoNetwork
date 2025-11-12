@@ -92,7 +92,7 @@ if autoN2
     N2old = N2;
     r2_avg = dn.alpha*r1_avg;
     N2 = r2_avg/(lam2*b);
-    fprintf("   Auto N2 mode enabled. Adjusting N2 from %d to %d",N2old,N2);
+    fprintf("   Auto N2 mode enabled. Adjusting N2 from %.0d to %.0d\n",N2old,N2);
     options.bimodal.N2 = N2;
 end
 
@@ -146,8 +146,8 @@ r1_lower = max(r1_avg - dr1, dmin + epsr);
 r1_upper = r1_avg + dr1;
 
 gap = 0.1*r1_avg;
-r2_lower = max(r2_avg - dr2, r1_upper + gap)
-r2_upper = r2_avg + dr2
+r2_lower = max(r2_avg - dr2, r1_upper + gap);
+r2_upper = r2_avg + dr2;
 
 % ---------- Unpack atoms & maps ----------
 ids = Atoms(:,1);
@@ -161,7 +161,7 @@ for r=1:natom, id2row(int64(ids(r))) = int32(r); end
 if double_network
     alpha = options.double_network.alpha; % desired spacing multiplier, e.g. 2.5
     avg_nn_spacing = sqrt((xhi-xlo)*(yhi-ylo)/natom); % crude estimate
-    target_spacing = alpha * avg_nn_spacing
+    target_spacing = alpha * avg_nn_spacing;
     isSparse = pick_uniform_sparse_nodes(x, y, f_sparse, target_spacing);
     sparse_idx = find(isSparse);
 else
