@@ -33,7 +33,7 @@ if strcmp(options.dist_type,'bimodal')
         if Bonds(k,1) == 0, continue; end
         i1 = Bonds(k,2); i2 = Bonds(k,3);
         if Bonds(k,5) == 1
-            plot([Atoms(i1,2) Atoms(i2,2)], [Atoms(i1,3) Atoms(i2,3)], 'k-','LineWidth',0.25);
+            plot([Atoms(i1,2) Atoms(i2,2)], [Atoms(i1,3) Atoms(i2,3)], 'Color',[150 150 150]/255,'LineWidth',0.25);
         else
             plot([Atoms(i1,2) Atoms(i2,2)], [Atoms(i1,3) Atoms(i2,3)], 'r-','LineWidth',1.75);
         end

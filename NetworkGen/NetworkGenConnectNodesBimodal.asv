@@ -118,15 +118,16 @@ rho_all = natom / max(A, epsr);
 
 if useManual
     if useMixed
-        dr1 = (2.355*sigr1); % +/- 1 FWHM
-        dr2 = (2.355*sigr2);
+
     else
-        %otherwise calculate the widths geometrically based on N widths
-        dr1 = lam1*b*(2.355*sig1); % +/- 1 FWHM
-        dr2 = lam2*b*(2.355*sig2);
-
+        %otherwise calculate the widths geometrically
+        
     end
-
+    % manual widths
+    dr1 = lam1*b*(2.355*sig1); % +/- 1 FWHM
+    dr2 = lam2*b*(2.355*sig2);
+     
+   
 else
     % density-based (adaptive)
     dr1 = targetC1 / max(2*pi*rho_all*max(r1_avg,epsr), epsr);
@@ -224,6 +225,7 @@ if long_first
         % keep a dynamic gap vs short upper
         r2lo = max(r2_lower - (dr2 - dr2_pick), r1_upper + gap);
         r2hi = r2_upper + (dr2_pick - dr2);
+
 
         neigh = gather_neighbors(r1, Cells, cx, cy, nx, ny,isPeriodic);
         if isempty(neigh), no_progress = no_progress + 1; continue; end
