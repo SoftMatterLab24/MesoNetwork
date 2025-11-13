@@ -19,17 +19,17 @@ warning off backtrace  % disable stack trace for warnings
 dist_type = 'polydisperse';
 
 % Number of networks to generate
-Nreplicates = 1;
+Nreplicates = 5;
 cd 
 % Kuhn length
 b = 1.6;        % Kuhn length (in nm)
 
 % Domain size
-Lx = 150*4;       % Domain size in x (in units of b)
-Ly = 90*4;        % Domain size in y (in units of b)
+Lx = 150*8;       % Domain size in x (in units of b)
+Ly = 90*8;        % Domain size in y (in units of b)
 
 % Domain size scaler
-scale = 1.0;  % e.g., halve the system dimensions
+scale = 1.8;  % e.g., halve the system dimensions
 
 % Boundary Conditions
 boundary_box = 'fixed'; % 'fixed' or 'periodic' boundaries
@@ -39,7 +39,7 @@ imanualseed = false;  % true: manual seed; false: random seed
 seed = [1];
 
 % Visualization
-iplot = true;    % Show 
+iplot = false;    % Show 
 
 % Save options
 isave = true;  % Save data files
@@ -70,7 +70,7 @@ long_first                   =  true;       % enable long-first mode
 
 % Double network params
 double_network_flag = true;                 % enable double network style
-auto_N2_flag        = true;                 % automatically overrides N2 given the spacing ratio and pre-stretch
+auto_N2_flag        = true;                 % automatically overrides N2 given the spacing ratio and desired pre-stretch
 alpha = 3;                                  % spacing ratio of large mesh to small mesh
 
 % Height mode settings (only one is used)
@@ -85,11 +85,11 @@ lam2 = 1/sqrt(N1);   % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt
 %NOTE: Kuhn uses only kuhn, mixed uses both
 %Deviation in Kuhn segment
 stdN1 = 10; % std of N1 Kuhn segment distribution         
-stdN2 = 10; % std of  N2 Kuhn segment distribution 
+stdN2 = 10; % std of N2 Kuhn segment distribution 
 
 %Deviation in end-to-end length
 stdr1 = 2;   % std of the end-to-end length for r1;
-stdr2 = 15;   % std of the end-to-end length for r2;
+stdr2 = 15;  % std of the end-to-end length for r2;
 
 %% --------------------- Advanced Options --------------------------
 iadvancedoptions = false;
