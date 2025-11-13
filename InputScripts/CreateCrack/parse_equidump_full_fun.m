@@ -19,7 +19,7 @@ while 1 == 1
     end
 
     % Timestep
-    tstep(ii) = str2double(fgetl(fid));
+    tstep(ii) = str2double(fgetl(fid))
 
     % Skip
     tline = fgetl(fid);
@@ -68,7 +68,7 @@ while 1 == 1
     end
 
     % Timestep
-    tbstep(ii) = str2double(fgetl(fid));
+    tbstep(ii) = str2double(fgetl(fid))
 
     % Skip
     tline = fgetl(fid);
@@ -97,15 +97,15 @@ while 1 == 1
     columns = fgetl(fid);
 
     % Read the rest of the file 
-    C = textscan(fid,'%u %u %u %f %f');
+    C = textscan(fid,'%u %u %u %f %f %d %d');
 
     bType{ii}   = C{1};
     bAtom1{ii}  = C{2};
     bAtom2{ii}  = C{3};
     bLength{ii} = C{4};
     bForce{ii}  = C{5};
-    % bForcex{ii} = C{6};
-    % bForcey{ii} = C{7};
+    b1{ii} = C{6};
+    b2{ii} = C{7};
     % bForcez{ii} = C{8};
     % bEngpot{ii} = C{6};
 

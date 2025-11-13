@@ -13,7 +13,7 @@ clc; clear; close all;
 %% --------------------------- USER INPUTS --------------------------------
 
 xi = 1.6; %mesh size (LJ lengthscale)
-crack_mode = 'notch'; % 'sharp' or notch
+crack_mode = 'notch'; % 'sharp' or 'notch'
 
 %% Crack dimensions
 c       = 780*xi;     % notch length
@@ -24,7 +24,7 @@ alpha   = 90;         % taper angle (deg)
 xmin = -2570; %leftmost xboundary of the network (look at .dump)
 
 %location to lammps outputs (atoms_equilib.dump,bonds_equilib.dump)
-loc = 'C:\Users\zwhit\Downloads\polydisperse_net_generator\Runs\calibration\002';
+loc = 'E:\PhD\My Research\Polydisperse_fracture\PAPER\PD_smp4';
 
 %dump names
 atom_name = 'atoms_equilib.dump';
@@ -322,7 +322,7 @@ fprintf(fid, 'Atoms \n\n');
 counter = 0;
 for i = 1:length(idx_a)
     if ~idx_a(i)
-    counter = counter + 1;
+    counter = counter + 1
     % Format: atomID  molID  atomType  x y z
     fprintf(fid, '%d %d %d 1 1 %f %f %f\n', counter, MOL(i), TYPE(i), X(i),Y(i),0);
     end
@@ -332,7 +332,7 @@ fprintf(fid, '\nBonds\n\n');
 counter = 0;
 for i = 1:length(idx)
     if ~idx(i)
-        counter = counter + 1;
+        counter = counter + 1
         % Format: bondID  bondType  atom1  atom2
         fprintf(fid, '%d %d %d %d\n',counter, bondType(i), iatomn(i),jatomn(i));
     end
@@ -348,6 +348,7 @@ fprintf(fidt,'KEY\n');
 fprintf(fidt,'N %d\n\n', length(id_t));
 
 for i = 1:length(id_t)
+    i
     fprintf(fidt, '%d %d %d %f %f\n', id_t(i), iatom_t_new(i), jatom_t_new(i), N(i), b(i));
 end
 fclose(fidt);
@@ -373,7 +374,7 @@ fprintf(fid, 'Atoms \n\n');
 counter = 0;
 for i = 1:length(idx_a)
     if ~idx_a(i)
-    counter = counter + 1;
+    counter = counter + 1
     % Format: atom-ID atom-type x y z molecule-ID diameter density
     fprintf(fid, '%d 1 %f %f %f 1 1 1 \n', counter, X(i), Y(i), 0);
     end
@@ -383,7 +384,7 @@ fprintf(fid, '\nBonds\n\n');
 counter = 0;
 for i = 1:length(idx)
     if ~idx(i)
-        counter = counter + 1;
+        counter = counter + 1
         % Format: bondID  bondType  atom1  atom2
         fprintf(fid, '%d %d %d %d\n', counter, bondType(i), iatomn(i), jatomn(i));
     end

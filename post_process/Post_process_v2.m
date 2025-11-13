@@ -61,7 +61,7 @@ Lc_range        = [];                % e.g., [0, 200]   (NEW)
 lambda_range    = [];                % e.g., [0, 2]
 
 % --- Unified bin count for ALL THREE plots ---
-nbins_common    = 40;                % one knob to rule them all
+nbins_common    = 35;                % one knob to rule them all
 
 % --- Kuhn length handling ---
 use_b_const     = true;              % true: override/ignore per-bond b and use b_const
