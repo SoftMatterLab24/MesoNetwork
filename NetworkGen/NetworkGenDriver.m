@@ -39,7 +39,7 @@ imanualseed = false;  % true: manual seed; false: random seed
 seed = [1];
 
 % Visualization
-iplot = false;    % Show 
+iplot =false;    % Show 
 
 % Save options
 isave = true;  % Save data files
@@ -59,7 +59,7 @@ rho_max = 500;    % maximum density
 distribution_assignment_mode_poly = 'mono';  % Kuhn segment assigment method: 'geom' | 'range' | 'pmf' | 'mono'
 
 %% --------------------- Bimodal Options ---------------------------
-N1 = 50; 
+N1 = 35; 
 N2 = 400; %454
 
 bin_window_method            = 'manual';    % Method for determining bin width of bimodal dist: 'manual' or 'adaptive'
@@ -80,7 +80,7 @@ N2_bonds = 2; % Fixed: desired number of type 2 bonds
 %%% Manual mode settings
 %Prestretch
 lam1 = 1/sqrt(N1);   % Prestretched length of type 1 bonds: lam1 = [0 1], 1/sqrt(N1) (default)
-lam2 = 1/sqrt(N1);   % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
+lam2 = 0.4;   % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
 
 %NOTE: Kuhn uses only kuhn, mixed uses both
 %Deviation in Kuhn segment
@@ -248,7 +248,7 @@ for ii = 1:Nreplicates
         [Domain, Atoms, Bonds] = NetworkScaleDomain(Domain, Atoms, Bonds, scale);
     end
     %% E. Show visualization and statistics
-    NetworkGenVisualize(Domain,Atoms,Bonds,Nvec,options);
+    NetworkGenVisualize(Domain,Atoms,Bonds,Nvec,scale,options);
 
     %% F. Write data files
     NetworkGenWriteDataFiles(Domain,Atoms,Bonds,Nvec,LDpot,options);
