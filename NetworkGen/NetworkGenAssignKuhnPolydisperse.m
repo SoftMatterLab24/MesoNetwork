@@ -51,7 +51,7 @@ switch lower(mode)
         Nvec = max(Nvec, min_N);
         
     case 'mono'
-        Nvec(:) = 45;
+        Nvec(:) = pd.pmf_meanN;
         
     case 'range'
         % Map lengths monotonically to [N_target_min, N_target_max]
