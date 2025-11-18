@@ -80,7 +80,7 @@ N2_bonds = 2; % Fixed: desired number of type 2 bonds
 %%% Manual mode settings
 %Prestretch
 lam1 = 1/sqrt(N1);   % Prestretched length of type 1 bonds: lam1 = [0 1], 1/sqrt(N1) (default)
-lam2 = 0.4;   % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
+lam2 = 0.4;          % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
 
 %NOTE: Kuhn uses only kuhn, mixed uses both
 %Deviation in Kuhn segment
