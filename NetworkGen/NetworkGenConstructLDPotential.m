@@ -22,8 +22,6 @@ rho_max = options.LDpot_rho_max; % maximum density
 drho = (rho_max - rho_min) / (N_rho - 1); % density step
 
 
-% 
-
 % ---------- Construct local density potential ----------
 
 sig_c = 0.5*b*(Total_kuhn_segment/Atom_count)^(1/2)   % desired equlibrium length
