@@ -24,11 +24,11 @@ drho = (rho_max - rho_min) / (N_rho - 1); % density step
 
 % ---------- Construct local density potential ----------
 
-sig_c = 0.5*b*(Total_kuhn_segment/Atom_count)^(1/2)   % desired equlibrium length
+sig_c = 0.5*b*(Total_kuhn_segment/Atom_count)^(1/2);   % desired equlibrium length
 atom_density = Atom_count / ((xhi - xlo)*(yhi - ylo)); % number density
 
 R2 = 4*sig_c; % outer radius of density calculation
-rho0 = 0.8*(R2/sig_c)^2 % desired equilibrium density for given R2
+rho0 = 0.8*(R2/sig_c)^2; % desired equilibrium density for given R2
 
 R1 = 0.8*sig_c; % inner radius of density calculation
 rc = 1.0*2*sig_c;    % cutoff radius for bpm/spring repulsion
@@ -53,6 +53,7 @@ LDpot.pot_density   = pot_density;
 
 % ----------- Print summary -----------
 fprintf('   Constructed LD potential with parameters:\n');
+fprintf('   Target equilibrium density rho0 = %.4f\n', rho0);
 fprintf('   Lower Cutoff R1 = %.4f * b, Upper Cutoff R2 = %.4f * b', R1/b, R2/b);
 fprintf('   Cutoff for BPM/Spring repulsion rc = %.4f * b \n', rc/b);
 
