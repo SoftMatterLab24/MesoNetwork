@@ -19,14 +19,14 @@ warning off backtrace  % disable stack trace for warnings
 dist_type = 'polydisperse';
 
 % Number of networks to generate
-Nreplicates = 5;
+Nreplicates = 1;
 cd 
 % Kuhn length
 b = 1.6;        % Kuhn length (in nm)
 
 % Domain size
-Lx = 150*8;       % Domain size in x (in units of b)
-Ly = 90*8;        % Domain size in y (in units of b)
+Lx = 150*1;       % Domain size in x (in units of b)
+Ly = 90*1;        % Domain size in y (in units of b)
 
 % Domain size scaler
 scale = 1.8;  % e.g., halve the system dimensions
