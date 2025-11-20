@@ -53,6 +53,15 @@ potfile_path = fullfile(outdir,'mytab.localdensity.table');
 Atom_count = size(Atoms,1);
 Bond_count = size(Bonds,1);
 
+natype = 1;
+
+[~, ncol] = size(Bonds);
+if ncol > 4
+    nbtype = max(Bonds(:,5));
+else
+    nbtype = 1;
+end
+
 xlo = Domain.xlo; xhi = Domain.xhi;
 ylo = Domain.ylo; yhi = Domain.yhi;
 zlo = Domain.zlo; zhi = Domain.zhi;
@@ -66,8 +75,8 @@ end
 fprintf(fid, '\n\n');
 fprintf(fid, '%d atoms\n', Atom_count);
 fprintf(fid, '%d bonds\n', Bond_count);
-fprintf(fid, '%d atom types\n', 1);
-fprintf(fid, '%d bond types\n', 1);
+fprintf(fid, '%d atom types\n', natype);
+fprintf(fid, '%d bond types\n', nbtype);
 fprintf(fid, '%.16g %.16g xlo xhi\n', xlo, xhi);
 fprintf(fid, '%.16g %.16g ylo yhi\n', ylo, yhi);
 fprintf(fid, '%.16g %.16g zlo zhi\n', zlo, zhi);
@@ -83,7 +92,9 @@ end
 fprintf(fid, '\nBonds\n\n');
 % Format: bondID  bondType  atom1  atom2
 for i = 1:Bond_count
-    fprintf(fid, '%d 1 %d %d\n', Bonds(i,1), Bonds(i,2), Bonds(i,3));
+    if ncol > 4; btype = Bonds(i,5); else btype = 1; end
+        
+    fprintf(fid, '%d %d %d %d\n', Bonds(i,1), btype, Bonds(i,2), Bonds(i,3));
 end
 
 fclose(fid);

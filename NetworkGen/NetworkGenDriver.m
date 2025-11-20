@@ -16,17 +16,17 @@ warning off backtrace  % disable stack trace for warnings
 
 %% --------------------------- Global settings ----------------------
 % Distribution type: 'bimodal' or 'polydisperse'
-dist_type = 'polydisperse';
+dist_type = 'bimodal';
 
 % Number of networks to generate
-Nreplicates = 5;
+Nreplicates = 1;
 cd 
 % Kuhn length
 b = 1.6;        % Kuhn length (in nm)
 
 % Domain size
-Lx = 150*8;       % Domain size in x (in units of b)
-Ly = 90*8;        % Domain size in y (in units of b)
+Lx = 150*1;       % Domain size in x (in units of b)
+Ly = 90*1;        % Domain size in y (in units of b)
 
 % Domain size scaler
 scale = 1.6;  % e.g., halve the system dimensions
@@ -39,7 +39,7 @@ imanualseed = false;  % true: manual seed; false: random seed
 seed = [1];
 
 % Visualization
-iplot = false;    % Show 
+iplot =false;    % Show 
 
 % Save options
 isave = true;  % Save data files
@@ -59,7 +59,7 @@ rho_max = 500;    % maximum density
 distribution_assignment_mode_poly = 'pmf';  % Kuhn segment assigment method: 'geom' | 'range' | 'pmf' | 'mono'
 
 %% --------------------- Bimodal Options ---------------------------
-N1 = 50; 
+N1 = 35; 
 N2 = 400; %454
 
 bin_window_method            = 'manual';    % Method for determining bin width of bimodal dist: 'manual' or 'adaptive'
@@ -80,7 +80,7 @@ N2_bonds = 2; % Fixed: desired number of type 2 bonds
 %%% Manual mode settings
 %Prestretch
 lam1 = 1/sqrt(N1);   % Prestretched length of type 1 bonds: lam1 = [0 1], 1/sqrt(N1) (default)
-lam2 = 1/sqrt(N1);   % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
+lam2 = 0.4;          % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
 
 %NOTE: Kuhn uses only kuhn, mixed uses both
 %Deviation in Kuhn segment
@@ -248,7 +248,7 @@ for ii = 1:Nreplicates
         [Domain, Atoms, Bonds] = NetworkScaleDomain(Domain, Atoms, Bonds, scale);
     end
     %% E. Show visualization and statistics
-    NetworkGenVisualize(Domain,Atoms,Bonds,Nvec,options);
+    NetworkGenVisualize(Domain,Atoms,Bonds,Nvec,scale,options);
 
     %% F. Write data files
     NetworkGenWriteDataFiles(Domain,Atoms,Bonds,Nvec,LDpot,options);

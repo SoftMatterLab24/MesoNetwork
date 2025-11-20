@@ -86,14 +86,11 @@ end
 
 % ---------- Refine r1_avg and r2_avg based on geometry ----------
 r1_avg = lam1*b*N1;
-r2_avg = lam2*b*N2;
 
-if autoN2
-    N2old = N2;
+if double_network
     r2_avg = dn.alpha*r1_avg;
-    N2 = r2_avg/(lam2*b);
-    fprintf("   Auto N2 mode enabled. Adjusting N2 from %.0d to %.0d\n",N2old,N2);
-    options.bimodal.N2 = N2;
+else
+    r2_avg = lam2*b*N2;
 end
 
 r_min_allowed = max(dmin * 1.2, b * 0.5);
@@ -112,6 +109,7 @@ if r2_avg > r2_max_allowed
     r2_avg = r2_max_allowed;
 end
 
+
 % ---------- Window widths ----------
 A   = (xhi-xlo)*(yhi-ylo);
 rho_all = natom / max(A, epsr);
@@ -126,7 +124,6 @@ if useManual
         dr2 = lam2*b*(2.355*sig2);
 
     end
-
 else
     % density-based (adaptive)
     dr1 = targetC1 / max(2*pi*rho_all*max(r1_avg,epsr), epsr);
@@ -148,6 +145,14 @@ r1_upper = r1_avg + dr1;
 gap = 0.1*r1_avg;
 r2_lower = max(r2_avg - dr2, r1_upper + gap);
 r2_upper = r2_avg + dr2;
+
+if autoN2
+    N2old = N2;
+    R2AVG = 0.5*(r2_upper - r2_lower) + r2_lower;
+    N2 = R2AVG/(lam2*b);
+    fprintf("   Auto N2 mode enabled. Adjusting N2 from %.0d to %.0d\n",N2old,N2);
+    options.bimodal.N2 = N2;
+end
 
 % ---------- Unpack atoms & maps ----------
 ids = Atoms(:,1);

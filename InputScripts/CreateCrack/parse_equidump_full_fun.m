@@ -19,7 +19,7 @@ while 1 == 1
     end
 
     % Timestep
-    tstep(ii) = str2double(fgetl(fid))
+    tstep(ii) = str2double(fgetl(fid));
 
     % Skip
     tline = fgetl(fid);
@@ -68,7 +68,7 @@ while 1 == 1
     end
 
     % Timestep
-    tbstep(ii) = str2double(fgetl(fid))
+    tbstep(ii) = str2double(fgetl(fid));
 
     % Skip
     tline = fgetl(fid);

@@ -1,4 +1,4 @@
-function NetworkGenVisualize(Domain,Atoms,Bonds,Nvec,options)
+function NetworkGenVisualize(Domain,Atoms,Bonds,Nvec,scale,options)
 % NetworkGenVisualize - Visualize the generated network
 % INPUT: 
 %   Domain  : struct with fields xlo, xhi, ylo, yhi, zlo, zhi
@@ -80,7 +80,7 @@ if strcmp(options.dist_type,'polydisperse')
 
     % --- Prestretch distribution ---
     b = options.b;
-    lamvec = Bonds(:,4) ./ (Nvec * b);   % ? = L/(N·b)
+    lamvec = (Bonds(:,4)/scale) ./ (Nvec * b);   % ? = L/(N·b)
     dlam = 0.01;
     lam_min = min(lamvec);
     lam_max = max(lamvec);
@@ -163,8 +163,8 @@ if strcmp(options.dist_type,'bimodal')
 
     % prestretch
     b = options.b;
-    lamvec1 = Bonds(type1,4)./(Nvec(type1)*b);
-    lamvec2 = Bonds(~type1,4)./(Nvec(~type1)*b);
+    lamvec1 = (Bonds(type1,4)/scale)./(Nvec(type1)*b);
+    lamvec2 = (Bonds(~type1,4)/scale)./(Nvec(~type1)*b);
     
     N1 = options.bimodal.N1;
     N2 = options.bimodal.N2;
