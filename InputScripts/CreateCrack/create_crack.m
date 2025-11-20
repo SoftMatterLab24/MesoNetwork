@@ -24,7 +24,7 @@ alpha   = 90;         % taper angle (deg)
 xmin = -2570; %leftmost xboundary of the network (look at .dump)
 
 %location to lammps outputs (atoms_equilib.dump,bonds_equilib.dump)
-loc = 'E:\PhD\My Research\Polydisperse_fracture\PAPER\PD_smp4';
+loc = 'E:\PhD\My Research\Polydisperse_fracture\PAPER\MD_smp5';
 
 %dump names
 atom_name = 'atoms_equilib.dump';

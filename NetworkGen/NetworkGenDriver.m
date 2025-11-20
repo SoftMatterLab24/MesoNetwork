@@ -29,7 +29,7 @@ Lx = 150*8;       % Domain size in x (in units of b)
 Ly = 90*8;        % Domain size in y (in units of b)
 
 % Domain size scaler
-scale = 1.8;  % e.g., halve the system dimensions
+scale = 1.6;  % e.g., halve the system dimensions
 
 % Boundary Conditions
 boundary_box = 'fixed'; % 'fixed' or 'periodic' boundaries
@@ -56,7 +56,7 @@ rho_max = 500;    % maximum density
 
 %% --------------------- Polydisperse Options ----------------------
 
-distribution_assignment_mode_poly = 'mono';  % Kuhn segment assigment method: 'geom' | 'range' | 'pmf' | 'mono'
+distribution_assignment_mode_poly = 'pmf';  % Kuhn segment assigment method: 'geom' | 'range' | 'pmf' | 'mono'
 
 %% --------------------- Bimodal Options ---------------------------
 N1 = 50; 
@@ -140,7 +140,7 @@ options.polydisperse.N_target_max    = 120;      % integer upper target
 options.polydisperse.pmf_nu0         = 30;       % ν0 (minimum)
 options.polydisperse.pmf_meanN       = 45;       % target mean of ν after truncation
 options.polydisperse.pmf_cut_mode    = 'cap';    % keep as 'cap'
-options.polydisperse.pmf_nu_max      = 100;       % hard maximum ν (≥ ν0)
+options.polydisperse.pmf_nu_max      = 200;       % hard maximum ν (≥ ν0)
 options.polydisperse.integerize_rule = 'largest_remainder'; % allocation method
 
 % B. Bimodal options
