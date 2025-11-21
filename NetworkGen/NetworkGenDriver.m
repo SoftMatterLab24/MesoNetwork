@@ -16,7 +16,7 @@ warning off backtrace  % disable stack trace for warnings
 
 %% --------------------------- Global settings ----------------------
 % Distribution type: 'bimodal' or 'polydisperse'
-dist_type = 'bimodal';
+dist_type = 'polydisperse';
 
 % Number of networks to generate
 Nreplicates = 1;
@@ -25,11 +25,11 @@ cd
 b = 1.6;        % Kuhn length (in nm)
 
 % Domain size
-Lx = 150*1;       % Domain size in x (in units of b)
-Ly = 90*1;        % Domain size in y (in units of b)
+Lx = 150*8;       % Domain size in x (in units of b)
+Ly = 90*8;        % Domain size in y (in units of b)
 
 % Domain size scaler
-scale = 1.6;  % e.g., halve the system dimensions
+scale = 2.0;  % e.g., halve the system dimensions
 
 % Boundary Conditions
 boundary_box = 'fixed'; % 'fixed' or 'periodic' boundaries
@@ -137,10 +137,10 @@ options.polydisperse.N_target_min    = 20;       % integer lower target
 options.polydisperse.N_target_max    = 120;      % integer upper target
 
 % --- 'pmf' mode (truncated geometric with hard cap based on exp distribution) ---
-options.polydisperse.pmf_nu0         = 30;       % ν0 (minimum)
-options.polydisperse.pmf_meanN       = 45;       % target mean of ν after truncation
+options.polydisperse.pmf_nu0         = 50;       % ν0 (minimum)
+options.polydisperse.pmf_meanN       = 80;       % target mean of ν after truncation
 options.polydisperse.pmf_cut_mode    = 'cap';    % keep as 'cap'
-options.polydisperse.pmf_nu_max      = 200;       % hard maximum ν (≥ ν0)
+options.polydisperse.pmf_nu_max      = 352;       % hard maximum ν (≥ ν0)
 options.polydisperse.integerize_rule = 'largest_remainder'; % allocation method
 
 % B. Bimodal options
