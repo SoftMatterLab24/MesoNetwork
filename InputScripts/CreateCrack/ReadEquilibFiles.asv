@@ -1,0 +1,21 @@
+clc; clear; close all;
+
+%
+%location to lammps outputs (atoms_equilib.dump,bonds_equilib.dump)
+loc = 'C:\Users\zwhit\Downloads\polydisperse_net_generator\Runs\bimodal\Unnotched\Run2';
+bond_name = 'bonds_equilib.dump';
+
+for ii = 1:5
+    
+    bfile = strcat(loc,'\',sprintf('%03d',ii),'\',bond_name);
+    [bAtom1,bAtom2,bType,bLength,bForce,N,b] = parse_equidump_bond_fun(bfile);
+
+    bondAtom1 = bAtom1{end};
+    bondAtom2 = bAtom2{end};
+    bondType = bType{end};
+    bondLength = bLength{end};
+    bondForce = bForce{end};
+    bond
+
+end
+

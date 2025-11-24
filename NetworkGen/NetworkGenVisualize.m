@@ -163,8 +163,8 @@ if strcmp(options.dist_type,'bimodal')
 
     % prestretch
     b = options.b;
-    lamvec1 = (Bonds(type1,4)/scale)./(Nvec(type1)*b);
-    lamvec2 = (Bonds(~type1,4)/scale)./(Nvec(~type1)*b);
+    lamvec1 = (Bonds(type1,4))./(Nvec(type1)*b);
+    lamvec2 = (Bonds(~type1,4))./(Nvec(~type1)*b);
     
     N1 = options.bimodal.N1;
     N2 = options.bimodal.N2;

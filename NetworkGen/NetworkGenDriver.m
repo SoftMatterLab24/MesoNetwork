@@ -25,8 +25,8 @@ cd
 b = 1.6;        % Kuhn length (in nm)
 
 % Domain size
-Lx = 150*1;       % Domain size in x (in units of b)
-Ly = 90*1;        % Domain size in y (in units of b)
+Lx = 150*8;       % Domain size in x (in units of b)
+Ly = 90*8;        % Domain size in y (in units of b)
 
 % Domain size scaler
 scale = 1.8;  % e.g., halve the system dimensions
@@ -39,7 +39,7 @@ imanualseed = false;  % true: manual seed; false: random seed
 seed = [1];
 
 % Visualization
-iplot =false;    % Show 
+iplot = true;    % Show 
 
 % Save options
 isave = true;  % Save data files
@@ -60,7 +60,7 @@ distribution_assignment_mode_poly = 'mono';  % Kuhn segment assigment method: 'g
 
 %% --------------------- Bimodal Options ---------------------------
 N1 = 35; 
-N2 = 400; %454
+N2 = 60; %454
 
 bin_window_method            = 'manual';    % Method for determining bin width of bimodal dist: 'manual' or 'adaptive'
 manual_deviation_type        = 'mixed';     % For manual bins is the standard deviation of bin width: 'kuhn' or 'mixed'
@@ -70,8 +70,8 @@ long_first                   =  true;       % enable long-first mode
 
 % Double network params
 double_network_flag = true;                 % enable double network style
-auto_N2_flag        = true;                 % automatically overrides N2 given the spacing ratio and desired pre-stretch
-alpha = 3;                                  % spacing ratio of large mesh to small mesh
+auto_N2_flag        = false;                % automatically overrides N2 given the spacing ratio and desired pre-stretch
+alpha = 2.5;                                % spacing ratio of large mesh to small mesh
 
 % Height mode settings (only one is used)
 P = 1.0;      % Prob: desired fraction of type 2 bonds
@@ -80,7 +80,7 @@ N2_bonds = 2; % Fixed: desired number of type 2 bonds
 %%% Manual mode settings
 %Prestretch
 lam1 = 1/sqrt(N1);   % Prestretched length of type 1 bonds: lam1 = [0 1], 1/sqrt(N1) (default)
-lam2 = 0.4;          % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
+lam2 = 0.35;          % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
 
 %NOTE: Kuhn uses only kuhn, mixed uses both
 %Deviation in Kuhn segment
@@ -89,7 +89,7 @@ stdN2 = 10; % std of N2 Kuhn segment distribution
 
 %Deviation in end-to-end length
 stdr1 = 2;   % std of the end-to-end length for r1;
-stdr2 = 15;  % std of the end-to-end length for r2;
+stdr2 = 12;  % std of the end-to-end length for r2; [2 5 15 25]
 
 %% --------------------- Advanced Options --------------------------
 iadvancedoptions = false;

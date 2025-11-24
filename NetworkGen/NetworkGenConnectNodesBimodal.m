@@ -143,7 +143,7 @@ r1_lower = max(r1_avg - dr1, dmin + epsr);
 r1_upper = r1_avg + dr1;
 
 gap = 0.1*r1_avg;
-r2_lower = max(r2_avg - dr2, r1_upper + gap);
+r2_lower = r2_avg - dr2;
 r2_upper = r2_avg + dr2;
 
 if autoN2
