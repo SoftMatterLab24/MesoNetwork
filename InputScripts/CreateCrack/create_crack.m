@@ -21,19 +21,19 @@ t       = 75*xi;       % notch thickness
 alpha   = 90;         % taper angle (deg)
 
 %!!! MUST BE UPDATED !!!
-xmin = -2800; %leftmost xboundary of the network (look at .dump)
+xmin = -3145; %leftmost xboundary of the network (look at .dump)
 
 %location to lammps outputs (atoms_equilib.dump,bonds_equilib.dump)
-<<<<<<< HEAD
-loc = 'E:\PhD\My Research\Polydisperse_fracture\PAPER\MD_smp5';
-=======
-loc = 'C:\Users\zwhit\Downloads\polydisperse_net_generator\Runs\bimodal\Unnotched\002';
->>>>>>> 751163b0431be0507b5c99b0adcda654be0fa46b
+% <<<<<<< HEAD
+loc = 'E:\PhD\My Research\Polydisperse_fracture\PAPER\PD_middist_smp2';
+% =======
+% loc = 'C:\Users\zwhit\Downloads\polydisperse_net_generator\Runs\bimodal\Unnotched\002';
+% >>>>>>> 751163b0431be0507b5c99b0adcda654be0fa46b
 
 %dump names
 atom_name = 'atoms_equilib.dump';
 bond_name = 'bonds_equilib.dump';
-table_name ='0002_bond.table';
+table_name ='bond.table';
 
 ivisual = 1; %create visual dump
 

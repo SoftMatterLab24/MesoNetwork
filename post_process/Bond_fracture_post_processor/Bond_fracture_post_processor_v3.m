@@ -75,7 +75,7 @@ atomDumpName = 'atoms1.dump';
 % Rupture stretch and clamped region thickness
 lamc        = 0.95;   % rupture stretch lambda_c
 maskFracY   = 0.12;   % thickness of clamped top/bottom regions (fraction of box height)
-debug_print = false;  % per-sample debug printing (set true if needed)
+debug_print = false;  % per-sample debug printing (set true if needed) s
 
 % Turn on/off centerline normalization
 useCenterlineNorm = false;
