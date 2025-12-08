@@ -27,17 +27,17 @@ Samples = struct( ...
 
 % EXAMPLE: add samples (edit paths as needed)
 root = 'E:\PhD\My Research\Polydisperse_fracture\PAPER';
-Samples(end+1) = struct( ...
-  'dataDir',       fullfile(root,'bimodal_equilibrated_samples'), ...
-  'bondsDumpFile', fullfile(root,'bimodal_equilibrated_samples','bimodal_bondequib_001.dump'), ...
-  'bondTableFile', fullfile(root,'bimodal_equilibrated_samples','bond.table'), ...
-  'has_b_in_dump', true);
-% 
 % Samples(end+1) = struct( ...
-%   'dataDir',       fullfile(root,'MD_smp2'), ...
-%   'bondsDumpFile', fullfile(root,'MD_smp2','bonds.dump'), ...
-%   'bondTableFile', fullfile(root,'MD_smp2','bond.table'), ...
+%   'dataDir',       fullfile(root,'bimodal_equilibrated_samples'), ...
+%   'bondsDumpFile', fullfile(root,'bimodal_equilibrated_samples','bimodal_bondequib_001.dump'), ...
+%   'bondTableFile', fullfile(root,'bimodal_equilibrated_samples','bond.table'), ...
 %   'has_b_in_dump', true);
+% 
+Samples(end+1) = struct( ...
+  'dataDir',       fullfile(root,'PD_smp2'), ...
+  'bondsDumpFile', fullfile(root,'PD_smp2','bonds.dump'), ...
+  'bondTableFile', fullfile(root,'PD_smp2','bond.table'), ...
+  'has_b_in_dump', true);
 % % 
 % Samples(end+1) = struct( ...
 %   'dataDir',       fullfile(root,'MD_smp4'), ...
@@ -345,7 +345,7 @@ end
 
 xlabel('End-to-end length r'); ylabel('Probability per bin');
 title(sprintf('r distribution (%s)', avg_mode)); box on; grid off;
-
+axis([10 100 0 0.4])
 
 % ---- Lc = N*b (monodisperse-aware) ----
 
@@ -428,6 +428,42 @@ end
 
 xlabel('\lambda_0 = r / (N \cdot b)'); ylabel('Probability per bin');
 title(sprintf('Pre-stretch distribution (%s)', avg_mode)); box on; grid off;
+
+%% ===================== 2D HISTOGRAMS (pooled) =====================
+
+% --- custom grey ? red colormap ---
+ncol = 256;
+c_lo = [0.9 0.9 0.9];   % light grey
+c_hi = [1.0 0.0 0.0];   % red
+cmap_gr2red = [linspace(c_lo(1),c_hi(1),ncol)', ...
+               linspace(c_lo(2),c_hi(2),ncol)', ...
+               linspace(c_lo(3),c_hi(3),ncol)'];
+
+% ---------- 2D hist: lambda (x) vs r (y) ----------
+figure('Name','2D hist: \lambda_0 vs r','Color','w');
+h1 = histogram2(All_lambda, All_r, edges_l, edges_r);  % uses your common bins
+% h1.DisplayStyle = 'tile';
+% h1.ShowEmptyBins = 'on';
+h1.Normalization = 'probability';   % probability intensity
+set(gca,'FontName','Times New Roman','FontSize',15);
+xlabel('\lambda_0 = r / (N \cdot b)');
+ylabel('End-to-end length r');
+title('P(r,\lambda_0)');
+colormap(gca, cmap_gr2red);
+colorbar;
+
+% ---------- 2D hist: lambda (x) vs L_c (y) ----------
+figure('Name','2D hist: \lambda_0 vs L_c','Color','w');
+h2 = histogram2(All_lambda, All_Lc, edges_l, edges_Lc);
+% h2.DisplayStyle = 'tile';
+% h2.ShowEmptyBins = 'on';
+h2.Normalization = 'probability';
+set(gca,'FontName','Times New Roman','FontSize',15);
+xlabel('\lambda_0 = r / (N \cdot b)');
+ylabel('Contour length L_c = N \cdot b');
+title('P(L_c,\lambda_0)');
+colormap(gca, cmap_gr2red);
+colorbar;
 
 
 %% ===================== TEXT SUMMARY =====================

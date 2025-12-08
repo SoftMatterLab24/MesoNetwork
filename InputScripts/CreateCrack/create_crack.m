@@ -25,7 +25,7 @@ xmin = -3145; %leftmost xboundary of the network (look at .dump)
 
 %location to lammps outputs (atoms_equilib.dump,bonds_equilib.dump)
 % <<<<<<< HEAD
-loc = 'E:\PhD\My Research\Polydisperse_fracture\PAPER\PD_middist_smp2';
+loc = 'E:\PhD\My Research\Polydisperse_fracture\PAPER\PD_middist_smp3';
 % =======
 % loc = 'C:\Users\zwhit\Downloads\polydisperse_net_generator\Runs\bimodal\Unnotched\002';
 % >>>>>>> 751163b0431be0507b5c99b0adcda654be0fa46b
