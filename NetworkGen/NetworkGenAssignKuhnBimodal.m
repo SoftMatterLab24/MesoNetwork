@@ -1,4 +1,4 @@
-function Nvec = NetworkGenAssignKuhnBimodal(Bonds, options)
+function Nvec = NetworkGenAssignKuhnBimodal(Bonds, Atoms, options)
 % NetworkGenAssignKuhnBimodal - Assign Kuhn segment numbers to bonds in a bimodal network
 %
 % INPUT
@@ -17,7 +17,7 @@ function Nvec = NetworkGenAssignKuhnBimodal(Bonds, options)
 %
 % OUTPUT
 %   Nvec  : [BondCount x 1] integer N per bond
-
+natoms      = size(Atoms,1);
 Bond_count = size(Bonds,1);
 Nvec = zeros(Bond_count,1);
 if Bond_count == 0, return; end
@@ -127,6 +127,8 @@ switch mode
         if has_cap, Nvec = min(Nvec, bd.N_cap); end
     otherwise
         error('Unknown distribution_assignment_mode: %s', bd.distribution_assignment_mode);
-end
+    end
 
+    fprintf("Kuhn-to-crosslinker ratio %0.4f \n",sum(Nvec)/natoms);
+    fprintf("Average chain length %0.4f \n",sum(Nvec)/length(Nvec))
 end
