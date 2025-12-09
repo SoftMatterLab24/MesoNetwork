@@ -30,9 +30,15 @@ b = 1.6;        % Kuhn length (in nm)
 % Lattice spacing (center-to-center distance between neighboring nodes)
 lattice_a = 6 * b;   % you can tune this
 
-% Lattice disorder (0 = perfect, 1 = strong geometric disorder)
-lattice_disorder_level      = 1;   % try 0, 0.1, 0.3, 0.6, 1.0
+% Lattice disorder (0 = perfect geometry, 1 = strong geometric disorder)
+lattice_disorder_level      = 0.6;   % try 0, 0.3, 0.6, 1.0
 lattice_disorder_max_frac_a = 0.4;  % max displacement radius as fraction of 'a'
+
+% Topological disorder options (bond deletions)
+lattice_topo_disorder_flag      = true;  % enable/disable bond deletions
+lattice_max_del_per_node        = 1;     % max bonds to attempt to delete per node at disorder=1
+lattice_min_degree_keep         = 5;     % don't let any node go below this degree
+
 
 % Domain size
 Lx = 150*1;       % Domain size in x (in units of b)
@@ -129,10 +135,15 @@ options.LDpot_N_rho        = N_rho;      % number of density points
 options.LDpot_rho_min      = rho_min;    % minimum density
 options.LDpot_rho_max      = rho_max;    % maximum density
 % Lattice-specific options
-options.lattice.a          = lattice_a;   % nearest-neighbor spacing
-options.lattice.edgeTol    = 0.25*lattice_a;  % thickness of "fixed" boundary layer
-options.lattice.disorder_level      = lattice_disorder_level;
-options.lattice.disorder_max_frac_a = lattice_disorder_max_frac_a;
+options.lattice.a                  = lattice_a;
+options.lattice.edgeTol            = 0.25*lattice_a;
+options.lattice.disorder_level     = lattice_disorder_level;
+options.lattice.disorder_max_frac_a= lattice_disorder_max_frac_a;
+
+options.lattice.enable_topo_disorder   = lattice_topo_disorder_flag;
+options.lattice.max_topo_del_per_node  = lattice_max_del_per_node;
+options.lattice.min_degree_keep        = lattice_min_degree_keep;
+
 
 % A. Polydisperse options
 % ------------------------------------------------------------------
@@ -267,7 +278,13 @@ for ii = 1:Nreplicates
         % ---- New perfect hexagonal lattice path ----
         [Atoms, latticeData] = NetworkGenLatticeScatterNodes(Domain, options);
         [Atoms, Bonds] = NetworkGenLatticeConnectNodes(Domain, Atoms, latticeData, options);
-
+        
+        if isfield(options,'lattice') && isfield(options.lattice,'enable_topo_disorder')
+            if options.lattice.enable_topo_disorder
+                [Atoms, Bonds] = NetworkApplyLatticeTopoDisorder(Atoms, Bonds, options);
+            end
+        end
+        
         % Still use your existing Kuhn assignment logic on this topology:
         if strcmp(dist_type,'polydisperse')
             [Nvec] = NetworkGenAssignKuhnPolydisperse(Bonds, options);
