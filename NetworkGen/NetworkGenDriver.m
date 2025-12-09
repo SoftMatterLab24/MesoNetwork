@@ -15,6 +15,9 @@ clc; clear; close all;
 warning off backtrace  % disable stack trace for warnings
 
 %% --------------------------- Global settings ----------------------
+% Network geometry: 'random' (existing) or 'hex_lattice' (new)
+network_geometry = 'hex_lattice';   % 'random' | 'hex_lattice'
+
 % Distribution type: 'bimodal' or 'polydisperse'
 dist_type = 'polydisperse';
 
@@ -24,9 +27,16 @@ cd
 % Kuhn length
 b = 1.6;        % Kuhn length (in nm)
 
+% Lattice spacing (center-to-center distance between neighboring nodes)
+lattice_a = 6 * b;   % you can tune this
+
+% Lattice disorder (0 = perfect, 1 = strong geometric disorder)
+lattice_disorder_level      = 1;   % try 0, 0.1, 0.3, 0.6, 1.0
+lattice_disorder_max_frac_a = 0.4;  % max displacement radius as fraction of 'a'
+
 % Domain size
-Lx = 150*8;       % Domain size in x (in units of b)
-Ly = 90*8;        % Domain size in y (in units of b)
+Lx = 150*1;       % Domain size in x (in units of b)
+Ly = 90*1;        % Domain size in y (in units of b)
 
 % Domain size scaler
 scale = 1.8;  % e.g., halve the system dimensions
@@ -56,7 +66,7 @@ rho_max = 500;    % maximum density
 
 %% --------------------- Polydisperse Options ----------------------
 
-distribution_assignment_mode_poly = 'pmf';  % Kuhn segment assigment method: 'geom' | 'range' | 'pmf' | 'mono'
+distribution_assignment_mode_poly = 'mono';  % Kuhn segment assigment method: 'geom' | 'range' | 'pmf' | 'mono'
 
 %% --------------------- Bimodal Options ---------------------------
 N1 = 35; 
@@ -99,6 +109,7 @@ iadvancedoptions = false;
 
 % prepare options structure
 options.dist_type          = dist_type;
+options.network_geometry   = network_geometry;
 options.Nreplicates        = Nreplicates;
 options.b                  = b;
 options.Lx                 = Lx;
@@ -117,6 +128,11 @@ options.LDpot_strength     = kLD;        % strength factor
 options.LDpot_N_rho        = N_rho;      % number of density points
 options.LDpot_rho_min      = rho_min;    % minimum density
 options.LDpot_rho_max      = rho_max;    % maximum density
+% Lattice-specific options
+options.lattice.a          = lattice_a;   % nearest-neighbor spacing
+options.lattice.edgeTol    = 0.25*lattice_a;  % thickness of "fixed" boundary layer
+options.lattice.disorder_level      = lattice_disorder_level;
+options.lattice.disorder_max_frac_a = lattice_disorder_max_frac_a;
 
 % A. Polydisperse options
 % ------------------------------------------------------------------
@@ -228,17 +244,43 @@ for ii = 1:Nreplicates
     [Atoms] = NetworkGenScatterNodes(Domain);
 
     %% D. Connect nodes within bonds
-    if strcmp(dist_type,'polydisperse')
-        % Polydisperse network
-        [Atoms,Bonds] = NetworkGenConnectNodesPolydisperse(Domain,Atoms,options);
-        [Nvec] = NetworkGenAssignKuhnPolydisperse(Bonds, options);
-    elseif strcmp(dist_type,'bimodal')
-        % Bimodal network
-        [Atoms,Bonds,options] = NetworkGenConnectNodesBimodal(Domain,Atoms,options,advancedOptions);
-        [Nvec] = NetworkGenAssignKuhnBimodal(Bonds, options);
+    %% C–D. Geometry-specific node placement + connectivity
+    if strcmp(options.network_geometry, 'random')
+
+        % ---- Existing random network path ----
+        [Atoms] = NetworkGenScatterNodes(Domain);
+
+        if strcmp(dist_type,'polydisperse')
+            [Atoms,Bonds] = NetworkGenConnectNodesPolydisperse(Domain,Atoms,options);
+            [Nvec]        = NetworkGenAssignKuhnPolydisperse(Bonds, options);
+
+        elseif strcmp(dist_type,'bimodal')
+            [Atoms,Bonds,options] = NetworkGenConnectNodesBimodal(Domain,Atoms,options,advancedOptions);
+            [Nvec]                = NetworkGenAssignKuhnBimodal(Bonds, options);
+
+        else
+            error('Error: distribution type: %s not recognized', dist_type);
+        end
+
+    elseif strcmp(options.network_geometry, 'hex_lattice')
+
+        % ---- New perfect hexagonal lattice path ----
+        [Atoms, latticeData] = NetworkGenLatticeScatterNodes(Domain, options);
+        [Atoms, Bonds] = NetworkGenLatticeConnectNodes(Domain, Atoms, latticeData, options);
+
+        % Still use your existing Kuhn assignment logic on this topology:
+        if strcmp(dist_type,'polydisperse')
+            [Nvec] = NetworkGenAssignKuhnPolydisperse(Bonds, options);
+        elseif strcmp(dist_type,'bimodal')
+            [Nvec] = NetworkGenAssignKuhnBimodal(Bonds, options);
+        else
+            error('Error: distribution type: %s not recognized', dist_type);
+        end
+
     else
-        error('Error: distribution type: %s not recognized', dist_type);
+        error('Unknown network_geometry: %s', options.network_geometry);
     end
+
 
     % contruct local density potential
     [LDpot] = NetworkGenConstructLDPotential(Domain,Atoms,Bonds,Nvec,options);
