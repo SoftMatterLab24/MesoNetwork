@@ -15,48 +15,36 @@ clc; clear; close all;
 warning off backtrace  % disable stack trace for warnings
 
 %% --------------------------- Global settings ----------------------
-% Network geometry: 'random' (existing) or 'hex_lattice' (new)
+% --- Network geometry: 'random' or 'hex_lattice'
 network_geometry = 'hex_lattice';   % 'random' | 'hex_lattice'
 
-%%% Distribution type: 'bimodal' or 'polydisperse'
+% --- Distribution type: 'bimodal' or 'polydisperse'
 dist_type = 'bimodal';
 
-% Number of networks to generate
+% --- Number of networks to generate
 Nreplicates = 1;
 
-% Kuhn length
-b = 1.6;        % Kuhn length (in nm)
+% --- Kuhn length
+b = 1.6;          % Kuhn length (in nm)
 
-% Lattice spacing (center-to-center distance between neighboring nodes)
-lattice_a = 6 * b;   % you can tune this
-
-% Lattice disorder (0 = perfect geometry, 1 = strong geometric disorder)
-lattice_disorder_level      = 0.6;   % try 0, 0.3, 0.6, 1.0
-lattice_disorder_max_frac_a = 0.4;  % max displacement radius as fraction of 'a'
-
-% Topological disorder options (bond deletions)
-lattice_topo_disorder_flag      = true;  % enable/disable bond deletions
-lattice_max_del_per_node        = 1;     % max bonds to attempt to delete per node at disorder=1
-lattice_min_degree_keep         = 5;     % don't let any node go below this degree
-
-% Domain size
+% --- Domain size
 Lx = 150*1;       % Domain size in x (in units of b)
 Ly = 90*1;        % Domain size in y (in units of b)
 
-% Domain size scaler
+% --- Domain size scaler
 scale = 1.8;  % e.g., halve the system dimensions
 
-% Boundary Conditions
+% --- Boundary Conditions
 boundary_box = 'fixed'; % 'fixed' or 'periodic' boundaries
 
-% Seed options
+% --- Seed options
 imanualseed = false;  % true: manual seed; false: random seed
 seed = [1];
 
-% Visualization
+% --- Visualization
 iplot = true;    % Show 
 
-%Save options
+% --- Save options
 isave              = true;                                    % Save data files
 write_location     = './networks';                            % Location to write output files
 lammps_data_file   = 'PolyNetwork';                           % Prefix file name for LAMMPS data output
@@ -65,46 +53,62 @@ bond_table_file    = 'bond';                                  % File name for bo
 save_name_mode     = true;                                    % true: auto add sample info to file names; false: use only fixed names
 smp_number         = 1;                                       % Sample number for file naming <- to be used for auto input script making (data sweeps)
 
-%% --------------------- Local Density Potential ----------------------
+%% --------------------- Local Density Potential Options  -----------------
 kLD     = 2*4.14; % strength factor
 N_rho   = 100000; % number of density points
 rho_min = 0.0;    % minimum density
 rho_max = 500;    % maximum density
 
-%% --------------------- Polydisperse Options ----------------------
+%% --------------------- Hexagonal Lattice Options ------------------------
+% --- Lattice spacing (center-to-center distance between neighboring nodes)
+lattice_a = 6 * b;   % you can tune this
+
+% --- Lattice disorder (0 = perfect geometry, 1 = strong geometric disorder)
+lattice_disorder_level      = 0.6;   % try 0, 0.3, 0.6, 1.0
+lattice_disorder_max_frac_a = 0.4;  % max displacement radius as fraction of 'a'
+
+% --- Topological disorder options (bond deletions)
+lattice_topo_disorder_flag      = true;  % enable/disable bond deletions
+lattice_max_del_per_node        = 1;     % max bonds to attempt to delete per node at disorder=1
+lattice_min_degree_keep         = 5;     % don't let any node go below this degree
+
+%%% --------------------- Distribution OPTIONS -------------------------%%%
+%% --------------------- Polydisperse Options -----------------------------
 
 distribution_assignment_mode_poly = 'mono';  % Kuhn segment assigment method: 'geom' | 'range' | 'pmf' | 'mono'
 
 %% --------------------- Bimodal Options ---------------------------
+% --- Average chain Kuhn segments
 N1 = 35; 
 N2 = 60; %454
 
+% --- 
 bin_window_method            = 'manual';    % Method for determining bin width of bimodal dist: 'manual' or 'adaptive'
 manual_deviation_type        = 'mixed';     % For manual bins is the standard deviation of bin width: 'kuhn' or 'mixed'
 distribution_assignment_mode = 'gaussian';  % Kuhn segment assigment method: 'single' or 'geom' or 'gaussian'
 distribution_height_mode     = 'prob';      % Distribution height method: 'prob' or 'fixed'
 long_first                   =  true;       % enable long-first mode
 
-% Double network params
+% --- Double network params
 double_network_flag = true;                 % enable double network style
 auto_N2_flag        = false;                % automatically overrides N2 given the spacing ratio and desired pre-stretch
 alpha = 2.5;                                % spacing ratio of large mesh to small mesh
 
-% Height mode settings (only one is used)
+% --- Height mode settings (only one is used)
 P = 1.0;      % Prob: desired fraction of type 2 bonds
 N2_bonds = 2; % Fixed: desired number of type 2 bonds
 
-%%% Manual mode settings
-%Prestretch
+%%% Manual mode settings (only used if bin_window_method = manual)
+% --- Prestretch
 lam1 = 1/sqrt(N1);   % Prestretched length of type 1 bonds: lam1 = [0 1], 1/sqrt(N1) (default)
-lam2 = 0.35;          % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
+lam2 = 0.35;         % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
 
-%NOTE: Kuhn uses only kuhn, mixed uses both
-%Deviation in Kuhn segment
+% NOTE: Kuhn uses only kuhn, mixed uses both
+% --- Deviation in Kuhn segment
 stdN1 = 10; % std of N1 Kuhn segment distribution         
 stdN2 = 10; % std of N2 Kuhn segment distribution 
 
-%Deviation in end-to-end length
+% --- Deviation in end-to-end length
 stdr1 = 2;   % std of the end-to-end length for r1;
 stdr2 = 12;  % std of the end-to-end length for r2; [2 5 15 25]
 
@@ -112,7 +116,7 @@ stdr2 = 12;  % std of the end-to-end length for r2; [2 5 15 25]
 iadvancedoptions = false;
 
 %% --------------------- Network Generation ------------------------
-% !!!DO NOT EDIT BELOW THIS LINE!!!
+%%% -----------  !!!DO NOT EDIT BELOW THIS LINE!!! ----------- %%%
 
 % prepare options structure
 options.dist_type          = dist_type;
@@ -133,10 +137,12 @@ options.write_location     = write_location;
 options.save_name_mode     = save_name_mode;
 options.smp_number         = smp_number;
 
+% Local density pot options
 options.LDpot_strength     = kLD;        % strength factor
 options.LDpot_N_rho        = N_rho;      % number of density points
 options.LDpot_rho_min      = rho_min;    % minimum density
 options.LDpot_rho_max      = rho_max;    % maximum density
+
 % Lattice-specific options
 options.lattice.a                  = lattice_a;
 options.lattice.edgeTol            = 0.25*lattice_a;
@@ -147,7 +153,7 @@ options.lattice.enable_topo_disorder   = lattice_topo_disorder_flag;
 options.lattice.max_topo_del_per_node  = lattice_max_del_per_node;
 options.lattice.min_degree_keep        = lattice_min_degree_keep;
 
-
+% Distribution options
 % A. Polydisperse options
 % ------------------------------------------------------------------
 % --- mode selection ---
@@ -183,8 +189,6 @@ options.bimodal.stdr1              = stdr1;
 options.bimodal.stdr2              = stdr2;
 options.bimodal.lam1               = lam1;
 options.bimodal.lam2               = lam2;
-%options.bimodal.dr1                = dr1;
-%options.bimodal.dr2                = dr2;
 options.bimodal.min_N              = 1;        % lower bound for all modes
 options.bimodal.kuhn_rounding      = 'round';  % 'round' | 'ceil' | 'floor' (used in 'geom')
 
