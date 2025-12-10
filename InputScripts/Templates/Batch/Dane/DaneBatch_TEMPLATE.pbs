@@ -1,0 +1,7 @@
+#!/bin/bash
+#SBATCH -t 12:00:00
+#SBATCH -N 1 
+#SBATCH -A uco
+
+
+srun -n 112 /g/g20/white272/lammps/build/lmp -in /p/lustre1/white272/Prony/Runs/
