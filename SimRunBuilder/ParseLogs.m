@@ -1,23 +1,5 @@
 function [logs] = ParseLogs(data_location,Data)
 
-    % Log format
-    % Sample type:
-    % Sample number:
-    % Replicate number:
-    % Number of atoms:
-    % Number of bonds:
-    % Domain size:
-    % xlo xhi
-    % ylo yhi
-    % zlo zhi
-    % Equilibrium density:
-    % Lower cutoff radius (R_lower):
-    % Upper cuttoff radius (R_upper):
-    % BPM cutoff radius (rc):
-    % Crosslink density:
-    % Kuhn segments per crosslink:
-
-
     % preallocate logs structure for format of each log file
     log_template = struct('sample_type',[],'sample_number',[],'replicate_number',[],...
         'num_atoms',[],'num_bonds',[],...

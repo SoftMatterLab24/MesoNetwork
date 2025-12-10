@@ -29,9 +29,10 @@ clampFrac = 0.1;        % Fraction of sample height to clamp in simulations
 
 %% --------------------- Store the options ----------------------
 options.dist_type = dist_type;
-optoins.sim_type = sim_type;
+options.sim_type = sim_type;
 options.iHPC = iHPC;
 options.HPC_type = HPC_type;
+options.data_location = data_location;
 options.write_location = write_location;
 options.clampFrac = clampFrac;
 %% --------------------- Run the Builder ------------------------
@@ -89,6 +90,11 @@ for iLog = 1:Data.Nlogs
 end 
 
 % get the correct template input file
+writeInputs(Data,logs,options)
+
+if options.iHPC
+ %   [] = writeSubScripts();
+end
 
 % write data and submit
 
