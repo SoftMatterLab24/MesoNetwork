@@ -23,7 +23,7 @@ dist_type = 'bimodal';
 
 % Number of networks to generate
 Nreplicates = 1;
-cd 
+
 % Kuhn length
 b = 1.6;        % Kuhn length (in nm)
 
@@ -38,7 +38,6 @@ lattice_disorder_max_frac_a = 0.4;  % max displacement radius as fraction of 'a'
 lattice_topo_disorder_flag      = true;  % enable/disable bond deletions
 lattice_max_del_per_node        = 1;     % max bonds to attempt to delete per node at disorder=1
 lattice_min_degree_keep         = 5;     % don't let any node go below this degree
-
 
 % Domain size
 Lx = 150*1;       % Domain size in x (in units of b)
@@ -232,7 +231,6 @@ end
 for ii = 1:Nreplicates
     fprintf('Generating network replicate %d of %d...\n',ii,Nreplicates);
     
-
     %% A. Prepare replicate-specific information
     % 1. Set seed
     if imanualseed
@@ -261,41 +259,41 @@ for ii = 1:Nreplicates
     %% B. Setup the system
     [Domain] = NetworkGenSetup(options,advancedOptions);
 
-    %% C. Scatter nodes with minimum spacing
-    [Atoms] = NetworkGenScatterNodes(Domain);
-
-    %% D. Connect nodes within bonds
-    %% C�D. Geometry-specific node placement + connectivity
+    %% C. Add crosslink nodes and connect with bonds
+    %1. Check geometry type
     if strcmp(options.network_geometry, 'random')
 
-        % ---- Existing random network path ----
+        % ---- Random Network Generation ----
+        % Add atoms
         [Atoms] = NetworkGenScatterNodes(Domain);
-
+        
+        % Add bonds
         if strcmp(dist_type,'polydisperse')
             [Atoms,Bonds] = NetworkGenConnectNodesPolydisperse(Domain,Atoms,options);
             [Nvec]        = NetworkGenAssignKuhnPolydisperse(Bonds,Atoms, options);
-
         elseif strcmp(dist_type,'bimodal')
             [Atoms,Bonds,options] = NetworkGenConnectNodesBimodal(Domain,Atoms,options,advancedOptions);
             [Nvec]                = NetworkGenAssignKuhnBimodal(Bonds,Atoms, options);
-
         else
             error('Error: distribution type: %s not recognized', dist_type);
         end
 
     elseif strcmp(options.network_geometry, 'hex_lattice')
 
-        % ---- New perfect hexagonal lattice path ----
+        % ---- Hexagonal lattice ----
+        % Add atoms
         [Atoms, latticeData] = NetworkGenLatticeScatterNodes(Domain, options);
+
+        % Add bonds
         [Atoms, Bonds] = NetworkGenLatticeConnectNodes(Domain, Atoms, latticeData, options);
         
+        % Add disorder
         if isfield(options,'lattice') && isfield(options.lattice,'enable_topo_disorder')
             if options.lattice.enable_topo_disorder
                 [Atoms, Bonds] = NetworkApplyLatticeTopoDisorder(Atoms, Bonds, options);
             end
         end
         
-        % Still use your existing Kuhn assignment logic on this topology:
         if strcmp(dist_type,'polydisperse')
             [Nvec] = NetworkGenAssignKuhnPolydisperse(Bonds,Atoms, options);
         elseif strcmp(dist_type,'bimodal')
@@ -308,14 +306,14 @@ for ii = 1:Nreplicates
         error('Unknown network_geometry: %s', options.network_geometry);
     end
 
-
-    % contruct local density potential
+    %2. Contruct local density potential
     [LDpot] = NetworkGenConstructLDPotential(Domain, Atoms, Bonds, Nvec, options);
     
-    %% E. Scale domain if needed
+    %% D. Scale domain if needed
     if (scale ~= 1.0)
         [Domain, Atoms, Bonds] = NetworkScaleDomain(Domain, Atoms, Bonds, scale);
     end
+
     %% E. Show visualization and statistics
     NetworkGenVisualize(Domain, Atoms, Bonds, Nvec, scale, options);
 
