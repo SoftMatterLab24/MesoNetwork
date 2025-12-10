@@ -23,6 +23,38 @@ end
 
 fprintf('   Writing network to data file...\n');
 
+% ---------- Prep filenames ---------- 
+
+% Determine network type
+if strcmpi(options.dist_type,'bimodal')
+    networkTY_prefix = 'BD';
+elseif strcmpi(options.dist_type,'polydisperse') && ~strcmpi(options.polydisperse.distribution_assignment_mode,'mono')
+    networkTY_prefix = 'PD';
+else
+    networkTY_prefix = 'MD';
+end
+
+if options.save_name_mode == true
+    % Auto naming mode: add sample info to file names
+    sample_label = sprintf('%s_%s_%s', ...
+        networkTY_prefix, ...
+        options.sample_suffix, ...
+        options.replicate_suffix);
+       
+    options.lammps_data_file   = sprintf('%s_%s.dat',options.lammps_data_file, sample_label);
+    options.lammps_visual_file = sprintf('%s_%s.dat',options.lammps_visual_file, sample_label);
+    options.bond_table_file    = sprintf('%s_%s.table',options.bond_table_file, sample_label);
+    options.log_file           = sprintf('%s.log', sample_label);
+    options.pot_file           = sprintf('%s.LD.table',sample_label);
+else
+    % Fixed names mode: use provided names directly
+    options.lammps_data_file   = sprintf('%s.dat',options.lammps_data_file);
+    options.lammps_visual_file = sprintf('%s.dat',options.lammps_visual_file);
+    options.bond_table_file    = sprintf('%s.table',options.bond_table_file);
+    options.log_file           = sprintf('%s.log',options.lammps_data_file);
+    options.pot_file           = sprintf('%s.LD.table',options.lammps_data_file);
+end
+
 % ---------- Prep paths ----------
 % Output directory
 if isfield(options,'write_location') && ~isempty(options.write_location)
@@ -47,7 +79,10 @@ end
 bondtable_path = fullfile(outdir, bond_table_file);
 
 % manybody potential path
-potfile_path = fullfile(outdir,'mytab.localdensity.table');
+potfile_path = fullfile(outdir, options.pot_file);
+
+% log file path
+logfile_path = fullfile(outdir,options.log_file);
 
 % ---------- Gather counts & domain ----------
 Atom_count = size(Atoms,1);
@@ -189,3 +224,26 @@ for i = 1:length(LDpot.pot_density)
 end
 
 fclose(fidP);
+
+
+% ---------- Write log file ----------
+fidL = fopen(logfile_path,'w');
+if fidL < 0
+    error('Could not open %s for writing.','network_log.txt');
+end
+
+fprintf(fidL,"Sample type:      %s\n", networkTY_prefix);
+fprintf(fidL,"Sample number:    %d\n", sscanf(options.sample_suffix,'SMP%d'));
+fprintf(fidL,"Replicate number: %d\n", sscanf(options.replicate_suffix,'N%d'));
+fprintf(fidL,"Number of atoms:  %d\n", Atom_count);
+fprintf(fidL,"Number of bonds:  %d\n", Bond_count);
+fprintf(fidL,"Domain size: \n xlo xhi [%.4f %.4f] \n ylo yhi [%.4f %.4f] \n zlo zhi [%.4f %.4f]\n", xlo, xhi, ylo, yhi, zlo, zhi);
+fprintf(fidL,"Equilibrium density:           %.6f\n", LDpot.rho0);
+fprintf(fidL,"Lower cutoff radius (R_lower): %.4f b\n", LDpot.R_lower/options.b);
+fprintf(fidL,"Upper cutoff radius (R_upper): %.4f b\n", LDpot.R_upper/options.b);
+fprintf(fidL,"BPM cutoff radius (rc):        %.4f b\n", LDpot.rc/options.b);
+fprintf(fidL,"Crosslink density:             %.6f\n", Atom_count / ((xhi - xlo)*(yhi - ylo)*(zhi - zlo)));
+fprintf(fidL,"Kuhn segments per crosslink:   %.4f\n", sum(Nvec) / Atom_count);
+
+fclose(fidL);
+fprintf('   Wrote %s\n',logfile_path)

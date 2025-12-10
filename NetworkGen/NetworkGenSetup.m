@@ -109,4 +109,9 @@ else
     % continue to use defaults
 end
 
+%% C. Update file names
+data_file = options.lammps_data_file;
+
+type_prefix = '';
+
 end

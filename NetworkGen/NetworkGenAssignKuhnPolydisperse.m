@@ -1,4 +1,4 @@
-function Nvec = NetworkGenAssignKuhnPolydisperse(Bonds, options)
+function Nvec = NetworkGenAssignKuhnPolydisperse(Bonds, Atoms, options)
 %NETWORKGENASSIGNKUHNPOLYDISPERSE
 % Assign per-bond Kuhn segment counts N for a polydisperse network.
 % 
@@ -24,6 +24,7 @@ function Nvec = NetworkGenAssignKuhnPolydisperse(Bonds, options)
 %   Nvec    : [BondCount x 1] integer vector of N per bond (same ordering as Bonds)
 
 % ---------- Early exits / inputs ----------
+natoms      = size(Atoms,1);
 Bond_count = size(Bonds,1);
 Nvec = zeros(Bond_count,1);
 if Bond_count == 0
@@ -180,7 +181,8 @@ switch lower(mode)
     otherwise
         error('Unknown distribution_assignment_mode: %s', mode);
 end
-
+    fprintf("   Kuhn-to-crosslinker ratio %0.4f \n",sum(Nvec)/natoms);
+    fprintf("   Average chain length %0.4f \n",sum(Nvec)/length(Nvec));
 end
 
 % ===== helper (nested at EOF for R2016a) =====

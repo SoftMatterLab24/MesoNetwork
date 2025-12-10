@@ -15,8 +15,8 @@ clc; clear; close all;
 warning off backtrace  % disable stack trace for warnings
 
 %% --------------------------- Global settings ----------------------
-% Distribution type: 'bimodal' or 'polydisperse'
-dist_type = 'polydisperse';
+%%% Distribution type: 'bimodal' or 'polydisperse'
+dist_type = 'bimodal';
 
 % Number of networks to generate
 Nreplicates = 1;
@@ -25,8 +25,8 @@ cd
 b = 1.6;        % Kuhn length (in nm)
 
 % Domain size
-Lx = 150*8;       % Domain size in x (in units of b)
-Ly = 90*8;        % Domain size in y (in units of b)
+Lx = 150*1;       % Domain size in x (in units of b)
+Ly = 90*1;        % Domain size in y (in units of b)
 
 % Domain size scaler
 scale = 1.8;  % e.g., halve the system dimensions
@@ -41,12 +41,14 @@ seed = [1];
 % Visualization
 iplot = true;    % Show 
 
-% Save options
-isave = true;  % Save data files
-lammps_data_file   = 'PolyNetwork_nano_200x200.dat';          % Prefix file name for LAMMPS data output
-lammps_visual_file = 'PolyVisual_nano_200x200.dat';           % Prefix file name for LAMMPS visualization output
-bond_table_file    = 'bond.table';                            % File name for bond table output   
+%Save options
+isave              = true;                                    % Save data files
 write_location     = './networks';                            % Location to write output files
+lammps_data_file   = 'PolyNetwork';                           % Prefix file name for LAMMPS data output
+lammps_visual_file = 'PolyVisual';                            % Prefix file name for LAMMPS visualization output
+bond_table_file    = 'bond';                                  % File name for bond table output   
+save_name_mode     = true;                                    % true: auto add sample info to file names; false: use only fixed names
+smp_number         = 1;                                       % Sample number for file naming <- to be used for auto input script making (data sweeps)
 
 %% --------------------- Local Density Potential ----------------------
 kLD     = 2*4.14; % strength factor
@@ -112,6 +114,8 @@ options.lammps_data_file   = lammps_data_file;
 options.lammps_visual_file = lammps_visual_file;
 options.bond_table_file    = bond_table_file;
 options.write_location     = write_location;
+options.save_name_mode     = save_name_mode;
+options.smp_number         = smp_number;
 
 options.LDpot_strength     = kLD;        % strength factor
 options.LDpot_N_rho        = N_rho;      % number of density points
@@ -214,11 +218,17 @@ for ii = 1:Nreplicates
     end
     rng(options.seed);
 
-    % 2. Set replicate-specific file names
+    % 2. Set sample name
+    sample_suffix = sprintf('SMP%04d',smp_number);
+    options.sample_suffix = sample_suffix;
+    
+    % 3. Set replicate-specific file names
     if Nreplicates > 1
-        options.lammps_data_file   = sprintf('%04d_%s',ii,lammps_data_file);
-        options.lammps_visual_file = sprintf('%04d_%s',ii,lammps_visual_file);
-        options.bond_table_file    = sprintf('%04d_%s',ii,bond_table_file);
+        replicate_suffix = sprintf('N%04d_',ii);
+        options.replicate_suffix = replicate_suffix;
+    else
+        replicate_suffix = sprintf('N%04d',1);
+        options.replicate_suffix = replicate_suffix;
     end
 
     %% B. Setup the system
@@ -230,28 +240,28 @@ for ii = 1:Nreplicates
     %% D. Connect nodes within bonds
     if strcmp(dist_type,'polydisperse')
         % Polydisperse network
-        [Atoms,Bonds] = NetworkGenConnectNodesPolydisperse(Domain,Atoms,options);
-        [Nvec] = NetworkGenAssignKuhnPolydisperse(Bonds, options);
+        [Atoms,Bonds] = NetworkGenConnectNodesPolydisperse(Domain, Atoms, options);
+        [Nvec] = NetworkGenAssignKuhnPolydisperse(Bonds, Atoms, options);
     elseif strcmp(dist_type,'bimodal')
         % Bimodal network
-        [Atoms,Bonds,options] = NetworkGenConnectNodesBimodal(Domain,Atoms,options,advancedOptions);
-        [Nvec] = NetworkGenAssignKuhnBimodal(Bonds, options);
+        [Atoms,Bonds,options] = NetworkGenConnectNodesBimodal(Domain, Atoms, options, advancedOptions);
+        [Nvec] = NetworkGenAssignKuhnBimodal(Bonds, Atoms, options);
     else
         error('Error: distribution type: %s not recognized', dist_type);
     end
 
     % contruct local density potential
-    [LDpot] = NetworkGenConstructLDPotential(Domain,Atoms,Bonds,Nvec,options);
+    [LDpot] = NetworkGenConstructLDPotential(Domain, Atoms, Bonds, Nvec, options);
     
     %% E. Scale domain if needed
     if (scale ~= 1.0)
         [Domain, Atoms, Bonds] = NetworkScaleDomain(Domain, Atoms, Bonds, scale);
     end
     %% E. Show visualization and statistics
-    NetworkGenVisualize(Domain,Atoms,Bonds,Nvec,scale,options);
+    NetworkGenVisualize(Domain, Atoms, Bonds, Nvec, scale, options);
 
     %% F. Write data files
-    NetworkGenWriteDataFiles(Domain,Atoms,Bonds,Nvec,LDpot,options);
+    NetworkGenWriteDataFiles(Domain, Atoms, Bonds, Nvec, LDpot, options);
     
 end
 
