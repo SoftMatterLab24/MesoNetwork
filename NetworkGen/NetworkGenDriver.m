@@ -16,7 +16,7 @@ warning off backtrace  % disable stack trace for warnings
 
 %% --------------------------- Global settings ----------------------
 % --- Network geometry: 'random' or 'hex_lattice'
-network_geometry = 'hex_lattice';   % 'random' | 'hex_lattice'
+network_geometry = 'random';   % 'random' | 'hex_lattice'
 
 % --- Distribution type: 'bimodal' or 'polydisperse'
 dist_type = 'bimodal';
@@ -51,7 +51,7 @@ lammps_data_file   = 'PolyNetwork';                           % Prefix file name
 lammps_visual_file = 'PolyVisual';                            % Prefix file name for LAMMPS visualization output
 bond_table_file    = 'bond';                                  % File name for bond table output   
 save_name_mode     = true;                                    % true: auto add sample info to file names; false: use only fixed names
-smp_number         = 1;                                       % Sample number for file naming <- to be used for auto input script making (data sweeps)
+smp_number         = 2;                                       % Sample number for file naming <- to be used for auto input script making (data sweeps)
 
 %% --------------------- Local Density Potential Options  -----------------
 kLD     = 2*4.14; % strength factor

@@ -237,11 +237,11 @@ fprintf(fidL,"Sample number:    %d\n", sscanf(options.sample_suffix,'SMP%d'));
 fprintf(fidL,"Replicate number: %d\n", sscanf(options.replicate_suffix,'N%d'));
 fprintf(fidL,"Number of atoms:  %d\n", Atom_count);
 fprintf(fidL,"Number of bonds:  %d\n", Bond_count);
-fprintf(fidL,"Domain size: \n xlo xhi [%.4f %.4f] \n ylo yhi [%.4f %.4f] \n zlo zhi [%.4f %.4f]\n", xlo, xhi, ylo, yhi, zlo, zhi);
+fprintf(fidL,"Domain size: \n xlo xhi: %.4f %.4f \n ylo yhi: %.4f %.4f \n zlo zhi: %.4f %.4f\n", xlo, xhi, ylo, yhi, zlo, zhi);
 fprintf(fidL,"Equilibrium density:           %.6f\n", LDpot.rho0);
-fprintf(fidL,"Lower cutoff radius (R_lower): %.4f b\n", LDpot.R_lower/options.b);
-fprintf(fidL,"Upper cutoff radius (R_upper): %.4f b\n", LDpot.R_upper/options.b);
-fprintf(fidL,"BPM cutoff radius (rc):        %.4f b\n", LDpot.rc/options.b);
+fprintf(fidL,"Lower cutoff radius (R_lower): %.4f\n", LDpot.R_lower/options.b);
+fprintf(fidL,"Upper cutoff radius (R_upper): %.4f\n", LDpot.R_upper/options.b);
+fprintf(fidL,"BPM cutoff radius (rc):        %.4f\n", LDpot.rc/options.b);
 fprintf(fidL,"Crosslink density:             %.6f\n", Atom_count / ((xhi - xlo)*(yhi - ylo)*(zhi - zlo)));
 fprintf(fidL,"Kuhn segments per crosslink:   %.4f\n", sum(Nvec) / Atom_count);
 

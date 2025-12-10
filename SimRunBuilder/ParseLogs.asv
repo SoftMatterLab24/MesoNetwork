@@ -1,0 +1,55 @@
+function [logs] = ParseLogs(data_location,Data)
+
+    % Log format
+    % Sample type:
+    % Sample number:
+    % Replicate number:
+    % Number of atoms:
+    % Number of bonds:
+    % Domain size:
+    % xlo xhi
+    % ylo yhi
+    % zlo zhi
+    % Equilibrium density:
+    % Lower cutoff radius (R_lower):
+    % Upper cuttoff radius (R_upper):
+    % BPM cutoff radius (rc):
+    % Crosslink density:
+    % Kuhn segments per crosslink:
+
+
+    % preallocate logs structure for format of each log file
+    log_template = struct('sample_type',[],'sample_number',[],'replicate_number',[],...
+        'num_atoms',[],'num_bonds',[],...
+        'domain_size',[],'equilibrium_density',[],...
+        'R_lower',[],'R_upper',[],'rc',[],...
+        'crosslink_density',[],'kuhn_per_crosslink',[]);
+
+    for iLog = 1:Data.Nlogs
+        logs(iLog) = log_template;
+
+        % open log file
+        log_file_path = fullfile(data_location, Data.logs{iLog});
+        fid = fopen(log_file_path,'r');
+        if fid < 0
+            error('Could not open log file: %s', log_file_path);
+        end
+        % read lines  
+        logs(iLog).sample_type          = strtrim(extractAfter(fgetl(fid),":"));
+        logs(iLog).sample_number        = str2double(strtrim(extractAfter(fgetl(fid),":")));
+        logs(iLog).replicate_number     = str2double(strtrim(extractAfter(fgetl(fid),":")));
+        logs(iLog).num_atoms            = str2double(strtrim(extractAfter(fgetl(fid),":")));
+        logs(iLog).num_bonds            = str2double(strtrim(extractAfter(fgetl(fid),":")));
+        domain_size_line                = strtrim(strtrim(extractAfter(fgetl(fid),":")));
+        logs(iLog).domain_size          = sscanf(domain_size_line, '%*s %*s %f %f %f %f %f %f');
+        logs(iLog).equilibrium_density  = str2double(strtrim(extractAfter(fgetl(fid),":")));
+        logs(iLog).R_lower              = str2double(strtrim(extractAfter(fgetl(fid),":")));
+        logs(iLog).R_upper              = str2double(strtrim(extractAfter(fgetl(fid),":")));
+        logs(iLog).rc                   = str2double(strtrim(extractAfter(fgetl(fid),":")));
+        logs(iLog).crosslink_density    = str2double(strtrim(extractAfter(fgetl(fid),":")));
+        logs(iLog).kuhn_per_crosslink   = str2double(strtrim(extractAfter(fgetl(fid),":")));
+        fclose(fid);
+
+    end
+
+end
