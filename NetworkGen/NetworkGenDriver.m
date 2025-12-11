@@ -322,12 +322,12 @@ for ii = 1:Nreplicates
 
     %% E. Show visualization and statistics
     NetworkGenVisualize(Domain, Atoms, Bonds, Nvec, scale, options);
-
-    %% F. Write data files
-    NetworkGenWriteDataFiles(Domain, Atoms, Bonds, Nvec, LDpot, options);
-
-    %% G. Compute order parameters
+    
+    %% F. Compute order parameters
     [order] = NetworkComputeOrder(Atoms,Bonds);
+    
+    %% G. Write data files
+    NetworkGenWriteDataFiles(Domain, Atoms, Bonds, Nvec, LDpot, options,order);
     
 end
 

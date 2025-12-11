@@ -1,4 +1,4 @@
-function NetworkGenWriteDataFiles(Domain,Atoms,Bonds,Nvec,LDpot,options)
+function NetworkGenWriteDataFiles(Domain,Atoms,Bonds,Nvec,LDpot,options,order)
 %NetworkGenWriteDataFiles - Write LAMMPS data file and bond.table
 % 
 % Files:
@@ -45,14 +45,14 @@ if options.save_name_mode == true
     options.lammps_visual_file = sprintf('%s_%s.dat',options.lammps_visual_file, sample_label);
     options.bond_table_file    = sprintf('%s_%s.table',options.bond_table_file, sample_label);
     options.log_file           = sprintf('%s.log', sample_label);
-    options.pot_file           = sprintf('%s.LD.table',sample_label);
+    options.pot_file           = sprintf('%s.localdensity.table',sample_label);
 else
     % Fixed names mode: use provided names directly
     options.lammps_data_file   = sprintf('%s.dat',options.lammps_data_file);
     options.lammps_visual_file = sprintf('%s.dat',options.lammps_visual_file);
     options.bond_table_file    = sprintf('%s.table',options.bond_table_file);
     options.log_file           = sprintf('%s.log',options.lammps_data_file);
-    options.pot_file           = sprintf('%s.LD.table',options.lammps_data_file);
+    options.pot_file           = sprintf('%s.localdensity.table',options.lammps_data_file);
 end
 
 % ---------- Prep paths ----------
@@ -250,6 +250,8 @@ fprintf(fidL,'Upper cutoff radius (R_upper): %.4f\n', LDpot.R_upper/options.b);
 fprintf(fidL,'BPM cutoff radius (rc):        %.4f\n', LDpot.rc/options.b);
 fprintf(fidL,'Crosslink density:             %.6f\n', Atom_count / ((xhi - xlo)*(yhi - ylo)*(zhi - zlo)));
 fprintf(fidL,'Kuhn segments per crosslink:   %.4f\n', sum(Nvec) / Atom_count);
+fprintf(fidL,'Hexatic order : %.4f\n',order.hex.phi6_hexatic);
+fprintf(fidL,'Hexagonal order : %.4f\n',order.hex.phi6_hexagonal);
 
 fclose(fidL);
 fprintf('   Wrote %s\n',logfile_path)
