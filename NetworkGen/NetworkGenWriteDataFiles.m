@@ -45,14 +45,14 @@ if options.save_name_mode == true
     options.lammps_visual_file = sprintf('%s_%s.dat',options.lammps_visual_file, sample_label);
     options.bond_table_file    = sprintf('%s_%s.table',options.bond_table_file, sample_label);
     options.log_file           = sprintf('%s.log', sample_label);
-    options.pot_file           = sprintf('%s.LD.table',sample_label);
+    options.pot_file           = sprintf('%s.localdensity.table',sample_label);
 else
     % Fixed names mode: use provided names directly
     options.lammps_data_file   = sprintf('%s.dat',options.lammps_data_file);
     options.lammps_visual_file = sprintf('%s.dat',options.lammps_visual_file);
     options.bond_table_file    = sprintf('%s.table',options.bond_table_file);
     options.log_file           = sprintf('%s.log',options.lammps_data_file);
-    options.pot_file           = sprintf('%s.LD.table',options.lammps_data_file);
+    options.pot_file           = sprintf('%s.localdensity.table',options.lammps_data_file);
 end
 
 % ---------- Prep paths ----------
