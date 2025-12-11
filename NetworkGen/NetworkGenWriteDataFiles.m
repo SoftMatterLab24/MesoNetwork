@@ -238,18 +238,18 @@ xAhi = max(Atoms(:,2));
 yAlo = min(Atoms(:,3));
 yAhi = max(Atoms(:,3));
 
-fprintf(fidL,"Sample type:      %s\n", networkTY_prefix);
-fprintf(fidL,"Sample number:    %d\n", sscanf(options.sample_suffix,'SMP%d'));
-fprintf(fidL,"Replicate number: %d\n", sscanf(options.replicate_suffix,'N%d'));
-fprintf(fidL,"Number of atoms:  %d\n", Atom_count);
-fprintf(fidL,"Number of bonds:  %d\n", Bond_count);
-fprintf(fidL,"Domain size: \n xlo xhi: %.4f %.4f \n ylo yhi: %.4f %.4f \n zlo zhi: %.4f %.4f\n", xAlo, xAhi, yAlo, yAhi, zlo, zhi);
-fprintf(fidL,"Equilibrium density:           %.6f\n", LDpot.rho0);
-fprintf(fidL,"Lower cutoff radius (R_lower): %.4f\n", LDpot.R_lower/options.b);
-fprintf(fidL,"Upper cutoff radius (R_upper): %.4f\n", LDpot.R_upper/options.b);
-fprintf(fidL,"BPM cutoff radius (rc):        %.4f\n", LDpot.rc/options.b);
-fprintf(fidL,"Crosslink density:             %.6f\n", Atom_count / ((xhi - xlo)*(yhi - ylo)*(zhi - zlo)));
-fprintf(fidL,"Kuhn segments per crosslink:   %.4f\n", sum(Nvec) / Atom_count);
+fprintf(fidL,'Sample type:      %s\n', networkTY_prefix);
+fprintf(fidL,'Sample number:    %d\n', sscanf(options.sample_suffix,'SMP%d'));
+fprintf(fidL,'Replicate number: %d\n', sscanf(options.replicate_suffix,'N%d'));
+fprintf(fidL,'Number of atoms:  %d\n', Atom_count);
+fprintf(fidL,'Number of bonds:  %d\n', Bond_count);
+fprintf(fidL,'Domain size: \n xlo xhi: %.4f %.4f \n ylo yhi: %.4f %.4f \n zlo zhi: %.4f %.4f\n', xAlo, xAhi, yAlo, yAhi, zlo, zhi);
+fprintf(fidL,'Equilibrium density:           %.6f\n', LDpot.rho0);
+fprintf(fidL,'Lower cutoff radius (R_lower): %.4f\n', LDpot.R_lower/options.b);
+fprintf(fidL,'Upper cutoff radius (R_upper): %.4f\n', LDpot.R_upper/options.b);
+fprintf(fidL,'BPM cutoff radius (rc):        %.4f\n', LDpot.rc/options.b);
+fprintf(fidL,'Crosslink density:             %.6f\n', Atom_count / ((xhi - xlo)*(yhi - ylo)*(zhi - zlo)));
+fprintf(fidL,'Kuhn segments per crosslink:   %.4f\n', sum(Nvec) / Atom_count);
 
 fclose(fidL);
 fprintf('   Wrote %s\n',logfile_path)

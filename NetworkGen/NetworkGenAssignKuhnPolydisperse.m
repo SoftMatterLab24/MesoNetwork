@@ -181,8 +181,8 @@ switch lower(mode)
     otherwise
         error('Unknown distribution_assignment_mode: %s', mode);
 end
-    fprintf("   Kuhn-to-crosslinker ratio %0.4f \n",sum(Nvec)/natoms);
-    fprintf("   Average chain length %0.4f \n",sum(Nvec)/length(Nvec));
+    fprintf('   Kuhn-to-crosslinker ratio %0.4f \n',sum(Nvec)/natoms);
+    fprintf('   Average chain length %0.4f \n',sum(Nvec)/length(Nvec));
 end
 
 % ===== helper (nested at EOF for R2016a) =====
