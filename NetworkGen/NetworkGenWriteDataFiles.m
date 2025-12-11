@@ -232,12 +232,18 @@ if fidL < 0
     error('Could not open %s for writing.','network_log.txt');
 end
 
+% Need the min and max 
+xAlo = min(Atoms(:,2));
+xAhi = max(Atoms(:,2));
+yAlo = min(Atoms(:,3));
+yAhi = max(Atoms(:,3));
+
 fprintf(fidL,"Sample type:      %s\n", networkTY_prefix);
 fprintf(fidL,"Sample number:    %d\n", sscanf(options.sample_suffix,'SMP%d'));
 fprintf(fidL,"Replicate number: %d\n", sscanf(options.replicate_suffix,'N%d'));
 fprintf(fidL,"Number of atoms:  %d\n", Atom_count);
 fprintf(fidL,"Number of bonds:  %d\n", Bond_count);
-fprintf(fidL,"Domain size: \n xlo xhi: %.4f %.4f \n ylo yhi: %.4f %.4f \n zlo zhi: %.4f %.4f\n", xlo, xhi, ylo, yhi, zlo, zhi);
+fprintf(fidL,"Domain size: \n xlo xhi: %.4f %.4f \n ylo yhi: %.4f %.4f \n zlo zhi: %.4f %.4f\n", xAlo, xAhi, yAlo, yAhi, zlo, zhi);
 fprintf(fidL,"Equilibrium density:           %.6f\n", LDpot.rho0);
 fprintf(fidL,"Lower cutoff radius (R_lower): %.4f\n", LDpot.R_lower/options.b);
 fprintf(fidL,"Upper cutoff radius (R_upper): %.4f\n", LDpot.R_upper/options.b);

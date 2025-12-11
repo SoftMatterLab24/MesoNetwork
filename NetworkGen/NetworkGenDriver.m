@@ -16,10 +16,10 @@ warning off backtrace  % disable stack trace for warnings
 
 %% --------------------------- Global settings ----------------------
 % --- Network geometry: 'random' or 'hex_lattice'
-network_geometry = 'random';   % 'random' | 'hex_lattice'
+network_geometry = 'hex_lattice';   % 'random' | 'hex_lattice'
 
 % --- Distribution type: 'bimodal' or 'polydisperse'
-dist_type = 'bimodal';
+dist_type = 'polydisperse';
 
 % --- Number of networks to generate
 Nreplicates = 1;
@@ -51,7 +51,7 @@ lammps_data_file   = 'PolyNetwork';                           % Prefix file name
 lammps_visual_file = 'PolyVisual';                            % Prefix file name for LAMMPS visualization output
 bond_table_file    = 'bond';                                  % File name for bond table output   
 save_name_mode     = true;                                    % true: auto add sample info to file names; false: use only fixed names
-smp_number         = 5;                                       % Sample number for file naming <- to be used for auto input script making (data sweeps)
+smp_number         = 1;                                       % Sample number for file naming <- to be used for auto input script making (data sweeps)
 
 %% --------------------- Local Density Potential Options  -----------------
 kLD     = 2*4.14; % strength factor
@@ -64,7 +64,7 @@ rho_max = 500;    % maximum density
 lattice_a = 6 * b;   % you can tune this
 
 % --- Lattice disorder (0 = perfect geometry, 1 = strong geometric disorder)
-lattice_disorder_level      = 0.6;   % try 0, 0.3, 0.6, 1.0
+lattice_disorder_level      = 0;   % try 0, 0.3, 0.6, 1.0
 lattice_disorder_max_frac_a = 0.4;  % max displacement radius as fraction of 'a'
 
 % --- Topological disorder options (bond deletions)
@@ -323,6 +323,9 @@ for ii = 1:Nreplicates
 
     %% F. Write data files
     NetworkGenWriteDataFiles(Domain, Atoms, Bonds, Nvec, LDpot, options);
+
+    %% G. Compute order parameters
+    [order] = NetworkComputeOrder(Atoms,Bonds);
     
 end
 
