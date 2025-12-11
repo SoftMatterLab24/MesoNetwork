@@ -1,4 +1,4 @@
-function NetworkGenWriteDataFiles(Domain,Atoms,Bonds,Nvec,LDpot,options)
+function NetworkGenWriteDataFiles(Domain,Atoms,Bonds,Nvec,LDpot,options,order)
 %NetworkGenWriteDataFiles - Write LAMMPS data file and bond.table
 % 
 % Files:
@@ -250,6 +250,8 @@ fprintf(fidL,'Upper cutoff radius (R_upper): %.4f\n', LDpot.R_upper/options.b);
 fprintf(fidL,'BPM cutoff radius (rc):        %.4f\n', LDpot.rc/options.b);
 fprintf(fidL,'Crosslink density:             %.6f\n', Atom_count / ((xhi - xlo)*(yhi - ylo)*(zhi - zlo)));
 fprintf(fidL,'Kuhn segments per crosslink:   %.4f\n', sum(Nvec) / Atom_count);
+fprintf(fidL,'Hexatic order : %.4f\n',order.hex.phi6_hexatic);
+fprintf(fidL,'Hexagonal order : %.4f\n',order.hex.phi6_hexagonal);
 
 fclose(fidL);
 fprintf('   Wrote %s\n',logfile_path)
