@@ -87,18 +87,25 @@ end
 % ---------- Refine r1_avg and r2_avg based on geometry ----------
 r1_avg = lam1*b*N1;
 
+%check r1_avg vs min allowed spacing
+r_min_allowed = max(dmin * 1.2, b * 0.5);
+if r1_avg < r_min_allowed
+    warning('r1_avg=%.3g below min separation %.3g; lifting to %.3g.', r1_avg, dmin, r_min_allowed);
+    r1_avg = r_min_allowed;
+end
+
+% if double network then scale
 if double_network
     r2_avg = dn.alpha*r1_avg;
 else
     r2_avg = lam2*b*N2;
 end
 
-r_min_allowed = max(dmin * 1.2, b * 0.5);
-if r1_avg < r_min_allowed
-    warning('r1_avg=%.3g below min separation %.3g; lifting to %.3g.', r1_avg, dmin, r_min_allowed);
-    r1_avg = r_min_allowed;
+if double_network && r2_avg < r_min_allowed
+    r2_avg = r1_avg;
 end
-if r2_avg < 1.8 * r1_avg
+
+if r2_avg < 1.8 * r1_avg && ~double_network
     warning('r2_avg too close to r1_avg (%.3g vs %.3g). Adjusting r2_avg.', r2_avg, r1_avg);
     r2_avg = 1.8 * r1_avg;
 end
@@ -108,8 +115,6 @@ if r2_avg > r2_max_allowed
     warning('r2_avg=%.3g exceeds domain size %.3g; capping to %.3g.', r2_avg, domain_diag, r2_max_allowed);
     r2_avg = r2_max_allowed;
 end
-
-
 % ---------- Window widths ----------
 A   = (xhi-xlo)*(yhi-ylo);
 rho_all = natom / max(A, epsr);
@@ -167,6 +172,9 @@ if double_network
     alpha = options.double_network.alpha; % desired spacing multiplier, e.g. 2.5
     avg_nn_spacing = sqrt((xhi-xlo)*(yhi-ylo)/natom); % crude estimate
     target_spacing = alpha * avg_nn_spacing;
+    if alpha ==1
+        target_spacing = 10;
+    end
     isSparse = pick_uniform_sparse_nodes(x, y, f_sparse, target_spacing);
     sparse_idx = find(isSparse);
 else
@@ -225,11 +233,16 @@ if long_first
             no_progress = no_progress + 1; continue;
         end
 
-        dr2_pick = dr2 * g_mul2;
-        % keep a dynamic gap vs short upper
-        r2lo = max(r2_lower - (dr2 - dr2_pick), r1_upper + gap);
-        r2hi = r2_upper + (dr2_pick - dr2);
-
+        if double_network
+            r2lo = r2_lower;
+            r2hi = r2_upper;
+        else
+            dr2_pick = dr2 * g_mul2;
+            % keep a dynamic gap vs short upper
+            r2lo = max(r2_lower - (dr2 - dr2_pick), r1_upper + gap);
+            r2hi = r2_upper + (dr2_pick - dr2);
+        end
+       
         neigh = gather_neighbors(r1, Cells, cx, cy, nx, ny,isPeriodic);
         if isempty(neigh), no_progress = no_progress + 1; continue; end
 
@@ -466,10 +479,16 @@ else
         if Atoms(r1,5) >= Max_peratom_bond
             no_progress = no_progress + 1; continue;
         end
-
-        dr2_pick = dr2 * g_mul2;
-        r2lo = max(r2_lower - (dr2 - dr2_pick), r1_upper + gap); % keep dynamic gap
-        r2hi = r2_upper + (dr2_pick - dr2);
+        
+        if double_network
+            r2lo = r2_lower;
+            r2hi = r2_upper;
+        else
+            dr2_pick = dr2 * g_mul2;
+            % keep a dynamic gap vs short upper
+            r2lo = max(r2_lower - (dr2 - dr2_pick), r1_upper + gap);
+            r2hi = r2_upper + (dr2_pick - dr2);
+        end
 
         neigh = gather_neighbors(r1, Cells, cx, cy, nx, ny, isPeriodic);
         if isempty(neigh), no_progress = no_progress + 1; continue; end

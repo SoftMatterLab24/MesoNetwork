@@ -16,10 +16,10 @@ warning off backtrace  % disable stack trace for warnings
 
 %% --------------------------- Global settings ----------------------
 % --- Network geometry: 'random' or 'hex_lattice'
-network_geometry = 'hex_lattice';   % 'random' | 'hex_lattice'
+network_geometry = 'random';   % 'random' | 'hex_lattice'
 
 % --- Distribution type: 'bimodal' or 'polydisperse'
-dist_type = 'polydisperse';
+dist_type = 'bimodal';
 
 % --- Number of networks to generate
 Nreplicates = 1;
@@ -28,8 +28,8 @@ Nreplicates = 1;
 b = 1.6;          % Kuhn length (in nm)
 
 % --- Domain size
-Lx = 150*1;       % Domain size in x (in units of b)
-Ly = 90*1;        % Domain size in y (in units of b)
+Lx = 150*4;       % Domain size in x (in units of b)
+Ly = 90*4;        % Domain size in y (in units of b)
 
 % --- Domain size scaler
 scale = 1.8;  % e.g., halve the system dimensions
@@ -91,8 +91,8 @@ long_first                   =  true;       % enable long-first mode
 
 % --- Double network params
 double_network_flag = true;                 % enable double network style
-auto_N2_flag        = false;                % automatically overrides N2 given the spacing ratio and desired pre-stretch
-alpha = 2.5;                                % spacing ratio of large mesh to small mesh
+auto_N2_flag        = true;                 % automatically overrides N2 given the spacing ratio and desired pre-stretch
+alpha               = 1.0;                  % spacing ratio of large mesh to small mesh
 
 % --- Height mode settings (only one is used)
 P = 1.0;      % Prob: desired fraction of type 2 bonds
@@ -101,7 +101,7 @@ N2_bonds = 2; % Fixed: desired number of type 2 bonds
 %%% Manual mode settings (only used if bin_window_method = manual)
 % --- Prestretch
 lam1 = 1/sqrt(N1);   % Prestretched length of type 1 bonds: lam1 = [0 1], 1/sqrt(N1) (default)
-lam2 = 0.35;         % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
+lam2 = 1*lam1;         % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
 
 % NOTE: Kuhn uses only kuhn, mixed uses both
 % --- Deviation in Kuhn segment
@@ -109,9 +109,11 @@ stdN1 = 10; % std of N1 Kuhn segment distribution
 stdN2 = 10; % std of N2 Kuhn segment distribution 
 
 % --- Deviation in end-to-end length
-stdr1 = 2;   % std of the end-to-end length for r1;
-stdr2 = 12;  % std of the end-to-end length for r2; [2 5 15 25]
+stdr1 = 3;   % std of the end-to-end length for r1;
+%stdr2 = 10;  % std of the end-to-end length for r2; [2 5 15 25]
 
+% heuristic scaling of sigr2
+stdr2 = 11.072*log(alpha) + 2.1987;
 %% --------------------- Advanced Options --------------------------
 iadvancedoptions = false;
 
