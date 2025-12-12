@@ -62,14 +62,15 @@ properties
     
     long_first          = true;         % 'true' | 'false' enable long-first mode
     double_network_flag = true;         % 'true' | 'false' enable double network style
+    auto_N1_flag        = true;         % 'true' | 'false' automatically overrides N1 given the spacing ratio and desired pre-stretch
     auto_N2_flag        = true;         % 'true' | 'false' automatically overrides N2 given the spacing ratio and desired pre-stretch
     alpha               = 1.0;          % spacing ratio of large mesh to small mesh
     P                   = 1.0;          % Prob: desired fraction of type 2 bonds
     N2_bonds            = 2;            % Fixed: desired number of type 2 bonds
     lam1                = 0.17;         % Prestretched length of type 1 bonds: lam1 = [0 1], 1/sqrt(N1) (default)
     lam2                = 0.17;         % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
-    stdN1               = 10;           % std of N1 Kuhn segment distribution  
-    stdN2               = 10;           % std of N2 Kuhn segment distribution 
+    stdN1               = 8;           % std of N1 Kuhn segment distribution  
+    stdN2               = 8;           % std of N2 Kuhn segment distribution 
     stdr1               = 3;            % std of the end-to-end length for r1;
     stdr2               = 10;           % std of the end-to-end length for r2;
 
@@ -171,6 +172,7 @@ methods
         options.bimodal.bin_window_method  = obj.bin_window_method; 
         options.bimodal.deviation_type     = obj.manual_deviation_type;
         options.double_network.flag        = obj.double_network_flag;
+        options.double_network.autoN1      = obj.auto_N1_flag;
         options.double_network.autoN2      = obj.auto_N2_flag;
         options.double_network.alpha       = obj.alpha;
 

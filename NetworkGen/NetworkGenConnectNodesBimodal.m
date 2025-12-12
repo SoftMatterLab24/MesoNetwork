@@ -45,6 +45,7 @@ isPeriodic  =  strcmpi(options.boundary_box,'Periodic');
 
 % --- Double-network flag & params (minimal style like long_first) ---
 double_network = isfield(options,'double_network') && (options.double_network.flag);
+autoN1 = isfield(options,'double_network') && (options.double_network.autoN1);
 autoN2 = isfield(options,'double_network') && (options.double_network.autoN2);
 
 if double_network
@@ -79,7 +80,6 @@ if lam1 <0 || lam1 >1
     lam1 = 1/sqrt(N1);
 end
 if lam2 <0 || lam2 >1
-    
     warning('lam2=%.3g out of range [0,1]; reverting to default: 1/sqrt(N2)=%.3g.', lam2, 1/sqrt(N2));
     lam2 = 1/sqrt(N2);
 end
@@ -127,7 +127,6 @@ if useManual
         %otherwise calculate the widths geometrically based on N widths
         dr1 = lam1*b*(2.355*sig1); % +/- 1 FWHM
         dr2 = lam2*b*(2.355*sig2);
-
     end
 else
     % density-based (adaptive)
@@ -151,10 +150,19 @@ gap = 0.1*r1_avg;
 r2_lower = r2_avg - dr2;
 r2_upper = r2_avg + dr2;
 
+% ---------- Auto N1/N2 mode ----------
+if autoN1
+    N1old = N1;
+    R1AVG = 0.5*(r1_upper - r1_lower) + r1_lower;
+    N1 = R1AVG/(lam1*b);
+    fprintf("   Auto N1 mode enabled. Adjusting N1 from %.0d to %.0d\n",N1old,N1);
+    options.bimodal.N1 = N1;
+end
+
 if autoN2
     N2old = N2;
     R2AVG = 0.5*(r2_upper - r2_lower) + r2_lower;
-    N2 = R2AVG/(lam2*b);
+    N2 = 1.4*R2AVG/(lam2*b);
     fprintf("   Auto N2 mode enabled. Adjusting N2 from %.0d to %.0d\n",N2old,N2);
     options.bimodal.N2 = N2;
 end
@@ -172,7 +180,7 @@ if double_network
     alpha = options.double_network.alpha; % desired spacing multiplier, e.g. 2.5
     avg_nn_spacing = sqrt((xhi-xlo)*(yhi-ylo)/natom); % crude estimate
     target_spacing = alpha * avg_nn_spacing;
-    if alpha ==1
+    if alpha == 1
         target_spacing = 10;
     end
     isSparse = pick_uniform_sparse_nodes(x, y, f_sparse, target_spacing);

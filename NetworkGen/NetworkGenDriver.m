@@ -79,7 +79,7 @@ distribution_assignment_mode_poly = 'mono';  % Kuhn segment assigment method: 'g
 
 %% --------------------- Bimodal Options ---------------------------
 % --- Average chain Kuhn segments
-N1 = 35; 
+N1 = 40; 
 N2 = 60; %454
 
 % --- 
@@ -91,8 +91,9 @@ long_first                   =  true;       % enable long-first mode
 
 % --- Double network params
 double_network_flag = true;                 % enable double network style
+auto_N1_flag        = true;                 % automatically overrides N1 given the spacing ratio and desired pre-stretch
 auto_N2_flag        = true;                 % automatically overrides N2 given the spacing ratio and desired pre-stretch
-alpha               = 1.0;                  % spacing ratio of large mesh to small mesh
+alpha               = 3.0;                  % spacing ratio of large mesh to small mesh
 
 % --- Height mode settings (only one is used)
 P = 1.0;      % Prob: desired fraction of type 2 bonds
@@ -100,13 +101,13 @@ N2_bonds = 2; % Fixed: desired number of type 2 bonds
 
 %%% Manual mode settings (only used if bin_window_method = manual)
 % --- Prestretch
-lam1 = 1/sqrt(N1);   % Prestretched length of type 1 bonds: lam1 = [0 1], 1/sqrt(N1) (default)
-lam2 = 1*lam1;         % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
+lam1 = 0.1;   % Prestretched length of type 1 bonds: lam1 = [0 1], 1/sqrt(N1) (default)
+lam2 = 4*lam1;         % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
 
 % NOTE: Kuhn uses only kuhn, mixed uses both
 % --- Deviation in Kuhn segment
 stdN1 = 10; % std of N1 Kuhn segment distribution         
-stdN2 = 10; % std of N2 Kuhn segment distribution 
+stdN2 = 8; % std of N2 Kuhn segment distribution 
 
 % --- Deviation in end-to-end length
 stdr1 = 3;   % std of the end-to-end length for r1;
@@ -198,6 +199,7 @@ options.bimodal.long_first         = long_first;
 options.bimodal.bin_window_method  = bin_window_method; 
 options.bimodal.deviation_type     = manual_deviation_type;
 options.double_network.flag        = double_network_flag;
+options.double_network.autoN1      = auto_N1_flag;
 options.double_network.autoN2      = auto_N2_flag;
 options.double_network.alpha       = alpha;
 
