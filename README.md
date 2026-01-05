@@ -4,11 +4,55 @@ This repository contains various mesoscale network models for studying mechanica
 
 All projects utilize the opensource [LAMMPS](https://www.lammps.org/#gsc.tab=0) MD codebase, under the custom [meso-network](https://github.com/SoftMatterLab24/lammps/tree/meso-network) branch. Please see the Installing LAMMPS section for more guidance.
 
-## Branches
+## Branches (OUTDATED)
 Code for specific models can be found within the following branches
 
 - **Poly** -- Elastic networks with polydispersity
 - **Visco** -- Viscoelastic networks with bimodal chain length distribution
+
+## Using the Network Generator
+The network generator is a multi-purpose tool that can be used to generate many different types of networks (hexagonal lattice, random, double) whose properties (i.e. contour length, connectivity, etc.) seek to follow physically realistic statistics. The network generator requires MATLAB Version 2016b or later. There are two ways to use the Generator: 1. (Open and run the ```/NetworkGen/NetworkGenDriver.m``` directly) OR 2. (Create a "network" object from the ```/NetworkGen/network.m``` class).
+
+### 1. Running the Generator from the Driver
+To execute the generator from the driver, first download the source code either manually or by cloning the repository. Once installed open ```/NetworkGen/NetworkGenDriver.m```
+
+...to be expanded upon
+
+### 2. Generating a network from a network object
+An alternative approach is to create a network object, modify the desired properties, and then pass the object to the ```generateNetwork``` function. This may be beneficial if many networks each with different properties need to be generated, which could otherwise become cumbersome to make with the driver. To use this method:
+1. Open a Linux terminal and navigate to the home directory or location you wish to install the generator. Then clone this repository:
+```
+git clone https://github.com/SoftMatterLab24/MesoNetwork.git
+```
+2. Once installed open a powershell terminal and in the root of the cloned directory run
+```powershell
+.\addPath.bat
+```
+This will save the network class to your MATLAB PATH, so that it can be accessed from any open editor. A defender window will prompt you to allow MATLAB to make these changes. Once this is done exit powershell.
+
+3. Now in a MATLAB script you can create a network object from the network class, modify its properties, and generate a network as:
+```matlab
+clear all
+
+% Create a network object
+n = network;  
+
+% Modify network properties
+n.Lx = 100;               % Change the x-dim boundary length
+n.dist_type = 'bimodal';  % Change the Kuhn segment distribution type
+
+% Generate a network
+[Domain, Atoms, Bonds, Nvec, order] = generateNetwork(n);
+```
+
+### 3. Using the networks with LAMMPS
+Unless saving is disabled the generator will automatically create the required data and table files needed to run LAMMPS simulations. By default four files are saved:
+1. data file (.dat) which contains the atoms and bonds data to be used by the [read_data](https://docs.lammps.org/read_data.html) command.
+2. bond table file (bond.table) which stores extra bond data to be used by various bond styles in the [meso-network](https://github.com/SoftMatterLab24/lammps/tree/meso-network) branch
+3. local density table file (.localdensity.table) which stores tabulated data for the [local_density](https://docs.lammps.org/pair_local_density.html) pairstyle
+4. A log file (.log) with summary information about the generated network, which is also used by Simulation Builder.
+
+## Using the Simulation Builder
 
 ## Installing & Running LAMMPS
 While LAMMPS offers both Windows and Mac compatability, we recommend using a Linux environment. For Windows users the recommended option is to install Windows Subsystem for Linux (WSL). A usefull guide can be found [here](https://docs.lammps.org/Howto_wsl.html). For a Linux distribution try Ubuntu 20.04.6 LTS.

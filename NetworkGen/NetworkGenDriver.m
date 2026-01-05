@@ -16,10 +16,10 @@ warning off backtrace  % disable stack trace for warnings
 
 %% --------------------------- Global settings ----------------------
 % --- Network geometry: 'random' or 'hex_lattice'
-network_geometry = 'hex_lattice';   % 'random' | 'hex_lattice'
+network_geometry = 'random';   % 'random' | 'hex_lattice'
 
 % --- Distribution type: 'bimodal' or 'polydisperse'
-dist_type = 'polydisperse';
+dist_type = 'bimodal';
 
 % --- Number of networks to generate
 Nreplicates = 1;
@@ -28,8 +28,13 @@ Nreplicates = 1;
 b = 1.6;          % Kuhn length (in nm)
 
 % --- Domain size
+<<<<<<< HEAD
 Lx = 150*8;       % Domain size in x (in units of b)
 Ly = 90*8;        % Domain size in y (in units of b)
+=======
+Lx = 150*4;       % Domain size in x (in units of b)
+Ly = 90*4;        % Domain size in y (in units of b)
+>>>>>>> 9cfe724c1ce3fec87388caf462339159effe2037
 
 % --- Domain size scaler
 scale = 3.4;  % e.g., halve the system dimensions
@@ -79,8 +84,13 @@ distribution_assignment_mode_poly = 'mono';  % Kuhn segment assigment method: 'g
 
 %% --------------------- Bimodal Options ---------------------------
 % --- Average chain Kuhn segments
+<<<<<<< HEAD
 N1 = 35; 
 N2 = 60; 
+=======
+N1 = 40; 
+N2 = 60; %454
+>>>>>>> 9cfe724c1ce3fec87388caf462339159effe2037
 
 % --- 
 bin_window_method            = 'manual';    % Method for determining bin width of bimodal dist: 'manual' or 'adaptive'
@@ -91,8 +101,9 @@ long_first                   =  true;       % enable long-first mode
 
 % --- Double network params
 double_network_flag = true;                 % enable double network style
-auto_N2_flag        = false;                % automatically overrides N2 given the spacing ratio and desired pre-stretch
-alpha = 2.5;                                % spacing ratio of large mesh to small mesh
+auto_N1_flag        = true;                 % automatically overrides N1 given the spacing ratio and desired pre-stretch
+auto_N2_flag        = true;                 % automatically overrides N2 given the spacing ratio and desired pre-stretch
+alpha               = 3.0;                  % spacing ratio of large mesh to small mesh
 
 % --- Height mode settings (only one is used)
 P = 1.0;      % Prob: desired fraction of type 2 bonds
@@ -100,18 +111,20 @@ N2_bonds = 2; % Fixed: desired number of type 2 bonds
 
 %%% Manual mode settings (only used if bin_window_method = manual)
 % --- Prestretch
-lam1 = 1/sqrt(N1);   % Prestretched length of type 1 bonds: lam1 = [0 1], 1/sqrt(N1) (default)
-lam2 = 0.35;         % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
+lam1 = 0.1;   % Prestretched length of type 1 bonds: lam1 = [0 1], 1/sqrt(N1) (default)
+lam2 = 4*lam1;         % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
 
 % NOTE: Kuhn uses only kuhn, mixed uses both
 % --- Deviation in Kuhn segment
 stdN1 = 10; % std of N1 Kuhn segment distribution         
-stdN2 = 10; % std of N2 Kuhn segment distribution 
+stdN2 = 8; % std of N2 Kuhn segment distribution 
 
 % --- Deviation in end-to-end length
-stdr1 = 2;   % std of the end-to-end length for r1;
-stdr2 = 12;  % std of the end-to-end length for r2; [2 5 15 25]
+stdr1 = 3;   % std of the end-to-end length for r1;
+%stdr2 = 10;  % std of the end-to-end length for r2; [2 5 15 25]
 
+% heuristic scaling of sigr2
+stdr2 = 11.072*log(alpha) + 2.1987;
 %% --------------------- Advanced Options --------------------------
 iadvancedoptions = false;
 
@@ -196,6 +209,7 @@ options.bimodal.long_first         = long_first;
 options.bimodal.bin_window_method  = bin_window_method; 
 options.bimodal.deviation_type     = manual_deviation_type;
 options.double_network.flag        = double_network_flag;
+options.double_network.autoN1      = auto_N1_flag;
 options.double_network.autoN2      = auto_N2_flag;
 options.double_network.alpha       = alpha;
 
