@@ -28,11 +28,11 @@ Nreplicates = 1;
 b = 1.6;          % Kuhn length (in nm)
 
 % --- Domain size
-Lx = 150*1;       % Domain size in x (in units of b)
-Ly = 90*1;        % Domain size in y (in units of b)
+Lx = 150*8;       % Domain size in x (in units of b)
+Ly = 90*8;        % Domain size in y (in units of b)
 
 % --- Domain size scaler
-scale = 1.8;  % e.g., halve the system dimensions
+scale = 3.4;  % e.g., halve the system dimensions
 
 % --- Boundary Conditions
 boundary_box = 'fixed'; % 'fixed' or 'periodic' boundaries
@@ -64,7 +64,7 @@ rho_max = 500;    % maximum density
 lattice_a = 6 * b;   % you can tune this
 
 % --- Lattice disorder (0 = perfect geometry, 1 = strong geometric disorder)
-lattice_disorder_level      = 0;   % try 0, 0.3, 0.6, 1.0
+lattice_disorder_level      = 1;   % try 0, 0.3, 0.6, 1.0
 lattice_disorder_max_frac_a = 0.4;  % max displacement radius as fraction of 'a'
 
 % --- Topological disorder options (bond deletions)
@@ -80,7 +80,7 @@ distribution_assignment_mode_poly = 'mono';  % Kuhn segment assigment method: 'g
 %% --------------------- Bimodal Options ---------------------------
 % --- Average chain Kuhn segments
 N1 = 35; 
-N2 = 60; %454
+N2 = 60; 
 
 % --- 
 bin_window_method            = 'manual';    % Method for determining bin width of bimodal dist: 'manual' or 'adaptive'
@@ -173,8 +173,8 @@ options.polydisperse.N_target_min    = 20;       % integer lower target
 options.polydisperse.N_target_max    = 120;      % integer upper target
 
 % --- 'pmf' mode (truncated geometric with hard cap based on exp distribution) ---
-options.polydisperse.pmf_nu0         = 50;       % ν0 (minimum)
-options.polydisperse.pmf_meanN       = 70;       % target mean of ν after truncation
+options.polydisperse.pmf_nu0         = 40;       % ν0 (minimum)
+options.polydisperse.pmf_meanN       = 50;       % target mean of ν after truncation
 options.polydisperse.pmf_cut_mode    = 'cap';    % keep as 'cap'
 options.polydisperse.pmf_nu_max      = 280;       % hard maximum ν (≥ ν0)
 options.polydisperse.integerize_rule = 'largest_remainder'; % allocation method
@@ -297,6 +297,11 @@ for ii = 1:Nreplicates
                 [Atoms, Bonds] = NetworkApplyLatticeTopoDisorder(Atoms, Bonds, options);
             end
         end
+        
+        % Rebuild neighbor lists (choose max_nbr=6 for triangular, or 4 to
+        % match your older 4-neighbor layout)
+        max_nbr = 6;
+        Atoms    = NetworkBuildNeighborLists(Atoms, Bonds, max_nbr);
         
         if strcmp(dist_type,'polydisperse')
             [Nvec] = NetworkGenAssignKuhnPolydisperse(Bonds,Atoms, options);

@@ -16,16 +16,16 @@ xi = 1.6; %mesh size (LJ lengthscale)
 crack_mode = 'notch'; % 'sharp' or 'notch'
 
 %% Crack dimensions
-c       = 780*xi;     % notch length
+c       = 2000*xi;     % notch length
 t       = 75*xi;       % notch thickness
 alpha   = 90;         % taper angle (deg)
 
 %!!! MUST BE UPDATED !!!
-xmin = -3145; %leftmost xboundary of the network (look at .dump)
+xmin = -2540; %leftmost xboundary of the network (look at .dump)
 
 %location to lammps outputs (atoms_equilib.dump,bonds_equilib.dump)
 % <<<<<<< HEAD
-loc = 'E:\PhD\My Research\Polydisperse_fracture\PAPER\PD_middist_smp3';
+loc = 'G:\LAMMPS_data\Notch_length_study\EX_MD_smp1';
 % =======
 % loc = 'C:\Users\zwhit\Downloads\polydisperse_net_generator\Runs\bimodal\Unnotched\002';
 % >>>>>>> 751163b0431be0507b5c99b0adcda654be0fa46b
@@ -38,8 +38,8 @@ table_name ='bond.table';
 ivisual = 1; %create visual dump
 
 %new write names
-lammps_data_file   = 'PolyNetworkCrack_nano.dat';
-lammps_table_file  = 'bondC.table';
+lammps_data_file   = 'PolyNetwork_MD_SMP0001_N0001_crack.dat';
+lammps_table_file  = 'bondC_MD_SMP0001_N0001.table';
 lammps_visual_file = 'PronyNetworkCrack_VISUAL2_1000.dat';
 %% --------------------------- Create Crack -------------------------------
 

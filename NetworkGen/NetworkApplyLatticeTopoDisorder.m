@@ -98,7 +98,13 @@ end
 %   => p_del ~ disorder_level * max_del_per_node / 6
 % -------------------------------------------------------------------------
 lambda_node = disorder_level * max_del_per_node;
-p_del = lambda_node / 6.0;
+
+d_avg = 2.0 * Nbonds / Natoms;   % average degree of current network
+if d_avg > 0
+    p_del = lambda_node / d_avg;
+else
+    p_del = 0;
+end
 
 % Clamp to [0, 0.9] to avoid pathological behavior
 if p_del < 0
