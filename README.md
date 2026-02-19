@@ -79,7 +79,7 @@ cd build
 ```
 5. Run cmake with proper packages (more packages can be apppended as necessary)
 ```
-cmake -D PKG_BPM=yes -D PKG_EXTRA-FIX=yes -D PKG_GRANULAR=yes -D PKG_MISC=yes -D PKG_MOLECULE=yes -D PKG_RIGID=yes -D PKG_TNT=yes -D PKG_EXTRA-MOLECULE=yes -D PKG_COLLOID=yes -D PKG_MC=yes -D PKG_BROWNIAN=yes ../cmake
+cmake -D PKG_BPM=yes -D PKG_EXTRA-FIX=yes -D PKG_GRANULAR=yes -D PKG_MISC=yes -D PKG_MOLECULE=yes -D PKG_RIGID=yes -D PKG_TNT=yes -D PKG_EXTRA-MOLECULE=yes -D PKG_COLLOID=yes -D PKG_MC=yes -D PKG_BROWNIAN=yes -D PKG_MANYBODY=yes ../cmake
 ```
 6. Compile lammps (enter the number of processors you have, if you don’t know choose 4)
 ```
