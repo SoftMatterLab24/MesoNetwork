@@ -27,9 +27,9 @@ Samples = struct('dataDir',{},'bondsDumpFile',{},'bondTableFile',{},'has_b_in_du
 % EXAMPLE: add samples (edit paths)
 root = 'E:\PhD\My Research\Polydisperse_fracture\PAPER';
 Samples(end+1) = struct( ...
-  'dataDir',       fullfile(root,'bimodal_equilibrated_samples'), ...
-  'bondsDumpFile', fullfile(root,'bimodal_equilibrated_samples','bimodal_bondequib_001.dump'), ...
-  'bondTableFile', fullfile(root,'bimodal_equilibrated_samples','bond.table'), ...
+  'dataDir',       fullfile(root,'PD_smp2'), ...
+  'bondsDumpFile', fullfile(root,'PD_smp2','bonds.dump'), ...
+  'bondTableFile', fullfile(root,'PD_smp2','bond.table'), ...
   'has_b_in_dump', true);
 
 % --- Plot look ---
@@ -53,8 +53,8 @@ normalize_types_separately = true;   % true: each type PDF integrates to 1
 
 % --- Misc ---
 show_per_sample_overlays = false; %#ok<NASGU>
-col_main   = [221 132 146]/255;
-color_line = [203 54 88]/255;
+col_main   = [37 193 205]/255;
+color_line = [21 96 130]/255;
 
 %% ===================== LOAD ALL SAMPLES (PASS 1) =====================
 ns = numel(Samples);
@@ -98,7 +98,7 @@ for s = 1:ns
     end
 
     % ---- Derived quantities ----
-    Lc      = N .* b;
+    Lc      = N;
     lambda0 = r ./ Lc;
 
     % ---- Store per-sample ----
@@ -318,17 +318,21 @@ all_N_unique = unique(All_N);
 figure('Name','Contour length L_c = N \times b (averaged)'); hold on;
 set(gca,'FontName','Times New Roman','FontSize',15);
 
-if numel(all_N_unique) == 1 && numel(unique_types) == 1
-    Lc0 = all_N_unique * b_const;
+if max(All_Lc) - min(All_Lc) < 1e-12
+    Lc0 = All_Lc(1);
+
     bar(Lc0, 1, 'FaceColor', col_main, 'EdgeColor', color_line, 'BarWidth', 1);
+
     xlabel('Contour length L_c = N \times b');
     ylabel('Probability');
-    title('L_c distribution (monodisperse)');
+    title('L_c distribution (degenerate)');
     xlim([Lc0 - 0.5*Lc0, Lc0 + 0.5*Lc0]);
     ylim([0, 1.1]);
     box on; grid off;
+
+    fprintf('Detected degenerate Lc = %.4g. Plotted single bar.\n', Lc0);
 else
-    if numel(unique_types) == 2
+   if numel(unique_types) == 2
         col1 = [63 61 153]/255;
         col2 = [100 153 202]/255;
         if strcmp(plotMode,'hist')

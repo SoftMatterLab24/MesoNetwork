@@ -85,16 +85,25 @@ potfile_path = fullfile(outdir, options.pot_file);
 logfile_path = fullfile(outdir,options.log_file);
 
 % ---------- Gather counts & domain ----------
+% ---------- Gather counts & domain ----------
 Atom_count = size(Atoms,1);
 Bond_count = size(Bonds,1);
+[~, ncol]  = size(Bonds);   % <-- ADD THIS LINE ALWAYS
 
-natype = 1;
+isComplex = isfield(options,'network_geometry') && strcmpi(options.network_geometry,'complex_multi_type');
 
-[~, ncol] = size(Bonds);
-if ncol > 4
-    nbtype = max(Bonds(:,5));
+if isComplex
+    natype = 2;
+    nbtype = 4; % force 4 bond types always
+    typecol = Domain.atomType_col;
 else
-    nbtype = 1;
+    natype = 1;
+    [~, ncol] = size(Bonds);
+    if ncol > 4
+        nbtype = max(Bonds(:,5));
+    else
+        nbtype = 1;
+    end
 end
 
 xlo = Domain.xlo; xhi = Domain.xhi;
@@ -120,15 +129,23 @@ fprintf(fid, '\n');
 fprintf(fid, 'Atoms #bpm/sphere\n\n');
 % Format: atomID  molID  atomType  diameter  density   x  y  z
 for i = 1:Atom_count
-    fprintf(fid, '%d 1 1 1 1 %.16g %.16g %.16g\n', ...
-        Atoms(i,1), Atoms(i,2), Atoms(i,3), Atoms(i,4));
+    if isComplex
+        atype_i = Atoms(i, typecol);
+    else
+        atype_i = 1;
+    end
+    fprintf(fid, '%d 1 %d 1 1 %.16g %.16g %.16g\n', ...
+        Atoms(i,1), atype_i, Atoms(i,2), Atoms(i,3), Atoms(i,4));
 end
 
 fprintf(fid, '\nBonds\n\n');
 % Format: bondID  bondType  atom1  atom2
 for i = 1:Bond_count
-    if ncol > 4; btype = Bonds(i,5); else btype = 1; end
-        
+    if size(Bonds,2) >= 5
+        btype = Bonds(i,5);
+    else
+        btype = 1;
+    end
     fprintf(fid, '%d %d %d %d\n', Bonds(i,1), btype, Bonds(i,2), Bonds(i,3));
 end
 

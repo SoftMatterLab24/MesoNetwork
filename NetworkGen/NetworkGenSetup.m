@@ -60,6 +60,26 @@ Domain.min_degree_keep            = min_degree_keep;
 Domain.min_node_sep        = min_node_sep;      
 Domain.min_node_sep2       = min_node_sep2;
 
+% ---- Complex geometry overrides (2 atom types, 3 used bond types + reserved 4th) ----
+if isfield(options,'network_geometry') && strcmpi(options.network_geometry,'complex_multi_type')
+    cap1  = options.complex.max_bondtype1_per_atom;
+    cap23 = options.complex.max_bondtype23_per_atom;
+
+    % Total neighbor slots needed for Atoms neighbor list
+    Max_peratom_bond = cap1 + cap23;
+
+    % Update caps based on total
+    Max_bond = round(0.5*Max_atom*Max_peratom_bond);
+
+    Domain.Max_peratom_bond = Max_peratom_bond;
+    Domain.Max_bond         = Max_bond;
+
+    % Store useful indices for complex Atoms layout:
+    % [ID x y z deg nbr... atomType]
+    Domain.maxNbrTotal  = Max_peratom_bond;
+    Domain.atomType_col = 6 + Max_peratom_bond;   % col index where atomType is stored
+end
+
 %% B. Override advanced options
 if (advancedOptions.iadvancedoptions)
 

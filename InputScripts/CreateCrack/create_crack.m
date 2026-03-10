@@ -16,16 +16,16 @@ xi = 1.6; %mesh size (LJ lengthscale)
 crack_mode = 'notch'; % 'sharp' or 'notch'
 
 %% Crack dimensions
-c       = 2000*xi;     % notch length
+c       = 650*xi;     % notch length
 t       = 75*xi;       % notch thickness
 alpha   = 90;         % taper angle (deg)
 
 %!!! MUST BE UPDATED !!!
-xmin = -2540; %leftmost xboundary of the network (look at .dump)
+xmin = -2359; %leftmost xboundary of the network (look at .dump)
 
 %location to lammps outputs (atoms_equilib.dump,bonds_equilib.dump)
 % <<<<<<< HEAD
-loc = 'G:\LAMMPS_data\Notch_length_study\EX_MD_smp1';
+loc = 'G:\LAMMPS_data\Viscous_fracture\Fracture\EX_PD_BETA20_aT_1e8_unnotched';
 % =======
 % loc = 'C:\Users\zwhit\Downloads\polydisperse_net_generator\Runs\bimodal\Unnotched\002';
 % >>>>>>> 751163b0431be0507b5c99b0adcda654be0fa46b
@@ -33,7 +33,7 @@ loc = 'G:\LAMMPS_data\Notch_length_study\EX_MD_smp1';
 %dump names
 atom_name = 'atoms_equilib.dump';
 bond_name = 'bonds_equilib.dump';
-table_name ='bond.table';
+table_name ='bond_MD_SMP0001_N0001.table';
 
 ivisual = 1; %create visual dump
 
@@ -191,8 +191,9 @@ elseif strcmpi(crack_mode,'notch')
     % Find atoms in notch region
     tip_dx = (t/2)*(tand(alpha/2));
 
-    notch_xmin = 1.1*xmin;
-    notch_xmax = notch_xmin + c - tip_dx;
+    notch_xmin = 1.0*xmin;
+%     notch_xmax = notch_xmin + c - tip_dx;
+    notch_xmax = notch_xmin + c;
 
     notch_ymin = -t/2;
     notch_ymax = t/2;

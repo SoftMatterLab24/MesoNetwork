@@ -31,7 +31,7 @@ isPeriodic  =  strcmpi(options.boundary_box,'Periodic');
 if isfield(Domain,'Rcut')
     Rcut = Domain.Rcut;
 else
-    Rcut = 4.5 * Domain.min_node_sep;   % fallback
+    Rcut = 1.85 * Domain.min_node_sep;   % fallback
 end
 Rcut2 = Rcut*Rcut;
 
@@ -55,7 +55,7 @@ cy = floor((y - ylo)/hy) + 1; cy = max(1, min(ny, cy));
 
 Cells = cell(nx, ny);
 for i=1:natom
-    Cells{cx(i), cy(i)}(end+1) = i; %#ok<AGROW>
+    Cells{cx(i), cy(i)}(end+1) = i;
 end
 %% Compute cell indices for each row
 %cx = floor((x - xlo) / hx) + 1;   % 1..nx

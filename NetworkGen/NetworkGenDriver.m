@@ -15,11 +15,11 @@ clc; clear; close all;
 warning off backtrace  % disable stack trace for warnings
 
 %% --------------------------- Global settings ----------------------
-% --- Network geometry: 'random' or 'hex_lattice'
-network_geometry = 'random';   % 'random' | 'hex_lattice'
+% --- Network geometry: 'random' or 'hex_lattice' or 'complex_multi_type'
+network_geometry = 'complex_multi_type';   % 'random' | 'hex_lattice' | 'complex_multi_type'
 
 % --- Distribution type: 'bimodal' or 'polydisperse'
-dist_type = 'bimodal';
+dist_type = 'polydisperse';
 
 % --- Number of networks to generate
 Nreplicates = 1;
@@ -28,16 +28,19 @@ Nreplicates = 1;
 b = 1.6;          % Kuhn length (in nm)
 
 % --- Domain size
-<<<<<<< HEAD
-Lx = 150*8;       % Domain size in x (in units of b)
-Ly = 90*8;        % Domain size in y (in units of b)
-=======
-Lx = 150*4;       % Domain size in x (in units of b)
-Ly = 90*4;        % Domain size in y (in units of b)
->>>>>>> 9cfe724c1ce3fec87388caf462339159effe2037
+% <<<<<<< HEAD
+Lx = 150*1.5;       % Domain size in x (in units of b)
+Ly = 150*1.5;        % Domain size in y (in units of b)
+
+% Lx = 150*16;       % Domain size in x (in units of b)
+% Ly = 90*16;        % Domain size in y (in units of b)
+% =======
+% Lx = 150*4;       % Domain size in x (in units of b)
+% Ly = 90*4;        % Domain size in y (in units of b)
+% >>>>>>> 9cfe724c1ce3fec87388caf462339159effe2037
 
 % --- Domain size scaler
-scale = 3.4;  % e.g., halve the system dimensions
+scale = 1.25;  % e.g., halve the system dimensions
 
 % --- Boundary Conditions
 boundary_box = 'fixed'; % 'fixed' or 'periodic' boundaries
@@ -84,13 +87,13 @@ distribution_assignment_mode_poly = 'mono';  % Kuhn segment assigment method: 'g
 
 %% --------------------- Bimodal Options ---------------------------
 % --- Average chain Kuhn segments
-<<<<<<< HEAD
-N1 = 35; 
-N2 = 60; 
-=======
+% <<<<<<< HEAD
 N1 = 40; 
-N2 = 60; %454
->>>>>>> 9cfe724c1ce3fec87388caf462339159effe2037
+N2 = 60; 
+% =======
+% N1 = 40; 
+% N2 = 60; %454
+% >>>>>>> 9cfe724c1ce3fec87388caf462339159effe2037
 
 % --- 
 bin_window_method            = 'manual';    % Method for determining bin width of bimodal dist: 'manual' or 'adaptive'
@@ -101,9 +104,9 @@ long_first                   =  true;       % enable long-first mode
 
 % --- Double network params
 double_network_flag = true;                 % enable double network style
-auto_N1_flag        = true;                 % automatically overrides N1 given the spacing ratio and desired pre-stretch
+auto_N1_flag        = false;                 % automatically overrides N1 given the spacing ratio and desired pre-stretch
 auto_N2_flag        = true;                 % automatically overrides N2 given the spacing ratio and desired pre-stretch
-alpha               = 3.0;                  % spacing ratio of large mesh to small mesh
+alpha               = 5.0;                  % spacing ratio of large mesh to small mesh
 
 % --- Height mode settings (only one is used)
 P = 1.0;      % Prob: desired fraction of type 2 bonds
@@ -111,13 +114,13 @@ N2_bonds = 2; % Fixed: desired number of type 2 bonds
 
 %%% Manual mode settings (only used if bin_window_method = manual)
 % --- Prestretch
-lam1 = 0.1;   % Prestretched length of type 1 bonds: lam1 = [0 1], 1/sqrt(N1) (default)
-lam2 = 4*lam1;         % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
+lam1 = 0.2;   % Prestretched length of type 1 bonds: lam1 = [0 1], 1/sqrt(N1) (default)
+lam2 = 2.5*lam1;         % Prestretched length of type 2 bonds: lam2 = [0 1], 1/sqrt(N2) (default)
 
 % NOTE: Kuhn uses only kuhn, mixed uses both
 % --- Deviation in Kuhn segment
 stdN1 = 10; % std of N1 Kuhn segment distribution         
-stdN2 = 8; % std of N2 Kuhn segment distribution 
+stdN2 = 5; % std of N2 Kuhn segment distribution 
 
 % --- Deviation in end-to-end length
 stdr1 = 3;   % std of the end-to-end length for r1;
@@ -125,6 +128,22 @@ stdr1 = 3;   % std of the end-to-end length for r1;
 
 % heuristic scaling of sigr2
 stdr2 = 11.072*log(alpha) + 2.1987;
+
+%% --- Complex multi-type settings ---
+options.complex.phi_type2              = 0.50;   % fraction of nodes that are atomType=2
+options.complex.max_bondtype1_per_atom = 5;      % backbone degree cap per node (bond type 1)
+options.complex.max_bondtype23_per_atom= 2;      % total cap per node for (bond type 2 + 3)
+options.complex.AB_fill                = 1.0;    % 1.0 means "try to fill to the cap", <1 reduces AB density
+options.complex.frac_bond2             = 0.50;   % among AB bonds, fraction that are bondType=2 (rest is type 3)
+
+% Cutoffs (leave empty to use fallback = 1.85*min_node_sep)
+options.complex.Rcut_backbone          = [];     % e.g. 1.85*min_node_sep
+options.complex.Rcut_AB                = [];     % e.g. 1.85*min_node_sep
+
+% Monodisperse N for bond types 1/2/3
+options.complex.N_type1 = 40;
+options.complex.N_type2 = 40;
+options.complex.N_type3 = 40;
 %% --------------------- Advanced Options --------------------------
 iadvancedoptions = false;
 
@@ -187,7 +206,7 @@ options.polydisperse.N_target_max    = 120;      % integer upper target
 
 % --- 'pmf' mode (truncated geometric with hard cap based on exp distribution) ---
 options.polydisperse.pmf_nu0         = 40;       % ν0 (minimum)
-options.polydisperse.pmf_meanN       = 50;       % target mean of ν after truncation
+options.polydisperse.pmf_meanN       = 40;       % target mean of ν after truncation
 options.polydisperse.pmf_cut_mode    = 'cap';    % keep as 'cap'
 options.polydisperse.pmf_nu_max      = 280;       % hard maximum ν (≥ ν0)
 options.polydisperse.integerize_rule = 'largest_remainder'; % allocation method
@@ -324,6 +343,15 @@ for ii = 1:Nreplicates
         else
             error('Error: distribution type: %s not recognized', dist_type);
         end
+        
+    elseif strcmp(options.network_geometry, 'complex_multi_type')
+
+        % ---- Complex Multi-Type random network ----
+        [Atoms]        = NetworkGenScatterNodesComplexMultiType(Domain, options);
+        [Atoms, Bonds] = NetworkGenConnectBackboneComplex(Domain, Atoms, options);     % bondType=1, degree cap=5
+        [Atoms, Bonds] = NetworkGenAddABBondsComplex(Domain, Atoms, Bonds, options);  % bondType=2/3, AB-only, cap=2 total
+        [Nvec]         = NetworkGenAssignKuhnComplexMonodisperse(Bonds, options);
+
 
     else
         error('Unknown network_geometry: %s', options.network_geometry);
