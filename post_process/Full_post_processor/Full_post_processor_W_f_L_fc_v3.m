@@ -71,13 +71,39 @@ polyPairs = {
 %    'E:\PhD\My Research\Polydisperse_fracture\PAPER\sample_alpine_huge_erate_1e-6', ...
 %    'E:\PhD\My Research\Polydisperse_fracture\PAPER\sample_alpine_huge_erate_1e-6_notched';
 
-   'G:\LAMMPS_data\Notch_length_study\EX_PD_widerdist_smp1', ...
-   'G:\LAMMPS_data\Notch_length_study\EX_PD_widerdist_smp1_notched1600nm';
+   %'G:\LAMMPS_data\Notch_length_study\EX_PD_widerdist_smp1', ...
+   %'G:\LAMMPS_data\Notch_length_study\EX_PD_widerdist_smp1_notched1600nm';
 };
 
 % ----------------- BIMODAL pairs -----------------
 bimoPairs = {
 %    'E:\PhD\...\BD_smp1', 'E:\PhD\...\BD_smp1_notched';
+     'E:\PhD\Projects\Polydisperse\Runs\bimodal\sweep\unnotched\0001', ...
+     'E:\PhD\Projects\Polydisperse\Runs\bimodal\sweep\notched\0001';
+
+     'E:\PhD\Projects\Polydisperse\Runs\bimodal\sweep\unnotched\0002', ...
+     'E:\PhD\Projects\Polydisperse\Runs\bimodal\sweep\notched\0002';
+
+     'E:\PhD\Projects\Polydisperse\Runs\bimodal\sweep\unnotched\0003', ...
+     'E:\PhD\Projects\Polydisperse\Runs\bimodal\sweep\notched\0003';
+     
+     'E:\PhD\Projects\Polydisperse\Runs\bimodal\sweep\unnotched\0004', ...
+     'E:\PhD\Projects\Polydisperse\Runs\bimodal\sweep\notched\0004';
+
+     'E:\PhD\Projects\Polydisperse\Runs\bimodal\sweep\unnotched\0005', ...
+     'E:\PhD\Projects\Polydisperse\Runs\bimodal\sweep\notched\0005';
+
+     'E:\PhD\Projects\Polydisperse\Runs\bimodal\sweep\unnotched\0006', ...
+     'E:\PhD\Projects\Polydisperse\Runs\bimodal\sweep\notched\0006';
+
+     'E:\PhD\Projects\Polydisperse\Runs\bimodal\sweep\unnotched\0007', ...
+     'E:\PhD\Projects\Polydisperse\Runs\bimodal\sweep\notched\0007';
+
+     'E:\PhD\Projects\Polydisperse\Runs\bimodal\sweep\unnotched\0008', ...
+     'E:\PhD\Projects\Polydisperse\Runs\bimodal\sweep\notched\0008';
+
+     'E:\PhD\Projects\Polydisperse\Runs\bimodal\sweep\unnotched\0009', ...
+     'E:\PhD\Projects\Polydisperse\Runs\bimodal\sweep\notched\0009';
 };
 
 % ----------------- Common file names / options -----------------

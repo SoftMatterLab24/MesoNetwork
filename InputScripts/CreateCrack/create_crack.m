@@ -16,30 +16,31 @@ xi = 1.6; %mesh size (LJ lengthscale)
 crack_mode = 'notch'; % 'sharp' or 'notch'
 
 %% Crack dimensions
-c       = 2000*xi;     % notch length
+c       = 750*xi;     % notch length
 t       = 75*xi;       % notch thickness
 alpha   = 90;         % taper angle (deg)
 
 %!!! MUST BE UPDATED !!!
-xmin = -2540; %leftmost xboundary of the network (look at .dump)
+xmin = -2627; %leftmost xboundary of the network (look at .dump)
 
 %location to lammps outputs (atoms_equilib.dump,bonds_equilib.dump)
-% <<<<<<< HEAD
-loc = 'G:\LAMMPS_data\Notch_length_study\EX_MD_smp1';
-% =======
-% loc = 'C:\Users\zwhit\Downloads\polydisperse_net_generator\Runs\bimodal\Unnotched\002';
-% >>>>>>> 751163b0431be0507b5c99b0adcda654be0fa46b
+
+%loc = 'G:\LAMMPS_data\Notch_length_study\EX_MD_smp1';
+loc = 'E:\PhD\Projects\1 - Dynamic Fracture\network\Fracture\PD\beta35\test_equilib';
 
 %dump names
 atom_name = 'atoms_equilib.dump';
 bond_name = 'bonds_equilib.dump';
-table_name ='bond.table';
+table_name ='bond_PD_SMP0001_N0001.table';
 
-ivisual = 1; %create visual dump
+ivisual = 0; %create visual dump
+
+% boundary settings
+domain_scaled = true; % are coordinates scaled or absolute
 
 %new write names
-lammps_data_file   = 'PolyNetwork_MD_SMP0001_N0001_crack.dat';
-lammps_table_file  = 'bondC_MD_SMP0001_N0001.table';
+lammps_data_file   = 'PolyNetwork_PD_SMP0001_N0001_crack.dat';
+lammps_table_file  = 'bondC_PD_SMP0001_N0001.table';
 lammps_visual_file = 'PronyNetworkCrack_VISUAL2_1000.dat';
 %% --------------------------- Create Crack -------------------------------
 
@@ -73,12 +74,12 @@ TYPE = ty{end};
 bondType = bType{end};
 
 %typology
-iatom = bAtom1{end};
-jatom = bAtom2{end};
+iatom = double(bAtom1{end});
+jatom = double(bAtom2{end});
 
 %IDs
-ID = id{end};
-MOL = mol{end};
+ID = double(id{end});
+MOL = double(mol{end});
 
 %get bond xcentroid
 %for ii = 1:length(bondType)
@@ -353,7 +354,7 @@ fprintf(fidt,'N %d\n\n', length(id_t));
 
 for i = 1:length(id_t)
     i
-    fprintf(fidt, '%d %d %d %f %f\n', id_t(i), iatom_t_new(i), jatom_t_new(i), N(i), b(i));
+    fprintf(fidt, '%d %d %d %d %f\n', id_t(i), iatom_t_new(i), jatom_t_new(i), N(i), b(i));
 end
 fclose(fidt);
 

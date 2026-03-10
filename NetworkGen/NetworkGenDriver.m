@@ -19,7 +19,7 @@ warning off backtrace  % disable stack trace for warnings
 network_geometry = 'random';   % 'random' | 'hex_lattice'
 
 % --- Distribution type: 'bimodal' or 'polydisperse'
-dist_type = 'bimodal';
+dist_type = 'polydisperse';
 
 % --- Number of networks to generate
 Nreplicates = 1;
@@ -28,16 +28,11 @@ Nreplicates = 1;
 b = 1.6;          % Kuhn length (in nm)
 
 % --- Domain size
-<<<<<<< HEAD
-Lx = 150*8;       % Domain size in x (in units of b)
-Ly = 90*8;        % Domain size in y (in units of b)
-=======
-Lx = 150*4;       % Domain size in x (in units of b)
-Ly = 90*4;        % Domain size in y (in units of b)
->>>>>>> 9cfe724c1ce3fec87388caf462339159effe2037
+Lx = 150*8;       % Domain size in x (in units of b) 9
+Ly = 150*4.33;        % Domain size in y (in units of b) 5.33
 
 % --- Domain size scaler
-scale = 3.4;  % e.g., halve the system dimensions
+scale = 1.0;  % e.g., halve the system dimensions
 
 % --- Boundary Conditions
 boundary_box = 'fixed'; % 'fixed' or 'periodic' boundaries
@@ -84,13 +79,8 @@ distribution_assignment_mode_poly = 'mono';  % Kuhn segment assigment method: 'g
 
 %% --------------------- Bimodal Options ---------------------------
 % --- Average chain Kuhn segments
-<<<<<<< HEAD
 N1 = 35; 
 N2 = 60; 
-=======
-N1 = 40; 
-N2 = 60; %454
->>>>>>> 9cfe724c1ce3fec87388caf462339159effe2037
 
 % --- 
 bin_window_method            = 'manual';    % Method for determining bin width of bimodal dist: 'manual' or 'adaptive'
@@ -182,14 +172,14 @@ options.polydisperse.kuhn_rounding   = 'round';  % 'round' | 'ceil' | 'floor' (u
 
 % --- 'range' mode (map lengths → [N_min,N_max]) ---
 options.polydisperse.N_range_method  = 'rank';   % 'rank' | 'linear'
-options.polydisperse.N_target_min    = 20;       % integer lower target
+options.polydisperse.N_target_min    = 5;       % integer lower target
 options.polydisperse.N_target_max    = 120;      % integer upper target
 
 % --- 'pmf' mode (truncated geometric with hard cap based on exp distribution) ---
-options.polydisperse.pmf_nu0         = 40;       % ν0 (minimum)
-options.polydisperse.pmf_meanN       = 50;       % target mean of ν after truncation
+options.polydisperse.pmf_nu0         = 20;       % ν0 (minimum) - 20   (3)
+options.polydisperse.pmf_meanN       = 40;       % target mean of ν after truncation - 40 (5)
 options.polydisperse.pmf_cut_mode    = 'cap';    % keep as 'cap'
-options.polydisperse.pmf_nu_max      = 280;       % hard maximum ν (≥ ν0)
+options.polydisperse.pmf_nu_max      = 120;       % hard maximum ν (≥ ν0) -120 (10)
 options.polydisperse.integerize_rule = 'largest_remainder'; % allocation method
 
 % B. Bimodal options
