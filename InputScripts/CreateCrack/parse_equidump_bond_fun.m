@@ -57,8 +57,11 @@ while 1 == 1
     bForce{ii}  = C{5};
     N{ii}       = C{6};
     b{ii}       = C{7};
-    %b1{ii} = C{6};
-    %b2{ii} = C{7};
+    b1{ii} = C{6};
+    b2{ii} = C{7};
+    b3{ii} = C{8};
+    b4{ii} = C{9};
+    b5{ii} = C{10};
     % bForcez{ii} = C{8};
     % bEngpot{ii} = C{6};
 

@@ -18,6 +18,12 @@ end
 
 fprintf('   Visualizing network...\n');
 
+isComplex = isfield(options,'network_geometry') && strcmpi(options.network_geometry,'complex_multi_type');
+if isComplex
+    typecol = Domain.atomType_col;
+    atype = Atoms(:,typecol);
+end
+
 % --------------------- Unpack & Setup ---------------------
 N_atom = length(Atoms);
 Total_bond = size(Bonds, 1);
@@ -25,31 +31,49 @@ Total_bond = size(Bonds, 1);
 isPeriodic  =  strcmpi(options.boundary_box,'Periodic');
 
 % --------------------- Plot final bonds ---------------------
-if strcmp(options.dist_type,'bimodal')
-    figure; hold on;
+figure; hold on;
 
-    scatter(Atoms(1:N_atom,2), Atoms(1:N_atom,3), 6, 'k', 'filled');
-    for k = 1:Total_bond
-        if Bonds(k,1) == 0, continue; end
-        i1 = Bonds(k,2); i2 = Bonds(k,3);
-        if Bonds(k,5) == 1
-            plot([Atoms(i1,2) Atoms(i2,2)], [Atoms(i1,3) Atoms(i2,3)], 'Color',[150 150 150]/255,'LineWidth',0.25);
-        else
-            plot([Atoms(i1,2) Atoms(i2,2)], [Atoms(i1,3) Atoms(i2,3)], 'r-','LineWidth',1.75);
-        end
-    
-    end
-    axis equal tight; title('Final bonds (post-prune)');
+% nodes
+N_atom = size(Atoms,1);
+if isComplex
+    scatter(Atoms(atype==1,2), Atoms(atype==1,3), 8, 'k', 'filled');
+    scatter(Atoms(atype==2,2), Atoms(atype==2,3), 8, 'r', 'filled');
 else
-    figure; hold on;
     scatter(Atoms(1:N_atom,2), Atoms(1:N_atom,3), 6, 'k', 'filled');
-    for k = 1:Total_bond
-        if Bonds(k,1) == 0, continue; end
-        i1 = Bonds(k,2); i2 = Bonds(k,3);
-        plot([Atoms(i1,2) Atoms(i2,2)], [Atoms(i1,3) Atoms(i2,3)], 'k-');
-    end
-    axis equal tight; title('Final bonds (post-prune)');
 end
+
+% bonds
+for k = 1:Total_bond
+    if Bonds(k,1) == 0, continue; end
+    i1 = Bonds(k,2); i2 = Bonds(k,3);
+
+    if isComplex && size(Bonds,2) >= 5
+        bt = Bonds(k,5);
+        if bt == 1
+            plot([Atoms(i1,2) Atoms(i2,2)], [Atoms(i1,3) Atoms(i2,3)], ...
+                'Color',[0.2 0.2 0.2], 'LineWidth',0.5);
+        elseif bt == 2
+            plot([Atoms(i1,2) Atoms(i2,2)], [Atoms(i1,3) Atoms(i2,3)], ...
+                'b-', 'LineWidth',1.2);
+        elseif bt == 3
+            plot([Atoms(i1,2) Atoms(i2,2)], [Atoms(i1,3) Atoms(i2,3)], ...
+                'm-', 'LineWidth',1.2);
+        else
+            plot([Atoms(i1,2) Atoms(i2,2)], [Atoms(i1,3) Atoms(i2,3)], ...
+                'g-', 'LineWidth',0.8);
+        end
+    else
+        % legacy plotting
+        if strcmp(options.dist_type,'bimodal') && size(Bonds,2) >= 5 && Bonds(k,5) ~= 1
+            plot([Atoms(i1,2) Atoms(i2,2)], [Atoms(i1,3) Atoms(i2,3)], 'r-','LineWidth',1.75);
+        else
+            plot([Atoms(i1,2) Atoms(i2,2)], [Atoms(i1,3) Atoms(i2,3)], 'k-');
+        end
+    end
+end
+
+axis equal tight;
+title('Final bonds (post-prune)');
 % --------------------- Network stats (Kuhn length) ---------------------
 
 % ---------- Optional histogram ----------

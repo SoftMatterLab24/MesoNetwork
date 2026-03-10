@@ -97,7 +97,7 @@ while 1 == 1
     columns = fgetl(fid);
 
     % Read the rest of the file 
-    C = textscan(fid,'%u %u %u %f %f %d %d %f %f %f');
+    C = textscan(fid,'%u %u %u %f %f %d %f %f %f %f %f %f %f');
 
     bType{ii}   = C{1};
     bAtom1{ii}  = C{2};
@@ -106,6 +106,9 @@ while 1 == 1
     bForce{ii}  = C{5};
     b1{ii} = C{6};
     b2{ii} = C{7};
+    b3{ii} = C{8};
+    b4{ii} = C{9};
+    b5{ii} = C{10};
     % bForcez{ii} = C{8};
     % bEngpot{ii} = C{6};
 

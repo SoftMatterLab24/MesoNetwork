@@ -155,7 +155,7 @@ if autoN1
     N1old = N1;
     R1AVG = 0.5*(r1_upper - r1_lower) + r1_lower;
     N1 = R1AVG/(lam1*b);
-    fprintf("   Auto N1 mode enabled. Adjusting N1 from %.0d to %.0d\n",N1old,N1);
+    fprintf('Auto N1 mode enabled. Adjusting N1 from %.0d to %.0d\n',N1old,N1);
     options.bimodal.N1 = N1;
 end
 
@@ -163,7 +163,7 @@ if autoN2
     N2old = N2;
     R2AVG = 0.5*(r2_upper - r2_lower) + r2_lower;
     N2 = 1.4*R2AVG/(lam2*b);
-    fprintf("   Auto N2 mode enabled. Adjusting N2 from %.0d to %.0d\n",N2old,N2);
+    fprintf('Auto N2 mode enabled. Adjusting N2 from %.0d to %.0d\n',N2old,N2);
     options.bimodal.N2 = N2;
 end
 

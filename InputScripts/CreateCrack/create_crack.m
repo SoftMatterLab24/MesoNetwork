@@ -192,8 +192,9 @@ elseif strcmpi(crack_mode,'notch')
     % Find atoms in notch region
     tip_dx = (t/2)*(tand(alpha/2));
 
-    notch_xmin = 1.1*xmin;
-    notch_xmax = notch_xmin + c - tip_dx;
+    notch_xmin = 1.0*xmin;
+%     notch_xmax = notch_xmin + c - tip_dx;
+    notch_xmax = notch_xmin + c;
 
     notch_ymin = -t/2;
     notch_ymax = t/2;

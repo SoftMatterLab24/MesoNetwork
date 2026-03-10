@@ -55,7 +55,7 @@ cy = floor((y - ylo)/hy) + 1; cy = max(1, min(ny, cy));
 
 Cells = cell(nx, ny);
 for i=1:natom
-    Cells{cx(i), cy(i)}(end+1) = i; %#ok<AGROW>
+    Cells{cx(i), cy(i)}(end+1) = i;
 end
 %% Compute cell indices for each row
 %cx = floor((x - xlo) / hx) + 1;   % 1..nx
