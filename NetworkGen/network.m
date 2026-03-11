@@ -11,7 +11,7 @@ properties
     );
 
     %%% Domain
-    domain = struct( ...
+    domain = struct(...
         );
 
     %%% Architecture subclass
@@ -21,7 +21,7 @@ properties
     peratom = struct(...
     );
 
-    %%% Per/bond
+    %%% Per/bond subclass
     perbond bondstyle
 
     %%% Defect
@@ -30,6 +30,10 @@ properties
 
     %%% Potential
     pot = struct(...
+    );
+
+    %%% log
+    log = struct(...
     );
 
 end
