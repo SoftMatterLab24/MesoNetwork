@@ -4,11 +4,12 @@ This repository contains various mesoscale network models for studying mechanica
 
 All projects utilize the opensource [LAMMPS](https://www.lammps.org/#gsc.tab=0) MD codebase, under the custom [meso-network](https://github.com/SoftMatterLab24/lammps/tree/meso-network) branch. Please see the Installing LAMMPS section for more guidance.
 
-## Branches (OUTDATED)
+## Branches
 Code for specific models can be found within the following branches
 
-- **Poly** -- Elastic networks with polydispersity
-- **Visco** -- Viscoelastic networks with bimodal chain length distribution
+- **Stable** -- This is the most up-to-date stable version of the Network Generator
+- **Develop** -- This branch includes features that are currently under development and therefore may not interact in a stable manner with other portions of the generator.
+- **Version0** -- (Not Recommended) This is a deprecated earlier version of the generator that is no longer updated. Please be aware that significant changes have been made between this branch and the **stable** and **develop** branches.
 
 ## Using the Network Generator
 The network generator is a multi-purpose tool that can be used to generate many different types of networks (hexagonal lattice, random, double) whose properties (i.e. contour length, connectivity, etc.) seek to follow physically realistic statistics. The network generator requires MATLAB Version 2016b or later. There are two ways to use the Generator: 1. (Open and run the ```/NetworkGen/NetworkGenDriver.m``` directly) OR 2. (Create a "network" object from the ```/NetworkGen/network.m``` class).
