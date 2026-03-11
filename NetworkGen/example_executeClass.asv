@@ -1,6 +1,6 @@
 n = network;
 
-n.arch.
+n.arch
 n.flags.isave = false;
 
 

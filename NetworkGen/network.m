@@ -3,7 +3,6 @@ classdef network < handle
 properties
 
     % Define properites and set default parameters
-    %options = struct();
 
     %%% Flags
     flags = struct(...
@@ -15,21 +14,33 @@ properties
     domain = struct( ...
         );
 
-    %%% Architecture
- 
+    %%% Architecture subclass
+    arch architecture 
 
     %%% Per/atom
+    peratom = struct(...
+    );
 
     %%% Per/bond
+    perbond bondstyle
 
     %%% Defect
+    defect = struct(...
+    );
 
     %%% Potential
-
+    pot = struct(...
+    );
 
 end
 
 methods
+
+    % Explicitly initialize subclass objects in the constructor
+    function obj = network()
+        obj.arch = architecture();
+        obj.perbond = bondstyle();
+    end
 
     function [] = generateNetwork(obj)
 

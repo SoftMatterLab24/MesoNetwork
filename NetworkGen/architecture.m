@@ -1,9 +1,9 @@
-classdef architecture < network
+classdef architecture
 
 properties
 
     %%% Architecture
-    arch = struct('type', 1);
+    poly = 1;
 
 end
 
