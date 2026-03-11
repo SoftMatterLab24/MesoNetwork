@@ -16,10 +16,9 @@ warning off backtrace  % disable stack trace for warnings
 
 %% --------------------------- Global settings ----------------------
 % --- Network geometry: 'random' or 'hex_lattice' or 'complex_multi_type'
-network_geometry = 'complex_multi_type';   % 'random' | 'hex_lattice' | 'complex_multi_type'
+network_geometry = 'random';   % 'random' | 'hex_lattice' | 'complex_multi_type'
 
 % --- Distribution type: 'bimodal' or 'polydisperse'
-dist_type = 'polydisperse';
 dist_type = 'polydisperse';
 
 % --- Number of networks to generate
@@ -29,8 +28,8 @@ Nreplicates = 1;
 b = 1.6;          % Kuhn length (in nm)
 
 % --- Domain size
-Lx = 150*8;       % Domain size in x (in units of b) 9
-Ly = 150*4.33;        % Domain size in y (in units of b) 5.33
+Lx = 150*3;       % Domain size in x (in units of b) 8
+Ly = 150*3;       % Domain size in y (in units of b) 4.33
 
 % --- Domain size scaler
 scale = 1.0;  % e.g., halve the system dimensions
@@ -55,7 +54,7 @@ save_name_mode     = true;                                    % true: auto add s
 smp_number         = 1;                                       % Sample number for file naming <- to be used for auto input script making (data sweeps)
 
 %% --------------------- Local Density Potential Options  -----------------
-kLD     = 2*4.14; % strength factor
+kLD     = 0.1*4.14; % strength factor
 N_rho   = 100000; % number of density points
 rho_min = 0.0;    % minimum density
 rho_max = 500;    % maximum density
@@ -73,10 +72,23 @@ lattice_topo_disorder_flag      = true;  % enable/disable bond deletions
 lattice_max_del_per_node        = 1;     % max bonds to attempt to delete per node at disorder=1
 lattice_min_degree_keep         = 5;     % don't let any node go below this degree
 
+%% --------------------- Lattice Heterogeneities Options ------------------
+options.density_mode        = 'area_fraction';
+options.void_area_frac      = 0.95;             % 15% of domain is void
+options.size_dist           = 'gaussian';       % sparse regions vary in size 'fixed' or 'gaussian' or 'exponential'
+options.radius_mean         = 12*b;
+options.shape_roughness     = .3; % 0-1
+options.shape_n_modes       = 2;
+options.void_overlap        = false;
+options.bridge_width        = 3*b;
+options.center_distribution = 'clustered';
+options.clamp_frac          = 0.12;
+options.margin_frac         = 0.1;
+
 %%% --------------------- Distribution OPTIONS -------------------------%%%
 %% --------------------- Polydisperse Options -----------------------------
 
-distribution_assignment_mode_poly = 'mono';  % Kuhn segment assigment method: 'geom' | 'range' | 'pmf' | 'mono'
+distribution_assignment_mode_poly = 'pmf';  % Kuhn segment assigment method: 'geom' | 'range' | 'pmf' | 'mono'
 
 %% --------------------- Bimodal Options ---------------------------
 % --- Average chain Kuhn segments
@@ -193,10 +205,10 @@ options.polydisperse.N_target_min    = 5;       % integer lower target
 options.polydisperse.N_target_max    = 120;      % integer upper target
 
 % --- 'pmf' mode (truncated geometric with hard cap based on exp distribution) ---
-options.polydisperse.pmf_nu0         = 40;       % ν0 (minimum)
-options.polydisperse.pmf_meanN       = 50;       % target mean of ν after truncation
+options.polydisperse.pmf_nu0         = 3;       % ν0 (minimum)
+options.polydisperse.pmf_meanN       = 5;       % target mean of ν after truncation
 options.polydisperse.pmf_cut_mode    = 'cap';    % keep as 'cap'
-options.polydisperse.pmf_nu_max      = 120;       % hard maximum ν (≥ ν0) -120 (10)
+options.polydisperse.pmf_nu_max      = 10;       % hard maximum ν (≥ ν0) -120 (10)
 options.polydisperse.integerize_rule = 'largest_remainder'; % allocation method
 
 % B. Bimodal options
@@ -295,6 +307,7 @@ for ii = 1:Nreplicates
         % Add bonds
         if strcmp(dist_type,'polydisperse')
             [Atoms,Bonds] = NetworkGenConnectNodesPolydisperse(Domain,Atoms,options);
+            [Atoms,Bonds] = NetworkAddHeterogeneities(Atoms, Bonds, Domain, options);
             [Nvec]        = NetworkGenAssignKuhnPolydisperse(Bonds,Atoms, options);
         elseif strcmp(dist_type,'bimodal')
             [Atoms,Bonds,options] = NetworkGenConnectNodesBimodal(Domain,Atoms,options,advancedOptions);
