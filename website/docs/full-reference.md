@@ -12,10 +12,8 @@ A complete flat reference of all NetworkGen settings. For detailed descriptions 
 | Setting | Type | Args | Default |
 |---------|------|------|---------|
 | `net.domain.b` | `double` | (0, ∞) | `1.6` |
-| `net.domain.dimension` | `double` | `2` \| `3` | `2` |
 | `net.domain.Lx` | `double` | (0, ∞) | `150` |
 | `net.domain.Ly` | `double` | (0, ∞) | `150` |
-| `net.domain.Lz` | `double` | (0, ∞) | `10` |
 | `net.domain.scale` | `double` | (0, ∞) | `1` |
 | `net.domain.boundary` | `string` | `'fixed'` \| `'periodic'` | `'fixed'` |
 | `net.domain.seed` | `int` | [1, ∞) | `12345` |

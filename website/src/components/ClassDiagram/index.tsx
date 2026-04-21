@@ -11,7 +11,7 @@ const CLASSES = [
     fields: [
       { name: 'Nreplicates', type: 'int', default: '1', desc: 'Number of network replicates to generate in a single call.' },
       { name: 'flags', type: 'struct', default: '—', desc: 'Boolean control flags: isave, iplot, ilog, savemode, imanualseed, idefect, ipotential.' },
-      { name: 'domain', type: 'struct', default: '—', desc: 'Domain settings: b, Lx, Ly, Lz, scale, boundary, seed, write_location, file prefixes.' },
+      { name: 'domain', type: 'struct', default: '—', desc: 'Domain settings: b, Lx, Ly, scale, boundary, seed, write_location, file prefixes.' },
       { name: 'peratom', type: 'struct', default: '—', desc: 'Per-atom constraints: Max_peratom_bond, min_degree_keep.' },
       { name: 'perbond', type: 'bondstyle', default: 'bondstyle()', desc: 'Per-bond property assignments. Subclass — see bondstyle.', isRef: true, refId: 'bondstyle' },
       { name: 'defect', type: 'struct', default: '—', desc: 'Defect settings: density_mode, n_voids, size_dist, radius_mean, center_distribution, etc.' },

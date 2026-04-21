@@ -131,7 +131,7 @@ net.architecture.lattice_min_degree_keep = 3;
 |------|------|---------|
 | `double` | (0, ∞) | `0.0078` |
 
-Target atom number density (atoms per unit area in 2D, atoms per unit volume in 3D). Used to determine the total number of nodes to place in the domain.
+Target atom number density in the 2D domain (atoms per unit area). Used to determine the total number of nodes to place in the domain.
 
 ```matlab
 net.architecture.rho_atom = 0.5;

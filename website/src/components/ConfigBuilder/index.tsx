@@ -22,9 +22,9 @@ const SECTION_COLORS = {
 const DEFAULT = {
   b: 1.6, Lx: 10, Ly: 10, boundary: 'fixed', seed: 12345,
   write_location: './networks', lammps_data_file: 'PolyNetwork',
-  lammps_viz_file: 'PolyVisual', smp_number: 1, scale: 1,
+  lammps_viz_file: 'PolyVisual', bond_table_file: 'bond', scale: 1,
 
-  geometry: 'random', rho_atom: 0.0078, max_peratom_bond: 6,
+  geometry: 'random', rho_atom: 0.0078, max_peratom_bond: 6, min_degree_keep: 2,
   lattice_spacing: 6, spacing_multiplier_mode: 'auto',
   spacing_multiplier: 1.2, lattice_disorder_level: 0,
   lattice_disorder_maxfrac: 0.4, lattice_topo_disorder: false,
@@ -32,13 +32,29 @@ const DEFAULT = {
 
   typology_mode: 'mono',
   mono_value: 20,
-  poly_method: 'pmf', poly_pmf_mean: 40, poly_pmf_min: 5,
+  poly_method: 'pmf', poly_min_value: 1, poly_pmf_mean: 40, poly_pmf_min: 5,
   poly_pmf_max: 120, poly_rounding: 'round', poly_align: 'none',
+  poly_range_method: 'rank', poly_target_min: 5, poly_target_max: 120,
   bimodal_method: 'gaussian', bimodal_mean1: 10, bimodal_mean2: 40,
   bimodal_std1: 2, bimodal_std2: 5, bimodal_height_mode: 'prob',
   bimodal_height_prob: 0.5, bimodal_height_count: 2, bimodal_long_first: true,
+  bimodal_min_value: 1, bimodal_double_network_flag: false, bimodal_alpha: 3.0,
+  bimodal_auto_1_flag: false, bimodal_auto_2_flag: false,
+  bimodal_bin_window_method: 'manual', bimodal_manual_dev_type: 'mixed',
+  bimodal_stdR_1: 3, bimodal_stdR_2: 10, bimodal_lam_1: 0.2, bimodal_lam_2: 0.5,
 
   kuhn_auto: true, kuhn_mode: 'mono', kuhn_mono_value: 20,
+  kuhn_poly_method: 'pmf', kuhn_poly_min_value: 1, kuhn_poly_pmf_mean: 40,
+  kuhn_poly_pmf_min: 20, kuhn_poly_pmf_max: 120, kuhn_poly_rounding: 'round',
+  kuhn_poly_align: 'ascend', kuhn_poly_range_method: 'rank',
+  kuhn_poly_target_min: 5, kuhn_poly_target_max: 120,
+  kuhn_bimodal_method: 'gaussian', kuhn_bimodal_mean1: 10, kuhn_bimodal_mean2: 40,
+  kuhn_bimodal_std1: 2, kuhn_bimodal_std2: 5, kuhn_bimodal_height_mode: 'prob',
+  kuhn_bimodal_height_prob: 0.5, kuhn_bimodal_height_count: 2, kuhn_bimodal_long_first: true,
+  kuhn_bimodal_min_value: 1, kuhn_bimodal_double_network_flag: false, kuhn_bimodal_alpha: 3.0,
+  kuhn_bimodal_auto_1_flag: false, kuhn_bimodal_auto_2_flag: false,
+  kuhn_bimodal_bin_window_method: 'manual', kuhn_bimodal_manual_dev_type: 'mixed',
+  kuhn_bimodal_stdR_1: 3, kuhn_bimodal_stdR_2: 10, kuhn_bimodal_lam_1: 0.2, kuhn_bimodal_lam_2: 0.5,
 
   idefect: false, defect_density_mode: 'count', defect_n_voids: 5,
   defect_void_area_frac: 0.1, defect_size_dist: 'gaussian',
@@ -50,6 +66,12 @@ const DEFAULT = {
   defect_margin_frac: 0.15, defect_prune_isolated: true,
   defect_sparse_network: false, defect_wall_thickness: 18,
   defect_clamp_thickness: 0.12, defect_bridge_width: 1,
+  defect_thinning: false, defect_thinning_radius: 0,
+  defect_thinning_target_frac: 0.4, defect_thinning_min_keep: 0.1,
+  defect_bridging: false, defect_bridge_max_dist: 0,
+  defect_bridge_void_thresh: 0.25, defect_bridge_perp_width: 0,
+  defect_bridge_max_degree: 0, defect_bridge_max_bonds: 0,
+  defect_bridge_min_spacing: 0,
 
   use_multitype: false, natom_type: 1, nbond_type: 1,
   atype_mode: 'frac', btype_mode: 'frac',
@@ -63,6 +85,7 @@ const DEFAULT = {
   pot_rho_min: 0.0, pot_rho_max: 500,
 
   isave: true, iplot: true, ilog: true,
+  idumpsettings: false, iversbose_settings: false,
   savemode: true, imanualseed: false,
   Nreplicates: 1,
 
@@ -150,6 +173,64 @@ function connectivityRowsToMatlabLines(rules, indent = '') {
 
   lines.push(`${indent}];`);
   return lines;
+}
+
+function pushPolyAssignmentConfig(lines, basePath, values) {
+  lines.push(`${basePath}.poly.method = '${values.method}';`);
+  lines.push(`${basePath}.poly.min_value = ${values.minValue};`);
+  lines.push(`${basePath}.poly.rounding = '${values.rounding}';`);
+  lines.push(`${basePath}.poly.align_to_length = '${values.alignToLength}';`);
+
+  if (values.method === 'range') {
+    lines.push(`${basePath}.poly.range_method = '${values.rangeMethod}';`);
+    lines.push(`${basePath}.poly.target_min = ${values.targetMin};`);
+    lines.push(`${basePath}.poly.target_max = ${values.targetMax};`);
+  }
+
+  if (values.method === 'pmf') {
+    lines.push(`${basePath}.poly.pmf_mean = ${values.pmfMean};`);
+    lines.push(`${basePath}.poly.pmf_min = ${values.pmfMin};`);
+    lines.push(`${basePath}.poly.pmf_max = ${values.pmfMax};`);
+  }
+}
+
+function pushBimodalAssignmentConfig(lines, basePath, values, formatBool = value => `${value}`) {
+  lines.push(`${basePath}.bimodal.method = '${values.method}';`);
+  lines.push(`${basePath}.bimodal.mean_1 = ${values.mean1};`);
+  lines.push(`${basePath}.bimodal.mean_2 = ${values.mean2};`);
+
+  if (values.method !== 'single') {
+    lines.push(`${basePath}.bimodal.std_1 = ${values.std1};`);
+    lines.push(`${basePath}.bimodal.std_2 = ${values.std2};`);
+  }
+
+  lines.push(`${basePath}.bimodal.height_mode = '${values.heightMode}';`);
+  if (values.heightMode === 'prob') {
+    lines.push(`${basePath}.bimodal.height_prob = ${values.heightProb};`);
+  } else {
+    lines.push(`${basePath}.bimodal.height_count = ${values.heightCount};`);
+  }
+
+  lines.push(`${basePath}.bimodal.long_first = ${formatBool(values.longFirst)};`);
+  lines.push(`${basePath}.bimodal.min_value = ${values.minValue};`);
+  lines.push(`${basePath}.bimodal.double_network_flag = ${formatBool(values.doubleNetworkFlag)};`);
+  if (values.doubleNetworkFlag) {
+    lines.push(`${basePath}.bimodal.alpha = ${values.alpha};`);
+  }
+  lines.push(`${basePath}.bimodal.auto_1_flag = ${formatBool(values.auto1Flag)};`);
+  if (values.auto1Flag) {
+    lines.push(`${basePath}.bimodal.lam_1 = ${values.lam1};`);
+  }
+  lines.push(`${basePath}.bimodal.auto_2_flag = ${formatBool(values.auto2Flag)};`);
+  if (values.auto2Flag) {
+    lines.push(`${basePath}.bimodal.lam_2 = ${values.lam2};`);
+  }
+  lines.push(`${basePath}.bimodal.stdR_1 = ${values.stdR1};`);
+  lines.push(`${basePath}.bimodal.stdR_2 = ${values.stdR2};`);
+  lines.push(`${basePath}.bimodal.bin_window_method = '${values.binWindowMethod}';`);
+  if (values.binWindowMethod === 'manual') {
+    lines.push(`${basePath}.bimodal.manual_dev_type = '${values.manualDevType}';`);
+  }
 }
 
 function matlabVector(values) {
@@ -387,12 +468,13 @@ export default function ConfigBuilder() {
     lines.push(`net.domain.write_location    = '${c.write_location}';`);
     lines.push(`net.domain.lammps_data_file  = '${c.lammps_data_file}';`);
     lines.push(`net.domain.lammps_viz_file   = '${c.lammps_viz_file}';`);
-    lines.push(`net.domain.smp_number        = ${c.smp_number};`);
+    lines.push(`net.domain.bond_table_file   = '${c.bond_table_file}';`);
     lines.push(``);
     lines.push(`%% ---- Architecture ----`);
     lines.push(`net.architecture.geometry           = '${c.geometry}';`);
     lines.push(`net.architecture.rho_atom           = ${c.rho_atom};`);
     lines.push(`net.peratom.Max_peratom_bond        = ${c.max_peratom_bond};`);
+    lines.push(`net.peratom.min_degree_keep         = ${c.min_degree_keep};`);
     if (c.geometry === 'hex_lattice') {
       lines.push(`net.architecture.lattice_spacing            = ${c.lattice_spacing};`);
       lines.push(`net.architecture.spacing_multiplier_mode    = '${c.spacing_multiplier_mode}';`);
@@ -409,28 +491,41 @@ export default function ConfigBuilder() {
     if (t === 'mono') {
       lines.push(`net.architecture.strand_typology.mono.value = ${c.mono_value};`);
     } else if (t === 'polydisperse') {
-      lines.push(`net.architecture.strand_typology.poly.method   = '${c.poly_method}';`);
-      if (c.poly_method === 'pmf') {
-        lines.push(`net.architecture.strand_typology.poly.pmf_mean = ${c.poly_pmf_mean};`);
-        lines.push(`net.architecture.strand_typology.poly.pmf_min  = ${c.poly_pmf_min};`);
-        lines.push(`net.architecture.strand_typology.poly.pmf_max  = ${c.poly_pmf_max};`);
-      }
-      lines.push(`net.architecture.strand_typology.poly.rounding       = '${c.poly_rounding}';`);
-      lines.push(`net.architecture.strand_typology.poly.align_to_length = '${c.poly_align}';`);
+      pushPolyAssignmentConfig(lines, 'net.architecture.strand_typology', {
+        method: c.poly_method,
+        minValue: c.poly_min_value,
+        rounding: c.poly_rounding,
+        alignToLength: c.poly_align,
+        rangeMethod: c.poly_range_method,
+        targetMin: c.poly_target_min,
+        targetMax: c.poly_target_max,
+        pmfMean: c.poly_pmf_mean,
+        pmfMin: c.poly_pmf_min,
+        pmfMax: c.poly_pmf_max,
+      });
     } else if (t === 'bimodal') {
-      lines.push(`net.architecture.strand_typology.bimodal.method       = '${c.bimodal_method}';`);
-      lines.push(`net.architecture.strand_typology.bimodal.mean_1       = ${c.bimodal_mean1};`);
-      lines.push(`net.architecture.strand_typology.bimodal.mean_2       = ${c.bimodal_mean2};`);
-      if (c.bimodal_method !== 'single') {
-        lines.push(`net.architecture.strand_typology.bimodal.std_1        = ${c.bimodal_std1};`);
-        lines.push(`net.architecture.strand_typology.bimodal.std_2        = ${c.bimodal_std2};`);
-      }
-      lines.push(`net.architecture.strand_typology.bimodal.height_mode  = '${c.bimodal_height_mode}';`);
-      if (c.bimodal_height_mode === 'prob')
-        lines.push(`net.architecture.strand_typology.bimodal.height_prob  = ${c.bimodal_height_prob};`);
-      else
-        lines.push(`net.architecture.strand_typology.bimodal.height_count = ${c.bimodal_height_count};`);
-      lines.push(`net.architecture.strand_typology.bimodal.long_first   = ${c.bimodal_long_first};`);
+      pushBimodalAssignmentConfig(lines, 'net.architecture.strand_typology', {
+        method: c.bimodal_method,
+        mean1: c.bimodal_mean1,
+        mean2: c.bimodal_mean2,
+        std1: c.bimodal_std1,
+        std2: c.bimodal_std2,
+        heightMode: c.bimodal_height_mode,
+        heightProb: c.bimodal_height_prob,
+        heightCount: c.bimodal_height_count,
+        longFirst: c.bimodal_long_first,
+        minValue: c.bimodal_min_value,
+        doubleNetworkFlag: c.bimodal_double_network_flag,
+        alpha: c.bimodal_alpha,
+        auto1Flag: c.bimodal_auto_1_flag,
+        auto2Flag: c.bimodal_auto_2_flag,
+        lam1: c.bimodal_lam_1,
+        lam2: c.bimodal_lam_2,
+        stdR1: c.bimodal_stdR_1,
+        stdR2: c.bimodal_stdR_2,
+        binWindowMethod: c.bimodal_bin_window_method,
+        manualDevType: c.bimodal_manual_dev_type,
+      });
     }
     lines.push(``);
     lines.push(`%% ---- Perbond ----`);
@@ -439,6 +534,43 @@ export default function ConfigBuilder() {
       lines.push(`net.perbond.kuhn.mode = '${c.kuhn_mode}';`);
       if (c.kuhn_mode === 'mono')
         lines.push(`net.perbond.kuhn.mono.value = ${c.kuhn_mono_value};`);
+      else if (c.kuhn_mode === 'polydisperse') {
+        pushPolyAssignmentConfig(lines, 'net.perbond.kuhn', {
+          method: c.kuhn_poly_method,
+          minValue: c.kuhn_poly_min_value,
+          rounding: c.kuhn_poly_rounding,
+          alignToLength: c.kuhn_poly_align,
+          rangeMethod: c.kuhn_poly_range_method,
+          targetMin: c.kuhn_poly_target_min,
+          targetMax: c.kuhn_poly_target_max,
+          pmfMean: c.kuhn_poly_pmf_mean,
+          pmfMin: c.kuhn_poly_pmf_min,
+          pmfMax: c.kuhn_poly_pmf_max,
+        });
+      } else if (c.kuhn_mode === 'bimodal') {
+        pushBimodalAssignmentConfig(lines, 'net.perbond.kuhn', {
+          method: c.kuhn_bimodal_method,
+          mean1: c.kuhn_bimodal_mean1,
+          mean2: c.kuhn_bimodal_mean2,
+          std1: c.kuhn_bimodal_std1,
+          std2: c.kuhn_bimodal_std2,
+          heightMode: c.kuhn_bimodal_height_mode,
+          heightProb: c.kuhn_bimodal_height_prob,
+          heightCount: c.kuhn_bimodal_height_count,
+          longFirst: c.kuhn_bimodal_long_first,
+          minValue: c.kuhn_bimodal_min_value,
+          doubleNetworkFlag: c.kuhn_bimodal_double_network_flag,
+          alpha: c.kuhn_bimodal_alpha,
+          auto1Flag: c.kuhn_bimodal_auto_1_flag,
+          auto2Flag: c.kuhn_bimodal_auto_2_flag,
+          lam1: c.kuhn_bimodal_lam_1,
+          lam2: c.kuhn_bimodal_lam_2,
+          stdR1: c.kuhn_bimodal_stdR_1,
+          stdR2: c.kuhn_bimodal_stdR_2,
+          binWindowMethod: c.kuhn_bimodal_bin_window_method,
+          manualDevType: c.kuhn_bimodal_manual_dev_type,
+        });
+      }
     }
     if (c.idefect) {
       lines.push(``);
@@ -469,6 +601,21 @@ export default function ConfigBuilder() {
       lines.push(`net.defect.wall_thickness     = ${c.defect_wall_thickness};`);
       lines.push(`net.defect.clamp_thickness    = ${c.defect_clamp_thickness};`);
       lines.push(`net.defect.bridge_width       = ${c.defect_bridge_width};`);
+      if (c.defect_thinning) {
+        lines.push(`net.defect.thinning           = true;`);
+        lines.push(`net.defect.thinning_radius    = ${c.defect_thinning_radius};`);
+        lines.push(`net.defect.thinning_target_frac = ${c.defect_thinning_target_frac};`);
+        lines.push(`net.defect.thinning_min_keep  = ${c.defect_thinning_min_keep};`);
+      }
+      if (c.defect_bridging) {
+        lines.push(`net.defect.bridging           = true;`);
+        lines.push(`net.defect.bridge_max_dist    = ${c.defect_bridge_max_dist};`);
+        lines.push(`net.defect.bridge_void_thresh = ${c.defect_bridge_void_thresh};`);
+        lines.push(`net.defect.bridge_perp_width  = ${c.defect_bridge_perp_width};`);
+        lines.push(`net.defect.bridge_max_degree  = ${c.defect_bridge_max_degree};`);
+        lines.push(`net.defect.bridge_max_bonds   = ${c.defect_bridge_max_bonds};`);
+        lines.push(`net.defect.bridge_min_spacing = ${c.defect_bridge_min_spacing};`);
+      }
     }
     if (c.use_multitype) {
       lines.push(``);
@@ -505,6 +652,8 @@ export default function ConfigBuilder() {
     lines.push(`net.flags.imanualseed = ${c.imanualseed};`);
     lines.push(`net.flags.idefect    = ${c.idefect};`);
     lines.push(`net.flags.ipotential = ${c.ipotential};`);
+    lines.push(`net.flags.idumpsettings = ${c.idumpsettings};`);
+    lines.push(`net.flags.iversbose_settings = ${c.iversbose_settings};`);
     lines.push(``);
     lines.push(`%% ---- Generate ----`);
     lines.push(`net.generateNetwork();`);
@@ -557,12 +706,13 @@ export default function ConfigBuilder() {
     ml.push(`    net.domain.write_location    = '${c.write_location}';`);
     ml.push(`    net.domain.lammps_data_file  = '${c.lammps_data_file}';`);
     ml.push(`    net.domain.lammps_viz_file   = '${c.lammps_viz_file}';`);
-    ml.push(`    net.domain.smp_number        = ${c.smp_number};`);
+    ml.push(`    net.domain.bond_table_file   = '${c.bond_table_file}';`);
     ml.push(``);
     ml.push(`    %% ---- Architecture ----`);
     ml.push(`    net.architecture.geometry           = '${c.geometry}';`);
     ml.push(`    net.architecture.rho_atom           = ${c.rho_atom};`);
     ml.push(`    net.peratom.Max_peratom_bond        = ${c.max_peratom_bond};`);
+    ml.push(`    net.peratom.min_degree_keep         = ${c.min_degree_keep};`);
     if (c.geometry === 'hex_lattice') {
       ml.push(`    net.architecture.lattice_spacing            = ${c.lattice_spacing};`);
       ml.push(`    net.architecture.spacing_multiplier_mode    = '${c.spacing_multiplier_mode}';`);
@@ -579,28 +729,41 @@ export default function ConfigBuilder() {
     if (t === 'mono') {
       ml.push(`    net.architecture.strand_typology.mono.value = ${c.mono_value};`);
     } else if (t === 'polydisperse') {
-      ml.push(`    net.architecture.strand_typology.poly.method   = '${c.poly_method}';`);
-      if (c.poly_method === 'pmf') {
-        ml.push(`    net.architecture.strand_typology.poly.pmf_mean = ${c.poly_pmf_mean};`);
-        ml.push(`    net.architecture.strand_typology.poly.pmf_min  = ${c.poly_pmf_min};`);
-        ml.push(`    net.architecture.strand_typology.poly.pmf_max  = ${c.poly_pmf_max};`);
-      }
-      ml.push(`    net.architecture.strand_typology.poly.rounding       = '${c.poly_rounding}';`);
-      ml.push(`    net.architecture.strand_typology.poly.align_to_length = '${c.poly_align}';`);
+      pushPolyAssignmentConfig(ml, '    net.architecture.strand_typology', {
+        method: c.poly_method,
+        minValue: c.poly_min_value,
+        rounding: c.poly_rounding,
+        alignToLength: c.poly_align,
+        rangeMethod: c.poly_range_method,
+        targetMin: c.poly_target_min,
+        targetMax: c.poly_target_max,
+        pmfMean: c.poly_pmf_mean,
+        pmfMin: c.poly_pmf_min,
+        pmfMax: c.poly_pmf_max,
+      });
     } else if (t === 'bimodal') {
-      ml.push(`    net.architecture.strand_typology.bimodal.method       = '${c.bimodal_method}';`);
-      ml.push(`    net.architecture.strand_typology.bimodal.mean_1       = ${c.bimodal_mean1};`);
-      ml.push(`    net.architecture.strand_typology.bimodal.mean_2       = ${c.bimodal_mean2};`);
-      if (c.bimodal_method !== 'single') {
-        ml.push(`    net.architecture.strand_typology.bimodal.std_1        = ${c.bimodal_std1};`);
-        ml.push(`    net.architecture.strand_typology.bimodal.std_2        = ${c.bimodal_std2};`);
-      }
-      ml.push(`    net.architecture.strand_typology.bimodal.height_mode  = '${c.bimodal_height_mode}';`);
-      if (c.bimodal_height_mode === 'prob')
-        ml.push(`    net.architecture.strand_typology.bimodal.height_prob  = ${c.bimodal_height_prob};`);
-      else
-        ml.push(`    net.architecture.strand_typology.bimodal.height_count = ${c.bimodal_height_count};`);
-      ml.push(`    net.architecture.strand_typology.bimodal.long_first   = ${boolStr(c.bimodal_long_first)};`);
+      pushBimodalAssignmentConfig(ml, '    net.architecture.strand_typology', {
+        method: c.bimodal_method,
+        mean1: c.bimodal_mean1,
+        mean2: c.bimodal_mean2,
+        std1: c.bimodal_std1,
+        std2: c.bimodal_std2,
+        heightMode: c.bimodal_height_mode,
+        heightProb: c.bimodal_height_prob,
+        heightCount: c.bimodal_height_count,
+        longFirst: c.bimodal_long_first,
+        minValue: c.bimodal_min_value,
+        doubleNetworkFlag: c.bimodal_double_network_flag,
+        alpha: c.bimodal_alpha,
+        auto1Flag: c.bimodal_auto_1_flag,
+        auto2Flag: c.bimodal_auto_2_flag,
+        lam1: c.bimodal_lam_1,
+        lam2: c.bimodal_lam_2,
+        stdR1: c.bimodal_stdR_1,
+        stdR2: c.bimodal_stdR_2,
+        binWindowMethod: c.bimodal_bin_window_method,
+        manualDevType: c.bimodal_manual_dev_type,
+      }, boolStr);
     }
     ml.push(``);
     ml.push(`    %% ---- Perbond ----`);
@@ -609,6 +772,43 @@ export default function ConfigBuilder() {
       ml.push(`    net.perbond.kuhn.mode = '${c.kuhn_mode}';`);
       if (c.kuhn_mode === 'mono')
         ml.push(`    net.perbond.kuhn.mono.value = ${c.kuhn_mono_value};`);
+      else if (c.kuhn_mode === 'polydisperse') {
+        pushPolyAssignmentConfig(ml, '    net.perbond.kuhn', {
+          method: c.kuhn_poly_method,
+          minValue: c.kuhn_poly_min_value,
+          rounding: c.kuhn_poly_rounding,
+          alignToLength: c.kuhn_poly_align,
+          rangeMethod: c.kuhn_poly_range_method,
+          targetMin: c.kuhn_poly_target_min,
+          targetMax: c.kuhn_poly_target_max,
+          pmfMean: c.kuhn_poly_pmf_mean,
+          pmfMin: c.kuhn_poly_pmf_min,
+          pmfMax: c.kuhn_poly_pmf_max,
+        });
+      } else if (c.kuhn_mode === 'bimodal') {
+        pushBimodalAssignmentConfig(ml, '    net.perbond.kuhn', {
+          method: c.kuhn_bimodal_method,
+          mean1: c.kuhn_bimodal_mean1,
+          mean2: c.kuhn_bimodal_mean2,
+          std1: c.kuhn_bimodal_std1,
+          std2: c.kuhn_bimodal_std2,
+          heightMode: c.kuhn_bimodal_height_mode,
+          heightProb: c.kuhn_bimodal_height_prob,
+          heightCount: c.kuhn_bimodal_height_count,
+          longFirst: c.kuhn_bimodal_long_first,
+          minValue: c.kuhn_bimodal_min_value,
+          doubleNetworkFlag: c.kuhn_bimodal_double_network_flag,
+          alpha: c.kuhn_bimodal_alpha,
+          auto1Flag: c.kuhn_bimodal_auto_1_flag,
+          auto2Flag: c.kuhn_bimodal_auto_2_flag,
+          lam1: c.kuhn_bimodal_lam_1,
+          lam2: c.kuhn_bimodal_lam_2,
+          stdR1: c.kuhn_bimodal_stdR_1,
+          stdR2: c.kuhn_bimodal_stdR_2,
+          binWindowMethod: c.kuhn_bimodal_bin_window_method,
+          manualDevType: c.kuhn_bimodal_manual_dev_type,
+        }, boolStr);
+      }
     }
     if (c.idefect) {
       ml.push(``);
@@ -639,6 +839,21 @@ export default function ConfigBuilder() {
       ml.push(`    net.defect.wall_thickness     = ${c.defect_wall_thickness};`);
       ml.push(`    net.defect.clamp_thickness    = ${c.defect_clamp_thickness};`);
       ml.push(`    net.defect.bridge_width       = ${c.defect_bridge_width};`);
+      if (c.defect_thinning) {
+        ml.push(`    net.defect.thinning           = true;`);
+        ml.push(`    net.defect.thinning_radius    = ${c.defect_thinning_radius};`);
+        ml.push(`    net.defect.thinning_target_frac = ${c.defect_thinning_target_frac};`);
+        ml.push(`    net.defect.thinning_min_keep  = ${c.defect_thinning_min_keep};`);
+      }
+      if (c.defect_bridging) {
+        ml.push(`    net.defect.bridging           = true;`);
+        ml.push(`    net.defect.bridge_max_dist    = ${c.defect_bridge_max_dist};`);
+        ml.push(`    net.defect.bridge_void_thresh = ${c.defect_bridge_void_thresh};`);
+        ml.push(`    net.defect.bridge_perp_width  = ${c.defect_bridge_perp_width};`);
+        ml.push(`    net.defect.bridge_max_degree  = ${c.defect_bridge_max_degree};`);
+        ml.push(`    net.defect.bridge_max_bonds   = ${c.defect_bridge_max_bonds};`);
+        ml.push(`    net.defect.bridge_min_spacing = ${c.defect_bridge_min_spacing};`);
+      }
     }
     if (c.use_multitype) {
       ml.push(``);
@@ -675,6 +890,8 @@ export default function ConfigBuilder() {
     ml.push(`    net.flags.imanualseed = ${boolStr(c.imanualseed)};`);
     ml.push(`    net.flags.idefect     = ${boolStr(c.idefect)};`);
     ml.push(`    net.flags.ipotential  = ${boolStr(c.ipotential)};`);
+    ml.push(`    net.flags.idumpsettings = ${boolStr(c.idumpsettings)};`);
+    ml.push(`    net.flags.iversbose_settings = ${boolStr(c.iversbose_settings)};`);
     ml.push(``);
     ml.push(`    %% ---- Generate ----`);
     ml.push(`    net.generateNetwork();`);
@@ -714,6 +931,74 @@ export default function ConfigBuilder() {
   const bondFractionSum = bondFractionValues.reduce((sum, value) => sum + value, 0);
   const atomTypeOptions = Array.from({ length: cfg.natom_type }, (_, index) => index + 1);
   const bondTypeOptions = Array.from({ length: cfg.nbond_type }, (_, index) => index + 1);
+  const topologyPolyFields = {
+    method: 'poly_method',
+    minValue: 'poly_min_value',
+    rounding: 'poly_rounding',
+    align: 'poly_align',
+    rangeMethod: 'poly_range_method',
+    targetMin: 'poly_target_min',
+    targetMax: 'poly_target_max',
+    pmfMean: 'poly_pmf_mean',
+    pmfMin: 'poly_pmf_min',
+    pmfMax: 'poly_pmf_max',
+  };
+  const kuhnPolyFields = {
+    method: 'kuhn_poly_method',
+    minValue: 'kuhn_poly_min_value',
+    rounding: 'kuhn_poly_rounding',
+    align: 'kuhn_poly_align',
+    rangeMethod: 'kuhn_poly_range_method',
+    targetMin: 'kuhn_poly_target_min',
+    targetMax: 'kuhn_poly_target_max',
+    pmfMean: 'kuhn_poly_pmf_mean',
+    pmfMin: 'kuhn_poly_pmf_min',
+    pmfMax: 'kuhn_poly_pmf_max',
+  };
+  const topologyBimodalFields = {
+    method: 'bimodal_method',
+    mean1: 'bimodal_mean1',
+    mean2: 'bimodal_mean2',
+    std1: 'bimodal_std1',
+    std2: 'bimodal_std2',
+    heightMode: 'bimodal_height_mode',
+    heightProb: 'bimodal_height_prob',
+    heightCount: 'bimodal_height_count',
+    longFirst: 'bimodal_long_first',
+    minValue: 'bimodal_min_value',
+    doubleNetworkFlag: 'bimodal_double_network_flag',
+    alpha: 'bimodal_alpha',
+    auto1: 'bimodal_auto_1_flag',
+    auto2: 'bimodal_auto_2_flag',
+    lam1: 'bimodal_lam_1',
+    lam2: 'bimodal_lam_2',
+    stdR1: 'bimodal_stdR_1',
+    stdR2: 'bimodal_stdR_2',
+    binWindowMethod: 'bimodal_bin_window_method',
+    manualDevType: 'bimodal_manual_dev_type',
+  };
+  const kuhnBimodalFields = {
+    method: 'kuhn_bimodal_method',
+    mean1: 'kuhn_bimodal_mean1',
+    mean2: 'kuhn_bimodal_mean2',
+    std1: 'kuhn_bimodal_std1',
+    std2: 'kuhn_bimodal_std2',
+    heightMode: 'kuhn_bimodal_height_mode',
+    heightProb: 'kuhn_bimodal_height_prob',
+    heightCount: 'kuhn_bimodal_height_count',
+    longFirst: 'kuhn_bimodal_long_first',
+    minValue: 'kuhn_bimodal_min_value',
+    doubleNetworkFlag: 'kuhn_bimodal_double_network_flag',
+    alpha: 'kuhn_bimodal_alpha',
+    auto1: 'kuhn_bimodal_auto_1_flag',
+    auto2: 'kuhn_bimodal_auto_2_flag',
+    lam1: 'kuhn_bimodal_lam_1',
+    lam2: 'kuhn_bimodal_lam_2',
+    stdR1: 'kuhn_bimodal_stdR_1',
+    stdR2: 'kuhn_bimodal_stdR_2',
+    binWindowMethod: 'kuhn_bimodal_bin_window_method',
+    manualDevType: 'kuhn_bimodal_manual_dev_type',
+  };
 
   function renderTargetEditor(title, key, values, mode, summary, resetValues, count) {
     const isFraction = mode === 'frac';
@@ -772,6 +1057,69 @@ export default function ConfigBuilder() {
     );
   }
 
+  function renderPolyEditor(fields) {
+    const method = cfg[fields.method];
+
+    return (
+      <>
+        <Row label="Method">{sel(fields.method, [['pmf'], ['range'], ['geom']])}</Row>
+        <Row label="Minimum value">{num(fields.minValue, 1)}</Row>
+        {method === 'pmf' && <>
+          <Row label="PMF mean">{num(fields.pmfMean, 1)}</Row>
+          <Row label="PMF min">{num(fields.pmfMin, 1)}</Row>
+          <Row label="PMF max">{num(fields.pmfMax, 1)}</Row>
+        </>}
+        {method === 'range' && <>
+          <Row label="Range method">{sel(fields.rangeMethod, [['rank'], ['linear']])}</Row>
+          <Row label="Target min">{num(fields.targetMin, 1)}</Row>
+          <Row label="Target max">{num(fields.targetMax, 1)}</Row>
+        </>}
+        <Row label="Rounding">{sel(fields.rounding, [['round'], ['ceil'], ['floor']])}</Row>
+        <Row label="Align to length">{sel(fields.align, [['none'], ['ascend']])}</Row>
+      </>
+    );
+  }
+
+  function renderBimodalEditor(fields) {
+    const method = cfg[fields.method];
+    const heightMode = cfg[fields.heightMode];
+    const binWindowMethod = cfg[fields.binWindowMethod];
+
+    return (
+      <>
+        <Row label="Method">{sel(fields.method, [['gaussian'], ['geom'], ['single', 'single (fixed mean)']])}</Row>
+        <Row label="Mean 1">{num(fields.mean1, 1)}</Row>
+        <Row label="Mean 2">{num(fields.mean2, 1)}</Row>
+        {method !== 'single' && <>
+          <Row label="Std 1">{num(fields.std1, 0, null, 0.5)}</Row>
+          <Row label="Std 2">{num(fields.std2, 0, null, 0.5)}</Row>
+        </>}
+        <Row label="Minimum value">{num(fields.minValue, 1)}</Row>
+        <Row label="Height mode">{sel(fields.heightMode, [['prob'], ['count']])}</Row>
+        {heightMode === 'prob'
+          ? <Row label="Fraction in mode 2">{slide(fields.heightProb, 0.05, 0.95, 0.05)}</Row>
+          : <Row label="Count in mode 2">{num(fields.heightCount, 0, null, 1)}</Row>
+        }
+        <Row label="Long first">{chk(fields.longFirst)}</Row>
+
+        <Sub title="Advanced bimodal">
+          <Row label="Double network">{chk(fields.doubleNetworkFlag)}</Row>
+          {cfg[fields.doubleNetworkFlag] && <Row label="Alpha">{num(fields.alpha, 0.01, null, 0.1)}</Row>}
+          <Row label="Auto mode 1">{chk(fields.auto1)}</Row>
+          {cfg[fields.auto1] && <Row label="lam_1">{num(fields.lam1, 0, 1, 0.01)}</Row>}
+          <Row label="Auto mode 2">{chk(fields.auto2)}</Row>
+          {cfg[fields.auto2] && <Row label="lam_2">{num(fields.lam2, 0, 1, 0.01)}</Row>}
+          <Row label="stdR_1">{num(fields.stdR1, 0, null, 0.1)}</Row>
+          <Row label="stdR_2">{num(fields.stdR2, 0, null, 0.1)}</Row>
+          <Row label="Bin window">{sel(fields.binWindowMethod, [['manual'], ['adaptive']])}</Row>
+          {binWindowMethod === 'manual' && (
+            <Row label="Manual deviation">{sel(fields.manualDevType, [['mixed'], ['kuhn'], ['both']])}</Row>
+          )}
+        </Sub>
+      </>
+    );
+  }
+
   return (
     <div className={styles.outer}>
       <div className={styles.formCol}>
@@ -803,7 +1151,10 @@ export default function ConfigBuilder() {
           <Row label="Ly" hint="units of b">{num('Ly', 1)}</Row>
           <Row label="Scale">{num('scale', 0.1, null, 0.1)}</Row>
           <Row label="Boundary">{sel('boundary', [['fixed'], ['periodic']])}</Row>
-          <Row label="Replicates">{num('Nreplicates', 1, null, 1)}</Row>
+          <Row label="Networks to generate" hint="sets net.Nreplicates">{num('Nreplicates', 1, null, 1)}</Row>
+          <div className={styles.note}>
+            NetworkGen currently generates 2D networks, so the domain builder only exposes the in-plane size.
+          </div>
           <Row label="Manual seed">
             {chk('imanualseed')}
           </Row>
@@ -811,13 +1162,17 @@ export default function ConfigBuilder() {
           <Row label="Output folder">{txt('write_location')}</Row>
           <Row label="Data file prefix">{txt('lammps_data_file')}</Row>
           <Row label="Viz file prefix">{txt('lammps_viz_file')}</Row>
-          <Row label="Sample number">{num('smp_number', 1)}</Row>
+          <Row label="Bond table prefix">{txt('bond_table_file')}</Row>
+          <div className={styles.note}>
+            Batch outputs already get unique replicate suffixes automatically. Leave sample numbering at the package default unless you are managing your own outer loop by hand.
+          </div>
         </Section>
 
         <Section id="architecture" title="Architecture">
           <Row label="Geometry">{sel('geometry', [['random'], ['hex_lattice', 'hex lattice']])}</Row>
           <Row label="rho_atom" hint="atoms/unit area">{num('rho_atom', 0.0001, null, 0.0001)}</Row>
           <Row label="Max bonds/atom">{num('max_peratom_bond', 3, null, 1)}</Row>
+          <Row label="Min degree keep">{num('min_degree_keep', 1, null, 1)}</Row>
           {cfg.geometry === 'hex_lattice' && (
             <Sub title="Lattice settings">
               <Row label="Lattice spacing">{num('lattice_spacing', 1, null, 0.5)}</Row>
@@ -842,31 +1197,12 @@ export default function ConfigBuilder() {
           )}
           {t === 'polydisperse' && (
             <Sub title="Polydisperse">
-              <Row label="Method">{sel('poly_method', [['pmf'], ['range'], ['geom']])}</Row>
-              {cfg.poly_method === 'pmf' && <>
-                <Row label="PMF mean">{num('poly_pmf_mean', 1)}</Row>
-                <Row label="PMF min">{num('poly_pmf_min', 1)}</Row>
-                <Row label="PMF max">{num('poly_pmf_max', 1)}</Row>
-              </>}
-              <Row label="Rounding">{sel('poly_rounding', [['round'], ['ceil'], ['floor']])}</Row>
-              <Row label="Align to length">{sel('poly_align', [['none'], ['ascend']])}</Row>
+              {renderPolyEditor(topologyPolyFields)}
             </Sub>
           )}
           {t === 'bimodal' && (
             <Sub title="Bimodal">
-              <Row label="Method">{sel('bimodal_method', [['gaussian'], ['geom'], ['single', 'single (fixed mean)']])}</Row>
-              <Row label="Mean 1">{num('bimodal_mean1', 1)}</Row>
-              <Row label="Mean 2">{num('bimodal_mean2', 1)}</Row>
-              {cfg.bimodal_method !== 'single' && <>
-                <Row label="Std 1">{num('bimodal_std1', 0, null, 0.5)}</Row>
-                <Row label="Std 2">{num('bimodal_std2', 0, null, 0.5)}</Row>
-              </>}
-              <Row label="Height mode">{sel('bimodal_height_mode', [['prob'], ['count']])}</Row>
-              {cfg.bimodal_height_mode === 'prob'
-                ? <Row label="Fraction (mode 1)">{slide('bimodal_height_prob', 0.05, 0.95, 0.05)}</Row>
-                : <Row label="Count (mode 2)">{num('bimodal_height_count', 1)}</Row>
-              }
-              <Row label="Long first">{chk('bimodal_long_first')}</Row>
+              {renderBimodalEditor(topologyBimodalFields)}
             </Sub>
           )}
         </Section>
@@ -879,7 +1215,8 @@ export default function ConfigBuilder() {
               {cfg.kuhn_mode === 'mono' && (
                 <Row label="Kuhn value">{num('kuhn_mono_value', 1)}</Row>
               )}
-              <div className={styles.note}>Configure full kuhn distribution settings in the generated script.</div>
+              {cfg.kuhn_mode === 'polydisperse' && renderPolyEditor(kuhnPolyFields)}
+              {cfg.kuhn_mode === 'bimodal' && renderBimodalEditor(kuhnBimodalFields)}
             </Sub>
           )}
         </Section>
@@ -918,6 +1255,23 @@ export default function ConfigBuilder() {
               <Row label="Sparse network">{chk('defect_sparse_network')}</Row>
               <Row label="Wall thickness">{num('defect_wall_thickness', 0, null, 0.5)}</Row>
               <Row label="Clamp thickness">{num('defect_clamp_thickness', 0, null, 0.01)}</Row>
+            </Sub>
+            <Sub title="Advanced passes">
+              <Row label="Density thinning">{chk('defect_thinning')}</Row>
+              {cfg.defect_thinning && <>
+                <Row label="Thinning radius">{num('defect_thinning_radius', 0, null, 0.5)}</Row>
+                <Row label="Target keep frac">{num('defect_thinning_target_frac', 0, 1, 0.01)}</Row>
+                <Row label="Min keep frac">{num('defect_thinning_min_keep', 0, 1, 0.01)}</Row>
+              </>}
+              <Row label="Constriction bridging">{chk('defect_bridging')}</Row>
+              {cfg.defect_bridging && <>
+                <Row label="Bridge max dist">{num('defect_bridge_max_dist', 0, null, 0.5)}</Row>
+                <Row label="Void threshold">{num('defect_bridge_void_thresh', 0, 1, 0.01)}</Row>
+                <Row label="Perp width">{num('defect_bridge_perp_width', 0, null, 0.5)}</Row>
+                <Row label="Max degree">{num('defect_bridge_max_degree', 0, null, 1)}</Row>
+                <Row label="Max bonds">{num('defect_bridge_max_bonds', 0, null, 1)}</Row>
+                <Row label="Min spacing">{num('defect_bridge_min_spacing', 0, null, 0.5)}</Row>
+              </>}
             </Sub>
           </>)}
         </Section>
@@ -1093,6 +1447,8 @@ export default function ConfigBuilder() {
           )}
           <Row label="Write log">{chk('ilog')}</Row>
           <Row label="Auto-name files">{chk('savemode')}</Row>
+          <Row label="Dump settings">{chk('idumpsettings')}</Row>
+          <Row label="Verbose settings dump">{chk('iversbose_settings')}</Row>
         </Section>
 
       </div>
