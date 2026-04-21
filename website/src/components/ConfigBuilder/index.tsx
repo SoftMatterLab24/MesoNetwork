@@ -19,7 +19,7 @@ const DEFAULT = {
 
   geometry: 'random', rho_atom: 0.0078, max_peratom_bond: 6,
   lattice_spacing: 6, spacing_multiplier_mode: 'auto',
-  spacing_multiplier: 1, lattice_disorder_level: 0,
+  spacing_multiplier: 1.2, lattice_disorder_level: 0,
   lattice_disorder_maxfrac: 0.4, lattice_topo_disorder: false,
   lattice_max_del_per_node: 1, lattice_min_degree_keep: 5,
 
@@ -29,7 +29,7 @@ const DEFAULT = {
   poly_pmf_max: 120, poly_rounding: 'round', poly_align: 'none',
   bimodal_method: 'gaussian', bimodal_mean1: 10, bimodal_mean2: 40,
   bimodal_std1: 2, bimodal_std2: 5, bimodal_height_mode: 'prob',
-  bimodal_height_prob: 0.5, bimodal_long_first: false,
+  bimodal_height_prob: 0.5, bimodal_height_count: 2, bimodal_long_first: true,
 
   kuhn_auto: true, kuhn_mode: 'mono', kuhn_mono_value: 20,
 
@@ -274,6 +274,8 @@ export default function ConfigBuilder() {
       lines.push(`net.architecture.strand_typology.bimodal.height_mode  = '${c.bimodal_height_mode}';`);
       if (c.bimodal_height_mode === 'prob')
         lines.push(`net.architecture.strand_typology.bimodal.height_prob  = ${c.bimodal_height_prob};`);
+      else
+        lines.push(`net.architecture.strand_typology.bimodal.height_count = ${c.bimodal_height_count};`);
       lines.push(`net.architecture.strand_typology.bimodal.long_first   = ${c.bimodal_long_first};`);
     }
     lines.push(``);
@@ -438,6 +440,8 @@ export default function ConfigBuilder() {
       ml.push(`    net.architecture.strand_typology.bimodal.height_mode  = '${c.bimodal_height_mode}';`);
       if (c.bimodal_height_mode === 'prob')
         ml.push(`    net.architecture.strand_typology.bimodal.height_prob  = ${c.bimodal_height_prob};`);
+      else
+        ml.push(`    net.architecture.strand_typology.bimodal.height_count = ${c.bimodal_height_count};`);
       ml.push(`    net.architecture.strand_typology.bimodal.long_first   = ${boolStr(c.bimodal_long_first)};`);
     }
     ml.push(``);
@@ -633,10 +637,10 @@ export default function ConfigBuilder() {
                 <Row label="Std 1">{num('bimodal_std1', 0, null, 0.5)}</Row>
                 <Row label="Std 2">{num('bimodal_std2', 0, null, 0.5)}</Row>
               </>}
-              <Row label="Height mode">{sel('bimodal_height_mode', [['prob'], ['fixed']])}</Row>
+              <Row label="Height mode">{sel('bimodal_height_mode', [['prob'], ['count']])}</Row>
               {cfg.bimodal_height_mode === 'prob'
                 ? <Row label="Fraction (mode 1)">{slide('bimodal_height_prob', 0.05, 0.95, 0.05)}</Row>
-                : <Row label="Count (mode 1)">{num('bimodal_height_prob', 1)}</Row>
+                : <Row label="Count (mode 2)">{num('bimodal_height_count', 1)}</Row>
               }
               <Row label="Long first">{chk('bimodal_long_first')}</Row>
             </Sub>

@@ -91,12 +91,12 @@ net.architecture.strand_typology.bimodal.method = 'gaussian';
 
 | Type | Args | Default |
 |------|------|---------|
-| `string` | `'prob'` \| `'fixed'` | `'prob'` |
+| `string` | `'prob'` \| `'count'` | `'prob'` |
 
 Controls how the relative contribution of each distribution is specified.
 
 - **prob** — specified as a probability (fraction of bonds from each mode) via `height_prob`
-- **fixed** — specified as a fixed count via `height_count`
+- **count** — specified as a fixed count via `height_count`
 
 ```matlab
 net.architecture.strand_typology.bimodal.height_mode = 'prob';
@@ -124,7 +124,7 @@ net.architecture.strand_typology.bimodal.height_prob = 0.4;
 |------|------|---------|
 | `int` | [1, ∞) | `2` |
 
-Fixed number of values drawn from the first distribution. Only used when `height_mode = 'fixed'`.
+Fixed number of values drawn from the first distribution. Only used when `height_mode = 'count'`.
 
 ```matlab
 net.architecture.strand_typology.bimodal.height_count = 50;

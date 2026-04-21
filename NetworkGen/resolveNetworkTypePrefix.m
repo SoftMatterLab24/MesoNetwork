@@ -15,7 +15,7 @@ function network_prefix = resolveNetworkTypePrefix(obj)
         case 'bimodal'
             network_prefix = 'BD';
 
-        case 'poly'
+        case {'poly', 'polydisperse'}
             network_prefix = 'PD';
 
         otherwise

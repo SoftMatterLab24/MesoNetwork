@@ -226,6 +226,21 @@ class TestNetworkClass:
         )
         assert bool(ok)
 
+    def test_polydisperse_mode_alias_is_accepted(self):
+        """Documented polydisperse mode alias works for topology and kuhn sync."""
+        result = octave.eval(textwrap.dedent("""
+            n = network();
+            n.architecture.strand_typology.mode = 'polydisperse';
+            n.architecture.strand_typology.poly.method = 'pmf';
+            n.architecture.strand_typology.poly.pmf_mean = 12;
+            n.architecture.strand_typology.poly.pmf_min = 4;
+            n.architecture.strand_typology.poly.pmf_max = 20;
+            syncKuhnAssignmentFromTopology(n);
+            strcmp(n.perbond.kuhn.mode, 'polydisperse') && ...
+            strcmp(resolveNetworkTypePrefix(n), 'PD')
+        """), verbose=False)
+        assert bool(result)
+
 
 class TestSetupDomain:
 

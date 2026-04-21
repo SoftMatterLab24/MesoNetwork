@@ -78,7 +78,7 @@ function VisualizeNetwork(obj, Atoms, Bonds, Nvec)
         return;
     end
 
-    if strcmp(mode, 'poly')
+    if any(strcmp(mode, {'poly', 'polydisperse'}))
 
         % --- Kuhn distribution ---
         nbinsN = max(10, min(80, ceil(sqrt(numel(Nvec)))));

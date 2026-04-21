@@ -53,7 +53,7 @@ const CLASSES = [
     style: { left: 170, top: 510, width: 320 },
     fields: [
       { name: 'auto', type: 'boolean' },
-      { name: 'mode', type: 'string' },
+      { name: 'mode', type: "string {'mono'|'uniform'|'poly'|'polydisperse'|'bimodal'}" },
       { name: 'mono', type: 'struct {value}' },
       { name: 'uniform', type: 'struct {min_value, max_value}' },
       { name: 'poly', type: 'struct {method, pmf_mean...}' },

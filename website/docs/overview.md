@@ -20,7 +20,7 @@ The workflow follows three steps:
 net = network();
 net.domain.Lx = 10;
 net.domain.Ly = 10;
-net.architecture.strand_typology.mode = 'poly';
+net.architecture.strand_typology.mode = 'polydisperse';
 net.generateNetwork();
 ```
 

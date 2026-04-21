@@ -64,7 +64,7 @@ A complete flat reference of all NetworkGen settings. For detailed descriptions 
 
 | Setting | Type | Args | Default |
 |---------|------|------|---------|
-| `net.architecture.strand_typology.mode` | `string` | `'mono'` \| `'poly'` \| `'bimodal'` | `'mono'` |
+| `net.architecture.strand_typology.mode` | `string` | `'mono'` \| `'poly'` \| `'polydisperse'` \| `'bimodal'` | `'mono'` |
 | `net.architecture.strand_typology.auto` | `boolean` | `true` \| `false` | `true` |
 
 ## [Assignment Modes](./assignment-modes/overview)
@@ -88,7 +88,7 @@ A complete flat reference of all NetworkGen settings. For detailed descriptions 
 | `net.architecture.strand_typology.bimodal.mean_2` | `double` | (`mean_1`, ∞) | `60` |
 | `net.architecture.strand_typology.bimodal.std_1` | `double` | (0, ∞) | `10` |
 | `net.architecture.strand_typology.bimodal.std_2` | `double` | (0, ∞) | `5` |
-| `net.architecture.strand_typology.bimodal.height_mode` | `string` | `'prob'` \| `'fixed'` | `'prob'` |
+| `net.architecture.strand_typology.bimodal.height_mode` | `string` | `'prob'` \| `'count'` | `'prob'` |
 | `net.architecture.strand_typology.bimodal.height_prob` | `double` | [0, 1] | `1.0` |
 | `net.architecture.strand_typology.bimodal.height_count` | `int` | [1, ∞) | `2` |
 | `net.architecture.strand_typology.bimodal.long_first` | `boolean` | `true` \| `false` | `true` |
@@ -109,7 +109,7 @@ A complete flat reference of all NetworkGen settings. For detailed descriptions 
 | Setting | Type | Args | Default |
 |---------|------|------|---------|
 | `net.perbond.kuhn.auto` | `boolean` | `true` \| `false` | `true` |
-| `net.perbond.kuhn.mode` | `string` | `'mono'` \| `'poly'` \| `'bimodal'` | `'mono'` |
+| `net.perbond.kuhn.mode` | `string` | `'mono'` \| `'poly'` \| `'polydisperse'` \| `'bimodal'` | `'mono'` |
 | `net.pot.k_LD` | `double` | (0, ∞) | `0.414` |
 | `net.pot.N_rho` | `int` | [1, ∞) | `100000` |
 | `net.pot.rho_min` | `double` | (0, `rho_max`) | `0.0` |

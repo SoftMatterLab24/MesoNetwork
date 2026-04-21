@@ -30,7 +30,7 @@ function syncKuhnAssignmentFromTopology(obj)
         case 'uniform'
             obj.perbond.kuhn.uniform = topo.uniform;
 
-        case 'poly'
+        case {'poly', 'polydisperse'}
             obj.perbond.kuhn.poly = topo.poly;
 
         case 'bimodal'
