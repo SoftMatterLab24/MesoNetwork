@@ -1,0 +1,18 @@
+﻿addpath('NetworkGen');
+net = network();
+net.Nreplicates = 1;
+net.domain.Lx = 20;
+net.domain.Ly = 20;
+net.domain.write_location = 'tmp_multitype_validation_final';
+net.domain.lammps_data_file = 'validation_final';
+net.domain.seed = 1234;
+net.architecture.types.enabled = true;
+net.architecture.types.natom_type = 3;
+net.architecture.types.nbond_type = 2;
+net.architecture.types.atom_frac = [0.5, 0.3, 0.2];
+net.architecture.types.bond_frac = [0.6, 0.4];
+net.architecture.types.connectivity = [];
+net.flags.visualize = false;
+net.flags.iversbose_settings = true;
+net.generateNetwork();
+exit;

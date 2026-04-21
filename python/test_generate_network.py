@@ -926,6 +926,53 @@ class TestGenerateVisualizableOutputs:
             net.defect.shape_n_modes       = 4;
             net.defect.void_overlap        = true;
             net.defect.sparse_network      = false;
+
+
+class TestGenerateMultiType:
+    """Full pipeline with post-cleanup multi-type assignment enabled."""
+
+    def test_multitype_network_exports_atom_and_bond_types(self, outdir):
+        config = textwrap.dedent(f"""
+            net = network();
+            net.Nreplicates = 1;
+            net.domain.b            = 1.6;
+            net.domain.Lx           = 50;
+            net.domain.Ly           = 50;
+            net.domain.boundary     = 'fixed';
+            net.domain.write_location = '{outdir}';
+            net.architecture.geometry           = 'random';
+            net.architecture.rho_atom           = 0.0078;
+            net.architecture.strand_typology.mode = 'mono';
+            net.peratom.Max_peratom_bond        = 6;
+            net.peratom.min_degree_keep         = 2;
+            net.perbond.kuhn.auto               = true;
+            net.flags.isave      = true;
+            net.flags.iplot      = false;
+            net.flags.ilog       = true;
+            net.flags.idefect    = false;
+            net.flags.ipotential = false;
+            net.architecture.types.enabled    = true;
+            net.architecture.types.natom_type = 3;
+            net.architecture.types.nbond_type = 2;
+            net.architecture.types.atype_mode = 'frac';
+            net.architecture.types.btype_mode = 'frac';
+            net.architecture.types.atom_frac  = [0.50, 0.30, 0.20];
+            net.architecture.types.bond_frac  = [0.60, 0.40];
+            net.architecture.types.connectivity = [];
+            net.generateNetwork();
+        """)
+
+        run_config(config)
+        files = os.listdir(outdir)
+        data_files = [f for f in files if f.endswith('.dat') or 'PolyNetwork' in f]
+        assert data_files, f"No LAMMPS data file found. Files present: {files}"
+
+        data = read_lammps_data(os.path.join(outdir, data_files[0]))
+        atom_types = data['atoms'][:, 2].astype(int)
+        bond_types = data['bonds'][:, 1].astype(int)
+
+        assert set(atom_types) == {1, 2, 3}, f"Unexpected atom types: {sorted(set(atom_types))}"
+        assert set(bond_types) == {1, 2}, f"Unexpected bond types: {sorted(set(bond_types))}"
             net.defect.center_distribution = 'random';
             net.defect.margin_frac         = 0.05;
             net.defect.clamp_thickness     = 0.0;
