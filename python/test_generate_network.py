@@ -958,7 +958,12 @@ class TestGenerateMultiType:
             net.architecture.types.btype_mode = 'frac';
             net.architecture.types.atom_frac  = [0.50, 0.30, 0.20];
             net.architecture.types.bond_frac  = [0.60, 0.40];
-            net.architecture.types.connectivity = [];
+            net.architecture.types.connectivity = [ ...
+                1 2 1 0; ...
+                1 2 2 1; ...
+                2 3 1 1; ...
+                2 3 2 0  ...
+            ];
             net.generateNetwork();
         """)
 
@@ -973,13 +978,33 @@ class TestGenerateMultiType:
 
         assert set(atom_types) == {1, 2, 3}, f"Unexpected atom types: {sorted(set(atom_types))}"
         assert set(bond_types) == {1, 2}, f"Unexpected bond types: {sorted(set(bond_types))}"
-            net.defect.center_distribution = 'random';
-            net.defect.margin_frac         = 0.05;
-            net.defect.clamp_thickness     = 0.0;
-            net.generateNetwork();
-        """
-        subdir, data_files = self._run_to_viz_dir("mono_defects", config)
-        assert len(data_files) > 0, f"No data file written to {subdir}"
+
+        atom_type_by_id = {
+            int(row[0]): int(row[2])
+            for row in data['atoms']
+        }
+
+        connectivity = {
+            (1, 2, 1): False,
+            (1, 2, 2): True,
+            (2, 3, 1): True,
+            (2, 3, 2): False,
+        }
+
+        for bond_row in data['bonds']:
+            bond_type = int(bond_row[1])
+            atom_i = int(bond_row[2])
+            atom_j = int(bond_row[3])
+
+            type_i = atom_type_by_id[atom_i]
+            type_j = atom_type_by_id[atom_j]
+            key = (min(type_i, type_j), max(type_i, type_j), bond_type)
+
+            allowed = connectivity.get(key, True)
+            assert allowed, (
+                f"Bond ({atom_i}, {atom_j}) with atom types ({type_i}, {type_j}) "
+                f"was assigned forbidden bond type {bond_type}"
+            )
 
 
 # =============================================================================

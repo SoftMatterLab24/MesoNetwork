@@ -15,3 +15,6 @@ NetworkGen/example_executeClass.asv
 installer_output/
 tmp_multitype_validation/
 tmp_multitype_validation_final/
+networks/
+tmp_multitype_rulecheck/
+tmp_multitype_rulecheck_rerun/
