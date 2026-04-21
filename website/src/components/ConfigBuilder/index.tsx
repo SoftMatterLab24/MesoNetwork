@@ -1,6 +1,13 @@
 import React, { useState, useCallback } from 'react';
 import styles from './styles.module.css';
 
+type ConnectivityRule = {
+  atomTypeA: number;
+  atomTypeB: number;
+  bondType: number;
+  allowed: boolean;
+};
+
 const SECTION_COLORS = {
   domain:       { accent: '#378ADD', bg: '#E6F1FB' },
   architecture: { accent: '#1D9E75', bg: '#E1F5EE' },
@@ -46,6 +53,11 @@ const DEFAULT = {
 
   use_multitype: false, natom_type: 1, nbond_type: 1,
   atype_mode: 'frac', btype_mode: 'frac',
+  atom_frac_values: [1],
+  bond_frac_values: [1],
+  atom_count_values: [1],
+  bond_count_values: [1],
+  connectivity_rules: [] as ConnectivityRule[],
 
   ipotential: false, pot_k_LD: 0.414, pot_N_rho: 100000,
   pot_rho_min: 0.0, pot_rho_max: 500,
@@ -80,6 +92,64 @@ function uniformFractions(n) {
 
 function unitCounts(n) {
   return Array.from({ length: Math.max(0, n) }, () => 1);
+}
+
+function resizeNumericArray(values, count, fillValue) {
+  const next = Array.isArray(values) ? values.slice(0, count) : [];
+
+  while (next.length < count) {
+    next.push(fillValue);
+  }
+
+  return next;
+}
+
+function sanitizeWeightArray(values, count) {
+  return resizeNumericArray(values, count, 0)
+    .map(value => Math.max(0, Number.isFinite(value) ? value : 0));
+}
+
+function sanitizeCountArray(values, count) {
+  return resizeNumericArray(values, count, 1)
+    .map(value => Math.max(0, Math.round(Number.isFinite(value) ? value : 0)));
+}
+
+function normalizeWeightArray(values, count) {
+  const sanitized = sanitizeWeightArray(values, count);
+  const total = sanitized.reduce((sum, value) => sum + value, 0);
+
+  if (total <= 0) {
+    return uniformFractions(count);
+  }
+
+  return sanitized.map(value => Number((value / total).toFixed(6)));
+}
+
+function sanitizeConnectivityRules(rules, natomType, nbondType) {
+  return (Array.isArray(rules) ? rules : []).map(rule => ({
+    atomTypeA: Math.min(Math.max(1, Math.round(rule.atomTypeA || 1)), natomType),
+    atomTypeB: Math.min(Math.max(1, Math.round(rule.atomTypeB || 1)), natomType),
+    bondType: Math.min(Math.max(1, Math.round(rule.bondType || 1)), nbondType),
+    allowed: !!rule.allowed,
+  }));
+}
+
+function connectivityRowsToMatlabLines(rules, indent = '') {
+  if (!rules.length) {
+    return [`${indent}net.architecture.types.connectivity = [];  %% leave empty to allow all combinations`];
+  }
+
+  const lines = [`${indent}net.architecture.types.connectivity = [ ...`];
+
+  rules.forEach((rule, index) => {
+    const suffix = index === rules.length - 1 ? '  ...' : '; ...';
+    lines.push(
+      `${indent}    ${rule.atomTypeA} ${rule.atomTypeB} ${rule.bondType} ${rule.allowed ? 1 : 0}${suffix}`
+    );
+  });
+
+  lines.push(`${indent}];`);
+  return lines;
 }
 
 function matlabVector(values) {
@@ -173,6 +243,87 @@ export default function ConfigBuilder() {
     setCfg(c => ({ ...c, [key]: val }));
   }, []);
 
+  const setArrayValue = useCallback((key, index, rawValue, integer = false) => {
+    setCfg(c => {
+      const next = Array.isArray(c[key]) ? [...c[key]] : [];
+      const value = Number.isFinite(rawValue) ? rawValue : 0;
+      next[index] = integer ? Math.max(0, Math.round(value)) : Math.max(0, value);
+      return { ...c, [key]: next };
+    });
+  }, []);
+
+  const resetArrayValues = useCallback((key, values) => {
+    setCfg(c => ({ ...c, [key]: values }));
+  }, []);
+
+  const normalizeArrayValues = useCallback((key, count) => {
+    setCfg(c => ({ ...c, [key]: normalizeWeightArray(c[key], count) }));
+  }, []);
+
+  const setAtomTypeCount = useCallback((rawValue) => {
+    const nextCount = Math.max(1, Math.round(rawValue || 1));
+
+    setCfg(c => ({
+      ...c,
+      natom_type: nextCount,
+      atom_frac_values: resizeNumericArray(c.atom_frac_values, nextCount, 0),
+      atom_count_values: resizeNumericArray(c.atom_count_values, nextCount, 1),
+      connectivity_rules: sanitizeConnectivityRules(c.connectivity_rules, nextCount, c.nbond_type),
+    }));
+  }, []);
+
+  const setBondTypeCount = useCallback((rawValue) => {
+    const nextCount = Math.max(1, Math.round(rawValue || 1));
+
+    setCfg(c => ({
+      ...c,
+      nbond_type: nextCount,
+      bond_frac_values: resizeNumericArray(c.bond_frac_values, nextCount, 0),
+      bond_count_values: resizeNumericArray(c.bond_count_values, nextCount, 1),
+      connectivity_rules: sanitizeConnectivityRules(c.connectivity_rules, c.natom_type, nextCount),
+    }));
+  }, []);
+
+  const addConnectivityRule = useCallback(() => {
+    setCfg(c => ({
+      ...c,
+      connectivity_rules: [
+        ...sanitizeConnectivityRules(c.connectivity_rules, c.natom_type, c.nbond_type),
+        {
+          atomTypeA: 1,
+          atomTypeB: Math.min(2, c.natom_type),
+          bondType: 1,
+          allowed: false,
+        },
+      ],
+    }));
+  }, []);
+
+  const updateConnectivityRule = useCallback((index, field, value) => {
+    setCfg(c => {
+      const next = sanitizeConnectivityRules(c.connectivity_rules, c.natom_type, c.nbond_type);
+
+      if (!next[index]) {
+        return c;
+      }
+
+      next[index] = {
+        ...next[index],
+        [field]: field === 'allowed' ? !!value : Math.round(value || 1),
+      };
+
+      return { ...c, connectivity_rules: next };
+    });
+  }, []);
+
+  const removeConnectivityRule = useCallback((index) => {
+    setCfg(c => ({
+      ...c,
+      connectivity_rules: sanitizeConnectivityRules(c.connectivity_rules, c.natom_type, c.nbond_type)
+        .filter((_, rowIndex) => rowIndex !== index),
+    }));
+  }, []);
+
   const sel = (key, opts) => (
     <select value={cfg[key]} onChange={e => set(key, e.target.value)}>
       {opts.map(([v, l]) => <option key={v} value={v}>{l ?? v}</option>)}
@@ -210,11 +361,14 @@ export default function ConfigBuilder() {
     const t = c.typology_mode;
     const lines: string[] = [];
     const atomTargets = c.atype_mode === 'fixed'
-      ? matlabVector(unitCounts(c.natom_type))
-      : matlabVector(uniformFractions(c.natom_type));
+      ? matlabVector(sanitizeCountArray(c.atom_count_values, c.natom_type))
+      : matlabVector(sanitizeWeightArray(c.atom_frac_values, c.natom_type));
     const bondTargets = c.btype_mode === 'fixed'
-      ? matlabVector(unitCounts(c.nbond_type))
-      : matlabVector(uniformFractions(c.nbond_type));
+      ? matlabVector(sanitizeCountArray(c.bond_count_values, c.nbond_type))
+      : matlabVector(sanitizeWeightArray(c.bond_frac_values, c.nbond_type));
+    const connectivityLines = connectivityRowsToMatlabLines(
+      sanitizeConnectivityRules(c.connectivity_rules, c.natom_type, c.nbond_type)
+    );
 
     lines.push(`%% NetworkGen configuration script`);
     lines.push(`%% Generated by the NetworkGen config builder`);
@@ -325,14 +479,14 @@ export default function ConfigBuilder() {
       lines.push(`net.architecture.types.atype_mode  = '${c.atype_mode}';`);
       lines.push(`net.architecture.types.btype_mode  = '${c.btype_mode}';`);
       if (c.atype_mode === 'fixed')
-        lines.push(`net.architecture.types.atom_count  = ${atomTargets};  %% edit counts as needed`);
+        lines.push(`net.architecture.types.atom_count  = ${atomTargets};`);
       else
-        lines.push(`net.architecture.types.atom_frac   = ${atomTargets};  %% edit fractions as needed`);
+        lines.push(`net.architecture.types.atom_frac   = ${atomTargets};`);
       if (c.btype_mode === 'fixed')
-        lines.push(`net.architecture.types.bond_count  = ${bondTargets};  %% edit counts as needed`);
+        lines.push(`net.architecture.types.bond_count  = ${bondTargets};`);
       else
-        lines.push(`net.architecture.types.bond_frac   = ${bondTargets};  %% edit fractions as needed`);
-      lines.push(`net.architecture.types.connectivity = [];  %% optional [atomTypeA atomTypeB bondType allowed] rows`);
+        lines.push(`net.architecture.types.bond_frac   = ${bondTargets};`);
+      lines.push(...connectivityLines);
     }
     if (c.ipotential) {
       lines.push(``);
@@ -364,11 +518,15 @@ export default function ConfigBuilder() {
     const t = c.typology_mode;
     const lines: string[] = [];
     const atomTargets = c.atype_mode === 'fixed'
-      ? matlabVector(unitCounts(c.natom_type))
-      : matlabVector(uniformFractions(c.natom_type));
+      ? matlabVector(sanitizeCountArray(c.atom_count_values, c.natom_type))
+      : matlabVector(sanitizeWeightArray(c.atom_frac_values, c.natom_type));
     const bondTargets = c.btype_mode === 'fixed'
-      ? matlabVector(unitCounts(c.nbond_type))
-      : matlabVector(uniformFractions(c.nbond_type));
+      ? matlabVector(sanitizeCountArray(c.bond_count_values, c.nbond_type))
+      : matlabVector(sanitizeWeightArray(c.bond_frac_values, c.nbond_type));
+    const connectivityLines = connectivityRowsToMatlabLines(
+      sanitizeConnectivityRules(c.connectivity_rules, c.natom_type, c.nbond_type),
+      '    '
+    );
 
     const boolStr = (v: boolean) => v ? 'true' : 'false';
 
@@ -491,14 +649,14 @@ export default function ConfigBuilder() {
       ml.push(`    net.architecture.types.atype_mode  = '${c.atype_mode}';`);
       ml.push(`    net.architecture.types.btype_mode  = '${c.btype_mode}';`);
       if (c.atype_mode === 'fixed')
-        ml.push(`    net.architecture.types.atom_count  = ${atomTargets};  %% edit counts as needed`);
+        ml.push(`    net.architecture.types.atom_count  = ${atomTargets};`);
       else
-        ml.push(`    net.architecture.types.atom_frac   = ${atomTargets};  %% edit fractions as needed`);
+        ml.push(`    net.architecture.types.atom_frac   = ${atomTargets};`);
       if (c.btype_mode === 'fixed')
-        ml.push(`    net.architecture.types.bond_count  = ${bondTargets};  %% edit counts as needed`);
+        ml.push(`    net.architecture.types.bond_count  = ${bondTargets};`);
       else
-        ml.push(`    net.architecture.types.bond_frac   = ${bondTargets};  %% edit fractions as needed`);
-      ml.push(`    net.architecture.types.connectivity = [];  %% optional [atomTypeA atomTypeB bondType allowed] rows`);
+        ml.push(`    net.architecture.types.bond_frac   = ${bondTargets};`);
+      ml.push(...connectivityLines);
     }
     if (c.ipotential) {
       ml.push(``);
@@ -547,6 +705,72 @@ export default function ConfigBuilder() {
   }
 
   const t = cfg.typology_mode;
+  const atomFractionValues = sanitizeWeightArray(cfg.atom_frac_values, cfg.natom_type);
+  const bondFractionValues = sanitizeWeightArray(cfg.bond_frac_values, cfg.nbond_type);
+  const atomCountValues = sanitizeCountArray(cfg.atom_count_values, cfg.natom_type);
+  const bondCountValues = sanitizeCountArray(cfg.bond_count_values, cfg.nbond_type);
+  const connectivityRules = sanitizeConnectivityRules(cfg.connectivity_rules, cfg.natom_type, cfg.nbond_type);
+  const atomFractionSum = atomFractionValues.reduce((sum, value) => sum + value, 0);
+  const bondFractionSum = bondFractionValues.reduce((sum, value) => sum + value, 0);
+  const atomTypeOptions = Array.from({ length: cfg.natom_type }, (_, index) => index + 1);
+  const bondTypeOptions = Array.from({ length: cfg.nbond_type }, (_, index) => index + 1);
+
+  function renderTargetEditor(title, key, values, mode, summary, resetValues, count) {
+    const isFraction = mode === 'frac';
+
+    return (
+      <div className={styles.targetCard}>
+        <div className={styles.targetCardHead}>
+          <div>
+            <div className={styles.targetCardTitle}>{title}</div>
+            <div className={styles.targetCardSubtitle}>
+              {isFraction ? 'Fractions / weights per exported type' : 'Exact target count per exported type'}
+            </div>
+          </div>
+          <div className={styles.targetCardActions}>
+            {isFraction && (
+              <button
+                type="button"
+                className={styles.actionButton}
+                onClick={() => normalizeArrayValues(key, count)}
+              >
+                Normalize
+              </button>
+            )}
+            <button
+              type="button"
+              className={styles.actionButton}
+              onClick={() => resetArrayValues(key, resetValues)}
+            >
+              {isFraction ? 'Equalize' : 'Fill 1'}
+            </button>
+          </div>
+        </div>
+
+        <div className={styles.targetGrid}>
+          {values.map((value, index) => (
+            <label key={`${key}-${index}`} className={styles.targetCell}>
+              <span className={styles.targetCellLabel}>Type {index + 1}</span>
+              <input
+                type="number"
+                min={0}
+                step={isFraction ? 0.01 : 1}
+                value={value}
+                onChange={e => setArrayValue(key, index, parseFloat(e.target.value) || 0, !isFraction)}
+              />
+            </label>
+          ))}
+        </div>
+
+        <div className={styles.targetSummary}>
+          <span className={isFraction && Math.abs(summary - 1) > 0.001 ? styles.targetSummaryWarn : undefined}>
+            {isFraction ? `Current sum: ${summary.toFixed(3)}` : `Current total: ${summary.toFixed(0)}`}
+          </span>
+          {isFraction && <span>Any positive weights are normalized internally by NetworkGen.</span>}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={styles.outer}>
@@ -701,13 +925,148 @@ export default function ConfigBuilder() {
         <Section id="multitype" title="Multi-type">
           <Row label="Enable multi-type">{chk('use_multitype')}</Row>
           {cfg.use_multitype && (<>
-            <Row label="N atom types">{num('natom_type', 1)}</Row>
-            <Row label="N bond types">{num('nbond_type', 1)}</Row>
+            <Row label="N atom types">
+              <input
+                type="number"
+                value={cfg.natom_type}
+                min={1}
+                step={1}
+                onChange={e => setAtomTypeCount(parseFloat(e.target.value) || 1)}
+              />
+            </Row>
+            <Row label="N bond types">
+              <input
+                type="number"
+                value={cfg.nbond_type}
+                min={1}
+                step={1}
+                onChange={e => setBondTypeCount(parseFloat(e.target.value) || 1)}
+              />
+            </Row>
             <Row label="Atom type mode">{sel('atype_mode', [['frac', 'fraction'], ['fixed', 'fixed count']])}</Row>
             <Row label="Bond type mode">{sel('btype_mode', [['frac', 'fraction'], ['fixed', 'fixed count']])}</Row>
-            <div className={styles.note}>
-              Generated scripts now include `types.enabled = true` and uniform placeholder target arrays. Edit the arrays and optional connectivity rows manually. Connectivity rows use `[atomTypeA atomTypeB bondType allowed]`; unspecified combinations default to allowed.
-            </div>
+
+            <Sub title="Type targets">
+              <div className={styles.targetEditorGrid}>
+                {renderTargetEditor(
+                  cfg.atype_mode === 'frac' ? 'Atom fractions' : 'Atom counts',
+                  cfg.atype_mode === 'frac' ? 'atom_frac_values' : 'atom_count_values',
+                  cfg.atype_mode === 'frac' ? atomFractionValues : atomCountValues,
+                  cfg.atype_mode,
+                  cfg.atype_mode === 'frac'
+                    ? atomFractionSum
+                    : atomCountValues.reduce((sum, value) => sum + value, 0),
+                  cfg.atype_mode === 'frac' ? uniformFractions(cfg.natom_type) : unitCounts(cfg.natom_type),
+                  cfg.natom_type
+                )}
+                {renderTargetEditor(
+                  cfg.btype_mode === 'frac' ? 'Bond fractions' : 'Bond counts',
+                  cfg.btype_mode === 'frac' ? 'bond_frac_values' : 'bond_count_values',
+                  cfg.btype_mode === 'frac' ? bondFractionValues : bondCountValues,
+                  cfg.btype_mode,
+                  cfg.btype_mode === 'frac'
+                    ? bondFractionSum
+                    : bondCountValues.reduce((sum, value) => sum + value, 0),
+                  cfg.btype_mode === 'frac' ? uniformFractions(cfg.nbond_type) : unitCounts(cfg.nbond_type),
+                  cfg.nbond_type
+                )}
+              </div>
+            </Sub>
+
+            <Sub title="Connectivity rules">
+              <div className={styles.note}>
+                Add rows of the form `[atomTypeA atomTypeB bondType allowed]`. Leave the table empty to allow all combinations. Atom-type order is symmetric, so `(1,2)` is treated the same as `(2,1)`.
+              </div>
+
+              <div className={styles.ruleToolbar}>
+                <button type="button" className={styles.actionButton} onClick={addConnectivityRule}>
+                  Add rule
+                </button>
+                {connectivityRules.length > 0 && (
+                  <button
+                    type="button"
+                    className={`${styles.actionButton} ${styles.actionButtonGhost}`}
+                    onClick={() => resetArrayValues('connectivity_rules', [])}
+                  >
+                    Clear rules
+                  </button>
+                )}
+              </div>
+
+              {connectivityRules.length === 0 ? (
+                <div className={styles.ruleEmptyState}>
+                  No explicit rules yet. The generated script will leave `types.connectivity = []`, which means all type combinations are allowed.
+                </div>
+              ) : (
+                <div className={styles.ruleTableWrap}>
+                  <table className={styles.ruleTable}>
+                    <thead>
+                      <tr>
+                        <th>Atom A</th>
+                        <th>Atom B</th>
+                        <th>Bond type</th>
+                        <th>Action</th>
+                        <th />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {connectivityRules.map((rule, index) => (
+                        <tr key={`rule-${index}`}>
+                          <td>
+                            <select
+                              value={rule.atomTypeA}
+                              onChange={e => updateConnectivityRule(index, 'atomTypeA', parseFloat(e.target.value) || 1)}
+                            >
+                              {atomTypeOptions.map(typeId => (
+                                <option key={`rule-a-${typeId}`} value={typeId}>Type {typeId}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td>
+                            <select
+                              value={rule.atomTypeB}
+                              onChange={e => updateConnectivityRule(index, 'atomTypeB', parseFloat(e.target.value) || 1)}
+                            >
+                              {atomTypeOptions.map(typeId => (
+                                <option key={`rule-b-${typeId}`} value={typeId}>Type {typeId}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td>
+                            <select
+                              value={rule.bondType}
+                              onChange={e => updateConnectivityRule(index, 'bondType', parseFloat(e.target.value) || 1)}
+                            >
+                              {bondTypeOptions.map(typeId => (
+                                <option key={`rule-bond-${typeId}`} value={typeId}>Type {typeId}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td>
+                            <select
+                              value={rule.allowed ? 'allow' : 'forbid'}
+                              onChange={e => updateConnectivityRule(index, 'allowed', e.target.value === 'allow')}
+                            >
+                              <option value="forbid">Forbid</option>
+                              <option value="allow">Allow</option>
+                            </select>
+                          </td>
+                          <td className={styles.ruleDeleteCell}>
+                            <button
+                              type="button"
+                              className={`${styles.actionButton} ${styles.actionButtonGhost}`}
+                              onClick={() => removeConnectivityRule(index)}
+                            >
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Sub>
           </>)}
         </Section>
 
