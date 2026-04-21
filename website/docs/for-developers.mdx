@@ -108,15 +108,16 @@ All fields across all four classes. Fields marked with **†** are computed inte
 | `lattice_max_del_per_node` | `int` | `1` | |
 | `lattice_min_degree_keep` | `int` | `5` | |
 | `strand_typology` | `assignmentmode` | — | See `assignmentmode` table |
+| `types.enabled` | `boolean` | `false` | |
 | `types.natom_type` | `int` | `1` | |
-| `types.nbond_type` | `int` | `5` | |
+| `types.nbond_type` | `int` | `1` | |
 | `types.atype_mode` | `string` | `'frac'` | |
 | `types.btype_mode` | `string` | `'frac'` | |
 | `types.atom_count` | `int array` | `0` | |
 | `types.bond_count` | `int array` | `0` | |
 | `types.atom_frac` | `double array` | `1` | |
 | `types.bond_frac` | `double array` | `1` | |
-| `types.connectivity` | `int array` | `[]` | |
+| `types.connectivity` | `int array` | `[]` | Rows are `[atomTypeA atomTypeB bondType allowed]` |
 | `types.atype_sel_method` | `string` | `'random'` | |
 | `types.btype_sel_method` | `string` | `'random'` | |
 

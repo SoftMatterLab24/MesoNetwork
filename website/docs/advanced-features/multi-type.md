@@ -5,7 +5,25 @@ sidebar_position: 2
 
 # Multi-type Networks
 
-NetworkGen supports networks with multiple atom and bond types, allowing heterogeneous networks where different regions or connectivity classes have distinct physical properties in LAMMPS.
+NetworkGen supports exported networks with multiple atom and bond types, allowing heterogeneous LAMMPS labels on the final cleaned network.
+
+Multi-type assignment runs after topology generation, defects, and cleanup. It labels the surviving atoms and bonds that are written to the LAMMPS data file; it does not change the earlier bond-generation algorithms.
+
+If the requested atom or bond fractions cannot be matched exactly under the supplied connectivity rules, NetworkGen uses the closest feasible assignment it can find and reports the realized counts in the log.
+
+---
+
+### `types.enabled`
+
+| Type | Args | Default |
+|------|------|---------|
+| `boolean` | `true` \| `false` | `false` |
+
+Turns post-cleanup multi-type labeling on or off.
+
+```matlab
+net.architecture.types.enabled = true;
+```
 
 ---
 
@@ -41,7 +59,7 @@ net.architecture.types.nbond_type = 2;
 
 | Type | Args | Default |
 |------|------|---------|
-| `string` | `'fixed'` \| `'frac'` | `'fixed'` |
+| `string` | `'fixed'` \| `'frac'` | `'frac'` |
 
 Controls how atom type counts are specified.
 
@@ -58,7 +76,7 @@ net.architecture.types.atype_mode = 'frac';
 
 | Type | Args | Default |
 |------|------|---------|
-| `string` | `'fixed'` \| `'frac'` | `'fixed'` |
+| `string` | `'fixed'` \| `'frac'` | `'frac'` |
 
 Controls how bond type counts are specified.
 
@@ -131,24 +149,36 @@ net.architecture.types.bond_frac = [0.6, 0.4];
 
 | Type | Args | Default |
 |------|------|---------|
-| `int array` | size: [N x 3] | `[]` (empty) |
+| `int array` | size: [N x 4] | `[]` (empty) |
 
-An exclusion rule table that restricts which bond types can form between which atom types. Each row is `[bond_type, atom_type_1, atom_type_2]` and defines a forbidden connection.
+Connectivity rule table for exported bond labels. Each row is:
 
-By default this is empty, meaning there are no restrictions — any bond type can connect any atom types.
+```text
+[atom_type_A, atom_type_B, bond_type, allowed]
+```
 
-:::note Exclusion rules
-Each row specifies a connection that is **not allowed**, not one that is required:
-- `[1, 1, 2]` — bond type 1 **cannot** form between atom type 1 and atom type 2
-- `[1, 1, 1]` — bond type 1 **cannot** bridge two atoms of type 1 (i.e. type 1 bonds are restricted to cross-links only)
+Atom-type order is symmetric, so a rule for `[1, 2, 1, 0]` also applies to `[2, 1, 1, 0]`.
+
+Any `(atom type, atom type, bond type)` triple that is not listed is assumed to be allowed.
+
+:::note Default behavior
+The default mode is permissive: anything is allowed unless you explicitly constrain it.
+
+For example, if you specify only `[1, 2, 1, 0]`, then type-1 bonds are forbidden between atom types 1 and 2, but type-2 bonds between those same atom types are still allowed because that triple was not constrained.
 :::
 
 ```matlab
-% Bond type 1 cannot connect atom type 1 to atom type 2
-% Bond type 1 cannot connect two atoms of type 1
-net.architecture.types.connectivity = [1, 1, 2;
-                           1, 1, 1];
+% Bond type 1 cannot connect atom types 1 and 2
+% Bond type 2 is still allowed for atom types 1 and 2
+net.architecture.types.connectivity = [ ...
+    1 2 1 0; ...
+    1 2 2 1  ...
+];
 ```
+
+:::tip Legacy rule tables
+Legacy 3-column rule tables of the form `[atom_type_A, atom_type_B, allowed]` are still accepted for backward compatibility. In that case the same rule is applied to every bond type.
+:::
 
 ---
 
@@ -175,12 +205,18 @@ Method used to select which bonds are assigned each type. Currently only `'rando
 ## Example
 
 ```matlab
+net.architecture.types.enabled = true;
 net.architecture.types.natom_type = 2;
 net.architecture.types.nbond_type = 2;
 net.architecture.types.atype_mode = 'frac';
 net.architecture.types.btype_mode = 'frac';
 net.architecture.types.atom_frac = [0.7, 0.3];
 net.architecture.types.bond_frac = [0.6, 0.4];
-% No connectivity restrictions — any bond type can connect any atom types
-net.architecture.types.connectivity = [];
+
+% bond type 1 forbidden for atom-type pair (1,2)
+% bond type 2 still allowed for the same pair
+net.architecture.types.connectivity = [ ...
+    1 2 1 0; ...
+    1 2 2 1  ...
+];
 ```

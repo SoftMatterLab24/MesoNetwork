@@ -32,7 +32,7 @@ const CLASSES = [
     fields: [
       { name: 'geometry', type: 'string', default: "'random'", desc: "Node placement pattern. Options: 'random', 'hex_lattice'." },
       { name: 'strand_typology', type: 'assignmentmode', default: 'assignmentmode()', desc: 'Target bond length distribution. Uses assignmentmode framework.', isRef: true, refId: 'assignmentmode' },
-      { name: 'types', type: 'struct', default: '—', desc: 'Multi-type settings: natom_type, nbond_type, atype_mode, btype_mode, connectivity (exclusion rules), frac arrays.' },
+      { name: 'types', type: 'struct', default: '—', desc: 'Multi-type settings: enabled flag, atom/bond target arrays, and connectivity rows [atomTypeA atomTypeB bondType allowed].' },
       { name: 'lattice_spacing', type: 'double', default: '6', desc: 'Nominal node spacing in units of b. Used when geometry = hex_lattice.' },
       { name: 'spacing_multiplier_mode', type: 'string', default: "'auto'", desc: "How spacing multiplier is set. Options: 'auto', 'manual'." },
       { name: 'spacing_multiplier', type: 'double', default: '1', desc: 'Manual scale factor applied to lattice_spacing.' },

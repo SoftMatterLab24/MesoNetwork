@@ -144,14 +144,15 @@ A complete flat reference of all NetworkGen settings. For detailed descriptions 
 
 | Setting | Type | Args | Default |
 |---------|------|------|---------|
+| `net.architecture.types.enabled` | `boolean` | `true` \| `false` | `false` |
 | `net.architecture.types.natom_type` | `int` | [1, ∞) | `1` |
-| `net.architecture.types.nbond_type` | `int` | [1, ∞) | `5` |
+| `net.architecture.types.nbond_type` | `int` | [1, ∞) | `1` |
 | `net.architecture.types.atype_mode` | `string` | `'fixed'` \| `'frac'` | `'frac'` |
 | `net.architecture.types.btype_mode` | `string` | `'fixed'` \| `'frac'` | `'frac'` |
 | `net.architecture.types.atom_count` | `int array` | size [1 x `natom_type`] | `0` |
 | `net.architecture.types.bond_count` | `int array` | size [1 x `nbond_type`] | `0` |
 | `net.architecture.types.atom_frac` | `double array` | size [1 x `natom_type`], sum=1 | `1` |
 | `net.architecture.types.bond_frac` | `double array` | size [1 x `nbond_type`], sum=1 | `1` |
-| `net.architecture.types.connectivity` | `int array` | size [N x 3] | `[]` |
+| `net.architecture.types.connectivity` | `int array` | size [N x 4] | `[]` |
 | `net.architecture.types.atype_sel_method` | `string` | `'random'` | `'random'` |
 | `net.architecture.types.btype_sel_method` | `string` | `'random'` | `'random'` |
