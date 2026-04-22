@@ -37,6 +37,28 @@ net.architecture.spacing_multiplier = 1.87;
 %% ---- Perbond ----
 net.perbond.kuhn.auto = true;
 
+%% ---- Multi-type (optional) ----
+net.architecture.types.enabled    = true;
+net.architecture.types.natom_type = 3;
+net.architecture.types.nbond_type = 2;
+net.architecture.types.atype_mode = 'frac';
+net.architecture.types.btype_mode = 'frac';
+net.architecture.types.atom_frac  = [0.50 0.20 0.30];
+net.architecture.types.bond_frac  = [0.70 0.30];
+% connectivity rows are [atomTypeA atomTypeB bondType allowed]
+% unspecified combinations default to allowed
+net.architecture.types.connectivity = [ ...
+    1 1 1 1; ...
+    2 2 1 1; ...
+    3 3 1 1; ...
+    1 2 2 1; ...
+    1 2 1 0;  ...
+    1 3 1 0;  ...
+    1 3 2 1;  ...
+    2 3 1 0;  ...
+    2 3 2 1;  ...
+];
+
 %% ---- Defects ----
 net.defect.density_mode       = 'area_frac';
 net.defect.void_area_frac     = 0.85;
@@ -78,7 +100,7 @@ net.flags.iplot      = false;
 net.flags.ilog       = true;
 net.flags.savemode   = true;
 net.flags.imanualseed = true;
-net.flags.idefect    = true;
+net.flags.idefect    = false;
 net.flags.ipotential = true;
 net.flags.idumpsettings = true;
 net.flags.iversbose_settings = true;

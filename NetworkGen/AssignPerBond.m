@@ -29,7 +29,7 @@ function Nvec = AssignPerBond(obj, Bonds, Atoms)
         case 'mono'
             Nvec = AssignPerBondMono(obj, Bonds, Atoms);
 
-        case 'poly'
+        case {'poly', 'polydisperse'}
             Nvec = AssignPerBondPoly(obj, Bonds, Atoms);
 
         case 'bimodal'

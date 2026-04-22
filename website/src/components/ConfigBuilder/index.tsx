@@ -1,6 +1,13 @@
 import React, { useState, useCallback } from 'react';
 import styles from './styles.module.css';
 
+type ConnectivityRule = {
+  atomTypeA: number;
+  atomTypeB: number;
+  bondType: number;
+  allowed: boolean;
+};
+
 const SECTION_COLORS = {
   domain:       { accent: '#378ADD', bg: '#E6F1FB' },
   architecture: { accent: '#1D9E75', bg: '#E1F5EE' },
@@ -15,23 +22,39 @@ const SECTION_COLORS = {
 const DEFAULT = {
   b: 1.6, Lx: 10, Ly: 10, boundary: 'fixed', seed: 12345,
   write_location: './networks', lammps_data_file: 'PolyNetwork',
-  lammps_viz_file: 'PolyVisual', smp_number: 1, scale: 1,
+  lammps_viz_file: 'PolyVisual', bond_table_file: 'bond', scale: 1,
 
-  geometry: 'random', rho_atom: 0.0078, max_peratom_bond: 6,
+  geometry: 'random', rho_atom: 0.0078, max_peratom_bond: 6, min_degree_keep: 2,
   lattice_spacing: 6, spacing_multiplier_mode: 'auto',
-  spacing_multiplier: 1, lattice_disorder_level: 0,
+  spacing_multiplier: 1.2, lattice_disorder_level: 0,
   lattice_disorder_maxfrac: 0.4, lattice_topo_disorder: false,
   lattice_max_del_per_node: 1, lattice_min_degree_keep: 5,
 
   typology_mode: 'mono',
   mono_value: 20,
-  poly_method: 'pmf', poly_pmf_mean: 40, poly_pmf_min: 5,
+  poly_method: 'pmf', poly_min_value: 1, poly_pmf_mean: 40, poly_pmf_min: 5,
   poly_pmf_max: 120, poly_rounding: 'round', poly_align: 'none',
+  poly_range_method: 'rank', poly_target_min: 5, poly_target_max: 120,
   bimodal_method: 'gaussian', bimodal_mean1: 10, bimodal_mean2: 40,
   bimodal_std1: 2, bimodal_std2: 5, bimodal_height_mode: 'prob',
-  bimodal_height_prob: 0.5, bimodal_long_first: false,
+  bimodal_height_prob: 0.5, bimodal_height_count: 2, bimodal_long_first: true,
+  bimodal_min_value: 1, bimodal_double_network_flag: false, bimodal_alpha: 3.0,
+  bimodal_auto_1_flag: false, bimodal_auto_2_flag: false,
+  bimodal_bin_window_method: 'manual', bimodal_manual_dev_type: 'mixed',
+  bimodal_stdR_1: 3, bimodal_stdR_2: 10, bimodal_lam_1: 0.2, bimodal_lam_2: 0.5,
 
   kuhn_auto: true, kuhn_mode: 'mono', kuhn_mono_value: 20,
+  kuhn_poly_method: 'pmf', kuhn_poly_min_value: 1, kuhn_poly_pmf_mean: 40,
+  kuhn_poly_pmf_min: 20, kuhn_poly_pmf_max: 120, kuhn_poly_rounding: 'round',
+  kuhn_poly_align: 'ascend', kuhn_poly_range_method: 'rank',
+  kuhn_poly_target_min: 5, kuhn_poly_target_max: 120,
+  kuhn_bimodal_method: 'gaussian', kuhn_bimodal_mean1: 10, kuhn_bimodal_mean2: 40,
+  kuhn_bimodal_std1: 2, kuhn_bimodal_std2: 5, kuhn_bimodal_height_mode: 'prob',
+  kuhn_bimodal_height_prob: 0.5, kuhn_bimodal_height_count: 2, kuhn_bimodal_long_first: true,
+  kuhn_bimodal_min_value: 1, kuhn_bimodal_double_network_flag: false, kuhn_bimodal_alpha: 3.0,
+  kuhn_bimodal_auto_1_flag: false, kuhn_bimodal_auto_2_flag: false,
+  kuhn_bimodal_bin_window_method: 'manual', kuhn_bimodal_manual_dev_type: 'mixed',
+  kuhn_bimodal_stdR_1: 3, kuhn_bimodal_stdR_2: 10, kuhn_bimodal_lam_1: 0.2, kuhn_bimodal_lam_2: 0.5,
 
   idefect: false, defect_density_mode: 'count', defect_n_voids: 5,
   defect_void_area_frac: 0.1, defect_size_dist: 'gaussian',
@@ -43,20 +66,176 @@ const DEFAULT = {
   defect_margin_frac: 0.15, defect_prune_isolated: true,
   defect_sparse_network: false, defect_wall_thickness: 18,
   defect_clamp_thickness: 0.12, defect_bridge_width: 1,
+  defect_thinning: false, defect_thinning_radius: 0,
+  defect_thinning_target_frac: 0.4, defect_thinning_min_keep: 0.1,
+  defect_bridging: false, defect_bridge_max_dist: 0,
+  defect_bridge_void_thresh: 0.25, defect_bridge_perp_width: 0,
+  defect_bridge_max_degree: 0, defect_bridge_max_bonds: 0,
+  defect_bridge_min_spacing: 0,
 
   use_multitype: false, natom_type: 1, nbond_type: 1,
   atype_mode: 'frac', btype_mode: 'frac',
+  atom_frac_values: [1],
+  bond_frac_values: [1],
+  atom_count_values: [1],
+  bond_count_values: [1],
+  connectivity_rules: [] as ConnectivityRule[],
 
   ipotential: false, pot_k_LD: 0.414, pot_N_rho: 100000,
   pot_rho_min: 0.0, pot_rho_max: 500,
 
   isave: true, iplot: true, ilog: true,
+  idumpsettings: false, iversbose_settings: false,
   savemode: true, imanualseed: false,
   Nreplicates: 1,
 
   // Python-specific
   py_networkgen_path: '/path/to/NetworkGen',
 };
+
+function uniformFractions(n) {
+  if (n <= 0) {
+    return [];
+  }
+
+  if (n === 1) {
+    return [1];
+  }
+
+  const vals = [];
+  let running = 0;
+  for (let i = 0; i < n - 1; i += 1) {
+    const val = Number((1 / n).toFixed(6));
+    vals.push(val);
+    running += val;
+  }
+  vals.push(Number((1 - running).toFixed(6)));
+  return vals;
+}
+
+function unitCounts(n) {
+  return Array.from({ length: Math.max(0, n) }, () => 1);
+}
+
+function resizeNumericArray(values, count, fillValue) {
+  const next = Array.isArray(values) ? values.slice(0, count) : [];
+
+  while (next.length < count) {
+    next.push(fillValue);
+  }
+
+  return next;
+}
+
+function sanitizeWeightArray(values, count) {
+  return resizeNumericArray(values, count, 0)
+    .map(value => Math.max(0, Number.isFinite(value) ? value : 0));
+}
+
+function sanitizeCountArray(values, count) {
+  return resizeNumericArray(values, count, 1)
+    .map(value => Math.max(0, Math.round(Number.isFinite(value) ? value : 0)));
+}
+
+function normalizeWeightArray(values, count) {
+  const sanitized = sanitizeWeightArray(values, count);
+  const total = sanitized.reduce((sum, value) => sum + value, 0);
+
+  if (total <= 0) {
+    return uniformFractions(count);
+  }
+
+  return sanitized.map(value => Number((value / total).toFixed(6)));
+}
+
+function sanitizeConnectivityRules(rules, natomType, nbondType) {
+  return (Array.isArray(rules) ? rules : []).map(rule => ({
+    atomTypeA: Math.min(Math.max(1, Math.round(rule.atomTypeA || 1)), natomType),
+    atomTypeB: Math.min(Math.max(1, Math.round(rule.atomTypeB || 1)), natomType),
+    bondType: Math.min(Math.max(1, Math.round(rule.bondType || 1)), nbondType),
+    allowed: !!rule.allowed,
+  }));
+}
+
+function connectivityRowsToMatlabLines(rules, indent = '') {
+  if (!rules.length) {
+    return [`${indent}net.architecture.types.connectivity = [];  %% leave empty to allow all combinations`];
+  }
+
+  const lines = [`${indent}net.architecture.types.connectivity = [ ...`];
+
+  rules.forEach((rule, index) => {
+    const suffix = index === rules.length - 1 ? '  ...' : '; ...';
+    lines.push(
+      `${indent}    ${rule.atomTypeA} ${rule.atomTypeB} ${rule.bondType} ${rule.allowed ? 1 : 0}${suffix}`
+    );
+  });
+
+  lines.push(`${indent}];`);
+  return lines;
+}
+
+function pushPolyAssignmentConfig(lines, basePath, values) {
+  lines.push(`${basePath}.poly.method = '${values.method}';`);
+  lines.push(`${basePath}.poly.min_value = ${values.minValue};`);
+  lines.push(`${basePath}.poly.rounding = '${values.rounding}';`);
+  lines.push(`${basePath}.poly.align_to_length = '${values.alignToLength}';`);
+
+  if (values.method === 'range') {
+    lines.push(`${basePath}.poly.range_method = '${values.rangeMethod}';`);
+    lines.push(`${basePath}.poly.target_min = ${values.targetMin};`);
+    lines.push(`${basePath}.poly.target_max = ${values.targetMax};`);
+  }
+
+  if (values.method === 'pmf') {
+    lines.push(`${basePath}.poly.pmf_mean = ${values.pmfMean};`);
+    lines.push(`${basePath}.poly.pmf_min = ${values.pmfMin};`);
+    lines.push(`${basePath}.poly.pmf_max = ${values.pmfMax};`);
+  }
+}
+
+function pushBimodalAssignmentConfig(lines, basePath, values, formatBool = value => `${value}`) {
+  lines.push(`${basePath}.bimodal.method = '${values.method}';`);
+  lines.push(`${basePath}.bimodal.mean_1 = ${values.mean1};`);
+  lines.push(`${basePath}.bimodal.mean_2 = ${values.mean2};`);
+
+  if (values.method !== 'single') {
+    lines.push(`${basePath}.bimodal.std_1 = ${values.std1};`);
+    lines.push(`${basePath}.bimodal.std_2 = ${values.std2};`);
+  }
+
+  lines.push(`${basePath}.bimodal.height_mode = '${values.heightMode}';`);
+  if (values.heightMode === 'prob') {
+    lines.push(`${basePath}.bimodal.height_prob = ${values.heightProb};`);
+  } else {
+    lines.push(`${basePath}.bimodal.height_count = ${values.heightCount};`);
+  }
+
+  lines.push(`${basePath}.bimodal.long_first = ${formatBool(values.longFirst)};`);
+  lines.push(`${basePath}.bimodal.min_value = ${values.minValue};`);
+  lines.push(`${basePath}.bimodal.double_network_flag = ${formatBool(values.doubleNetworkFlag)};`);
+  if (values.doubleNetworkFlag) {
+    lines.push(`${basePath}.bimodal.alpha = ${values.alpha};`);
+  }
+  lines.push(`${basePath}.bimodal.auto_1_flag = ${formatBool(values.auto1Flag)};`);
+  if (values.auto1Flag) {
+    lines.push(`${basePath}.bimodal.lam_1 = ${values.lam1};`);
+  }
+  lines.push(`${basePath}.bimodal.auto_2_flag = ${formatBool(values.auto2Flag)};`);
+  if (values.auto2Flag) {
+    lines.push(`${basePath}.bimodal.lam_2 = ${values.lam2};`);
+  }
+  lines.push(`${basePath}.bimodal.stdR_1 = ${values.stdR1};`);
+  lines.push(`${basePath}.bimodal.stdR_2 = ${values.stdR2};`);
+  lines.push(`${basePath}.bimodal.bin_window_method = '${values.binWindowMethod}';`);
+  if (values.binWindowMethod === 'manual') {
+    lines.push(`${basePath}.bimodal.manual_dev_type = '${values.manualDevType}';`);
+  }
+}
+
+function matlabVector(values) {
+  return `[${values.join(' ')}]`;
+}
 
 function Row({ label, hint, children }) {
   return (
@@ -145,6 +324,87 @@ export default function ConfigBuilder() {
     setCfg(c => ({ ...c, [key]: val }));
   }, []);
 
+  const setArrayValue = useCallback((key, index, rawValue, integer = false) => {
+    setCfg(c => {
+      const next = Array.isArray(c[key]) ? [...c[key]] : [];
+      const value = Number.isFinite(rawValue) ? rawValue : 0;
+      next[index] = integer ? Math.max(0, Math.round(value)) : Math.max(0, value);
+      return { ...c, [key]: next };
+    });
+  }, []);
+
+  const resetArrayValues = useCallback((key, values) => {
+    setCfg(c => ({ ...c, [key]: values }));
+  }, []);
+
+  const normalizeArrayValues = useCallback((key, count) => {
+    setCfg(c => ({ ...c, [key]: normalizeWeightArray(c[key], count) }));
+  }, []);
+
+  const setAtomTypeCount = useCallback((rawValue) => {
+    const nextCount = Math.max(1, Math.round(rawValue || 1));
+
+    setCfg(c => ({
+      ...c,
+      natom_type: nextCount,
+      atom_frac_values: resizeNumericArray(c.atom_frac_values, nextCount, 0),
+      atom_count_values: resizeNumericArray(c.atom_count_values, nextCount, 1),
+      connectivity_rules: sanitizeConnectivityRules(c.connectivity_rules, nextCount, c.nbond_type),
+    }));
+  }, []);
+
+  const setBondTypeCount = useCallback((rawValue) => {
+    const nextCount = Math.max(1, Math.round(rawValue || 1));
+
+    setCfg(c => ({
+      ...c,
+      nbond_type: nextCount,
+      bond_frac_values: resizeNumericArray(c.bond_frac_values, nextCount, 0),
+      bond_count_values: resizeNumericArray(c.bond_count_values, nextCount, 1),
+      connectivity_rules: sanitizeConnectivityRules(c.connectivity_rules, c.natom_type, nextCount),
+    }));
+  }, []);
+
+  const addConnectivityRule = useCallback(() => {
+    setCfg(c => ({
+      ...c,
+      connectivity_rules: [
+        ...sanitizeConnectivityRules(c.connectivity_rules, c.natom_type, c.nbond_type),
+        {
+          atomTypeA: 1,
+          atomTypeB: Math.min(2, c.natom_type),
+          bondType: 1,
+          allowed: false,
+        },
+      ],
+    }));
+  }, []);
+
+  const updateConnectivityRule = useCallback((index, field, value) => {
+    setCfg(c => {
+      const next = sanitizeConnectivityRules(c.connectivity_rules, c.natom_type, c.nbond_type);
+
+      if (!next[index]) {
+        return c;
+      }
+
+      next[index] = {
+        ...next[index],
+        [field]: field === 'allowed' ? !!value : Math.round(value || 1),
+      };
+
+      return { ...c, connectivity_rules: next };
+    });
+  }, []);
+
+  const removeConnectivityRule = useCallback((index) => {
+    setCfg(c => ({
+      ...c,
+      connectivity_rules: sanitizeConnectivityRules(c.connectivity_rules, c.natom_type, c.nbond_type)
+        .filter((_, rowIndex) => rowIndex !== index),
+    }));
+  }, []);
+
   const sel = (key, opts) => (
     <select value={cfg[key]} onChange={e => set(key, e.target.value)}>
       {opts.map(([v, l]) => <option key={v} value={v}>{l ?? v}</option>)}
@@ -181,6 +441,15 @@ export default function ConfigBuilder() {
     const c = cfg;
     const t = c.typology_mode;
     const lines: string[] = [];
+    const atomTargets = c.atype_mode === 'fixed'
+      ? matlabVector(sanitizeCountArray(c.atom_count_values, c.natom_type))
+      : matlabVector(sanitizeWeightArray(c.atom_frac_values, c.natom_type));
+    const bondTargets = c.btype_mode === 'fixed'
+      ? matlabVector(sanitizeCountArray(c.bond_count_values, c.nbond_type))
+      : matlabVector(sanitizeWeightArray(c.bond_frac_values, c.nbond_type));
+    const connectivityLines = connectivityRowsToMatlabLines(
+      sanitizeConnectivityRules(c.connectivity_rules, c.natom_type, c.nbond_type)
+    );
 
     lines.push(`%% NetworkGen configuration script`);
     lines.push(`%% Generated by the NetworkGen config builder`);
@@ -199,12 +468,13 @@ export default function ConfigBuilder() {
     lines.push(`net.domain.write_location    = '${c.write_location}';`);
     lines.push(`net.domain.lammps_data_file  = '${c.lammps_data_file}';`);
     lines.push(`net.domain.lammps_viz_file   = '${c.lammps_viz_file}';`);
-    lines.push(`net.domain.smp_number        = ${c.smp_number};`);
+    lines.push(`net.domain.bond_table_file   = '${c.bond_table_file}';`);
     lines.push(``);
     lines.push(`%% ---- Architecture ----`);
     lines.push(`net.architecture.geometry           = '${c.geometry}';`);
     lines.push(`net.architecture.rho_atom           = ${c.rho_atom};`);
     lines.push(`net.peratom.Max_peratom_bond        = ${c.max_peratom_bond};`);
+    lines.push(`net.peratom.min_degree_keep         = ${c.min_degree_keep};`);
     if (c.geometry === 'hex_lattice') {
       lines.push(`net.architecture.lattice_spacing            = ${c.lattice_spacing};`);
       lines.push(`net.architecture.spacing_multiplier_mode    = '${c.spacing_multiplier_mode}';`);
@@ -221,26 +491,41 @@ export default function ConfigBuilder() {
     if (t === 'mono') {
       lines.push(`net.architecture.strand_typology.mono.value = ${c.mono_value};`);
     } else if (t === 'polydisperse') {
-      lines.push(`net.architecture.strand_typology.poly.method   = '${c.poly_method}';`);
-      if (c.poly_method === 'pmf') {
-        lines.push(`net.architecture.strand_typology.poly.pmf_mean = ${c.poly_pmf_mean};`);
-        lines.push(`net.architecture.strand_typology.poly.pmf_min  = ${c.poly_pmf_min};`);
-        lines.push(`net.architecture.strand_typology.poly.pmf_max  = ${c.poly_pmf_max};`);
-      }
-      lines.push(`net.architecture.strand_typology.poly.rounding       = '${c.poly_rounding}';`);
-      lines.push(`net.architecture.strand_typology.poly.align_to_length = '${c.poly_align}';`);
+      pushPolyAssignmentConfig(lines, 'net.architecture.strand_typology', {
+        method: c.poly_method,
+        minValue: c.poly_min_value,
+        rounding: c.poly_rounding,
+        alignToLength: c.poly_align,
+        rangeMethod: c.poly_range_method,
+        targetMin: c.poly_target_min,
+        targetMax: c.poly_target_max,
+        pmfMean: c.poly_pmf_mean,
+        pmfMin: c.poly_pmf_min,
+        pmfMax: c.poly_pmf_max,
+      });
     } else if (t === 'bimodal') {
-      lines.push(`net.architecture.strand_typology.bimodal.method       = '${c.bimodal_method}';`);
-      lines.push(`net.architecture.strand_typology.bimodal.mean_1       = ${c.bimodal_mean1};`);
-      lines.push(`net.architecture.strand_typology.bimodal.mean_2       = ${c.bimodal_mean2};`);
-      if (c.bimodal_method !== 'single') {
-        lines.push(`net.architecture.strand_typology.bimodal.std_1        = ${c.bimodal_std1};`);
-        lines.push(`net.architecture.strand_typology.bimodal.std_2        = ${c.bimodal_std2};`);
-      }
-      lines.push(`net.architecture.strand_typology.bimodal.height_mode  = '${c.bimodal_height_mode}';`);
-      if (c.bimodal_height_mode === 'prob')
-        lines.push(`net.architecture.strand_typology.bimodal.height_prob  = ${c.bimodal_height_prob};`);
-      lines.push(`net.architecture.strand_typology.bimodal.long_first   = ${c.bimodal_long_first};`);
+      pushBimodalAssignmentConfig(lines, 'net.architecture.strand_typology', {
+        method: c.bimodal_method,
+        mean1: c.bimodal_mean1,
+        mean2: c.bimodal_mean2,
+        std1: c.bimodal_std1,
+        std2: c.bimodal_std2,
+        heightMode: c.bimodal_height_mode,
+        heightProb: c.bimodal_height_prob,
+        heightCount: c.bimodal_height_count,
+        longFirst: c.bimodal_long_first,
+        minValue: c.bimodal_min_value,
+        doubleNetworkFlag: c.bimodal_double_network_flag,
+        alpha: c.bimodal_alpha,
+        auto1Flag: c.bimodal_auto_1_flag,
+        auto2Flag: c.bimodal_auto_2_flag,
+        lam1: c.bimodal_lam_1,
+        lam2: c.bimodal_lam_2,
+        stdR1: c.bimodal_stdR_1,
+        stdR2: c.bimodal_stdR_2,
+        binWindowMethod: c.bimodal_bin_window_method,
+        manualDevType: c.bimodal_manual_dev_type,
+      });
     }
     lines.push(``);
     lines.push(`%% ---- Perbond ----`);
@@ -249,6 +534,43 @@ export default function ConfigBuilder() {
       lines.push(`net.perbond.kuhn.mode = '${c.kuhn_mode}';`);
       if (c.kuhn_mode === 'mono')
         lines.push(`net.perbond.kuhn.mono.value = ${c.kuhn_mono_value};`);
+      else if (c.kuhn_mode === 'polydisperse') {
+        pushPolyAssignmentConfig(lines, 'net.perbond.kuhn', {
+          method: c.kuhn_poly_method,
+          minValue: c.kuhn_poly_min_value,
+          rounding: c.kuhn_poly_rounding,
+          alignToLength: c.kuhn_poly_align,
+          rangeMethod: c.kuhn_poly_range_method,
+          targetMin: c.kuhn_poly_target_min,
+          targetMax: c.kuhn_poly_target_max,
+          pmfMean: c.kuhn_poly_pmf_mean,
+          pmfMin: c.kuhn_poly_pmf_min,
+          pmfMax: c.kuhn_poly_pmf_max,
+        });
+      } else if (c.kuhn_mode === 'bimodal') {
+        pushBimodalAssignmentConfig(lines, 'net.perbond.kuhn', {
+          method: c.kuhn_bimodal_method,
+          mean1: c.kuhn_bimodal_mean1,
+          mean2: c.kuhn_bimodal_mean2,
+          std1: c.kuhn_bimodal_std1,
+          std2: c.kuhn_bimodal_std2,
+          heightMode: c.kuhn_bimodal_height_mode,
+          heightProb: c.kuhn_bimodal_height_prob,
+          heightCount: c.kuhn_bimodal_height_count,
+          longFirst: c.kuhn_bimodal_long_first,
+          minValue: c.kuhn_bimodal_min_value,
+          doubleNetworkFlag: c.kuhn_bimodal_double_network_flag,
+          alpha: c.kuhn_bimodal_alpha,
+          auto1Flag: c.kuhn_bimodal_auto_1_flag,
+          auto2Flag: c.kuhn_bimodal_auto_2_flag,
+          lam1: c.kuhn_bimodal_lam_1,
+          lam2: c.kuhn_bimodal_lam_2,
+          stdR1: c.kuhn_bimodal_stdR_1,
+          stdR2: c.kuhn_bimodal_stdR_2,
+          binWindowMethod: c.kuhn_bimodal_bin_window_method,
+          manualDevType: c.kuhn_bimodal_manual_dev_type,
+        });
+      }
     }
     if (c.idefect) {
       lines.push(``);
@@ -279,15 +601,39 @@ export default function ConfigBuilder() {
       lines.push(`net.defect.wall_thickness     = ${c.defect_wall_thickness};`);
       lines.push(`net.defect.clamp_thickness    = ${c.defect_clamp_thickness};`);
       lines.push(`net.defect.bridge_width       = ${c.defect_bridge_width};`);
+      if (c.defect_thinning) {
+        lines.push(`net.defect.thinning           = true;`);
+        lines.push(`net.defect.thinning_radius    = ${c.defect_thinning_radius};`);
+        lines.push(`net.defect.thinning_target_frac = ${c.defect_thinning_target_frac};`);
+        lines.push(`net.defect.thinning_min_keep  = ${c.defect_thinning_min_keep};`);
+      }
+      if (c.defect_bridging) {
+        lines.push(`net.defect.bridging           = true;`);
+        lines.push(`net.defect.bridge_max_dist    = ${c.defect_bridge_max_dist};`);
+        lines.push(`net.defect.bridge_void_thresh = ${c.defect_bridge_void_thresh};`);
+        lines.push(`net.defect.bridge_perp_width  = ${c.defect_bridge_perp_width};`);
+        lines.push(`net.defect.bridge_max_degree  = ${c.defect_bridge_max_degree};`);
+        lines.push(`net.defect.bridge_max_bonds   = ${c.defect_bridge_max_bonds};`);
+        lines.push(`net.defect.bridge_min_spacing = ${c.defect_bridge_min_spacing};`);
+      }
     }
     if (c.use_multitype) {
       lines.push(``);
       lines.push(`%% ---- Multi-type ----`);
+      lines.push(`net.architecture.types.enabled     = true;`);
       lines.push(`net.architecture.types.natom_type  = ${c.natom_type};`);
       lines.push(`net.architecture.types.nbond_type  = ${c.nbond_type};`);
       lines.push(`net.architecture.types.atype_mode  = '${c.atype_mode}';`);
       lines.push(`net.architecture.types.btype_mode  = '${c.btype_mode}';`);
-      lines.push(`net.architecture.types.connectivity = [];  %% add exclusion rules if needed`);
+      if (c.atype_mode === 'fixed')
+        lines.push(`net.architecture.types.atom_count  = ${atomTargets};`);
+      else
+        lines.push(`net.architecture.types.atom_frac   = ${atomTargets};`);
+      if (c.btype_mode === 'fixed')
+        lines.push(`net.architecture.types.bond_count  = ${bondTargets};`);
+      else
+        lines.push(`net.architecture.types.bond_frac   = ${bondTargets};`);
+      lines.push(...connectivityLines);
     }
     if (c.ipotential) {
       lines.push(``);
@@ -306,6 +652,8 @@ export default function ConfigBuilder() {
     lines.push(`net.flags.imanualseed = ${c.imanualseed};`);
     lines.push(`net.flags.idefect    = ${c.idefect};`);
     lines.push(`net.flags.ipotential = ${c.ipotential};`);
+    lines.push(`net.flags.idumpsettings = ${c.idumpsettings};`);
+    lines.push(`net.flags.iversbose_settings = ${c.iversbose_settings};`);
     lines.push(``);
     lines.push(`%% ---- Generate ----`);
     lines.push(`net.generateNetwork();`);
@@ -318,6 +666,16 @@ export default function ConfigBuilder() {
     const c = cfg;
     const t = c.typology_mode;
     const lines: string[] = [];
+    const atomTargets = c.atype_mode === 'fixed'
+      ? matlabVector(sanitizeCountArray(c.atom_count_values, c.natom_type))
+      : matlabVector(sanitizeWeightArray(c.atom_frac_values, c.natom_type));
+    const bondTargets = c.btype_mode === 'fixed'
+      ? matlabVector(sanitizeCountArray(c.bond_count_values, c.nbond_type))
+      : matlabVector(sanitizeWeightArray(c.bond_frac_values, c.nbond_type));
+    const connectivityLines = connectivityRowsToMatlabLines(
+      sanitizeConnectivityRules(c.connectivity_rules, c.natom_type, c.nbond_type),
+      '    '
+    );
 
     const boolStr = (v: boolean) => v ? 'true' : 'false';
 
@@ -348,12 +706,13 @@ export default function ConfigBuilder() {
     ml.push(`    net.domain.write_location    = '${c.write_location}';`);
     ml.push(`    net.domain.lammps_data_file  = '${c.lammps_data_file}';`);
     ml.push(`    net.domain.lammps_viz_file   = '${c.lammps_viz_file}';`);
-    ml.push(`    net.domain.smp_number        = ${c.smp_number};`);
+    ml.push(`    net.domain.bond_table_file   = '${c.bond_table_file}';`);
     ml.push(``);
     ml.push(`    %% ---- Architecture ----`);
     ml.push(`    net.architecture.geometry           = '${c.geometry}';`);
     ml.push(`    net.architecture.rho_atom           = ${c.rho_atom};`);
     ml.push(`    net.peratom.Max_peratom_bond        = ${c.max_peratom_bond};`);
+    ml.push(`    net.peratom.min_degree_keep         = ${c.min_degree_keep};`);
     if (c.geometry === 'hex_lattice') {
       ml.push(`    net.architecture.lattice_spacing            = ${c.lattice_spacing};`);
       ml.push(`    net.architecture.spacing_multiplier_mode    = '${c.spacing_multiplier_mode}';`);
@@ -370,26 +729,41 @@ export default function ConfigBuilder() {
     if (t === 'mono') {
       ml.push(`    net.architecture.strand_typology.mono.value = ${c.mono_value};`);
     } else if (t === 'polydisperse') {
-      ml.push(`    net.architecture.strand_typology.poly.method   = '${c.poly_method}';`);
-      if (c.poly_method === 'pmf') {
-        ml.push(`    net.architecture.strand_typology.poly.pmf_mean = ${c.poly_pmf_mean};`);
-        ml.push(`    net.architecture.strand_typology.poly.pmf_min  = ${c.poly_pmf_min};`);
-        ml.push(`    net.architecture.strand_typology.poly.pmf_max  = ${c.poly_pmf_max};`);
-      }
-      ml.push(`    net.architecture.strand_typology.poly.rounding       = '${c.poly_rounding}';`);
-      ml.push(`    net.architecture.strand_typology.poly.align_to_length = '${c.poly_align}';`);
+      pushPolyAssignmentConfig(ml, '    net.architecture.strand_typology', {
+        method: c.poly_method,
+        minValue: c.poly_min_value,
+        rounding: c.poly_rounding,
+        alignToLength: c.poly_align,
+        rangeMethod: c.poly_range_method,
+        targetMin: c.poly_target_min,
+        targetMax: c.poly_target_max,
+        pmfMean: c.poly_pmf_mean,
+        pmfMin: c.poly_pmf_min,
+        pmfMax: c.poly_pmf_max,
+      });
     } else if (t === 'bimodal') {
-      ml.push(`    net.architecture.strand_typology.bimodal.method       = '${c.bimodal_method}';`);
-      ml.push(`    net.architecture.strand_typology.bimodal.mean_1       = ${c.bimodal_mean1};`);
-      ml.push(`    net.architecture.strand_typology.bimodal.mean_2       = ${c.bimodal_mean2};`);
-      if (c.bimodal_method !== 'single') {
-        ml.push(`    net.architecture.strand_typology.bimodal.std_1        = ${c.bimodal_std1};`);
-        ml.push(`    net.architecture.strand_typology.bimodal.std_2        = ${c.bimodal_std2};`);
-      }
-      ml.push(`    net.architecture.strand_typology.bimodal.height_mode  = '${c.bimodal_height_mode}';`);
-      if (c.bimodal_height_mode === 'prob')
-        ml.push(`    net.architecture.strand_typology.bimodal.height_prob  = ${c.bimodal_height_prob};`);
-      ml.push(`    net.architecture.strand_typology.bimodal.long_first   = ${boolStr(c.bimodal_long_first)};`);
+      pushBimodalAssignmentConfig(ml, '    net.architecture.strand_typology', {
+        method: c.bimodal_method,
+        mean1: c.bimodal_mean1,
+        mean2: c.bimodal_mean2,
+        std1: c.bimodal_std1,
+        std2: c.bimodal_std2,
+        heightMode: c.bimodal_height_mode,
+        heightProb: c.bimodal_height_prob,
+        heightCount: c.bimodal_height_count,
+        longFirst: c.bimodal_long_first,
+        minValue: c.bimodal_min_value,
+        doubleNetworkFlag: c.bimodal_double_network_flag,
+        alpha: c.bimodal_alpha,
+        auto1Flag: c.bimodal_auto_1_flag,
+        auto2Flag: c.bimodal_auto_2_flag,
+        lam1: c.bimodal_lam_1,
+        lam2: c.bimodal_lam_2,
+        stdR1: c.bimodal_stdR_1,
+        stdR2: c.bimodal_stdR_2,
+        binWindowMethod: c.bimodal_bin_window_method,
+        manualDevType: c.bimodal_manual_dev_type,
+      }, boolStr);
     }
     ml.push(``);
     ml.push(`    %% ---- Perbond ----`);
@@ -398,6 +772,43 @@ export default function ConfigBuilder() {
       ml.push(`    net.perbond.kuhn.mode = '${c.kuhn_mode}';`);
       if (c.kuhn_mode === 'mono')
         ml.push(`    net.perbond.kuhn.mono.value = ${c.kuhn_mono_value};`);
+      else if (c.kuhn_mode === 'polydisperse') {
+        pushPolyAssignmentConfig(ml, '    net.perbond.kuhn', {
+          method: c.kuhn_poly_method,
+          minValue: c.kuhn_poly_min_value,
+          rounding: c.kuhn_poly_rounding,
+          alignToLength: c.kuhn_poly_align,
+          rangeMethod: c.kuhn_poly_range_method,
+          targetMin: c.kuhn_poly_target_min,
+          targetMax: c.kuhn_poly_target_max,
+          pmfMean: c.kuhn_poly_pmf_mean,
+          pmfMin: c.kuhn_poly_pmf_min,
+          pmfMax: c.kuhn_poly_pmf_max,
+        });
+      } else if (c.kuhn_mode === 'bimodal') {
+        pushBimodalAssignmentConfig(ml, '    net.perbond.kuhn', {
+          method: c.kuhn_bimodal_method,
+          mean1: c.kuhn_bimodal_mean1,
+          mean2: c.kuhn_bimodal_mean2,
+          std1: c.kuhn_bimodal_std1,
+          std2: c.kuhn_bimodal_std2,
+          heightMode: c.kuhn_bimodal_height_mode,
+          heightProb: c.kuhn_bimodal_height_prob,
+          heightCount: c.kuhn_bimodal_height_count,
+          longFirst: c.kuhn_bimodal_long_first,
+          minValue: c.kuhn_bimodal_min_value,
+          doubleNetworkFlag: c.kuhn_bimodal_double_network_flag,
+          alpha: c.kuhn_bimodal_alpha,
+          auto1Flag: c.kuhn_bimodal_auto_1_flag,
+          auto2Flag: c.kuhn_bimodal_auto_2_flag,
+          lam1: c.kuhn_bimodal_lam_1,
+          lam2: c.kuhn_bimodal_lam_2,
+          stdR1: c.kuhn_bimodal_stdR_1,
+          stdR2: c.kuhn_bimodal_stdR_2,
+          binWindowMethod: c.kuhn_bimodal_bin_window_method,
+          manualDevType: c.kuhn_bimodal_manual_dev_type,
+        }, boolStr);
+      }
     }
     if (c.idefect) {
       ml.push(``);
@@ -428,15 +839,39 @@ export default function ConfigBuilder() {
       ml.push(`    net.defect.wall_thickness     = ${c.defect_wall_thickness};`);
       ml.push(`    net.defect.clamp_thickness    = ${c.defect_clamp_thickness};`);
       ml.push(`    net.defect.bridge_width       = ${c.defect_bridge_width};`);
+      if (c.defect_thinning) {
+        ml.push(`    net.defect.thinning           = true;`);
+        ml.push(`    net.defect.thinning_radius    = ${c.defect_thinning_radius};`);
+        ml.push(`    net.defect.thinning_target_frac = ${c.defect_thinning_target_frac};`);
+        ml.push(`    net.defect.thinning_min_keep  = ${c.defect_thinning_min_keep};`);
+      }
+      if (c.defect_bridging) {
+        ml.push(`    net.defect.bridging           = true;`);
+        ml.push(`    net.defect.bridge_max_dist    = ${c.defect_bridge_max_dist};`);
+        ml.push(`    net.defect.bridge_void_thresh = ${c.defect_bridge_void_thresh};`);
+        ml.push(`    net.defect.bridge_perp_width  = ${c.defect_bridge_perp_width};`);
+        ml.push(`    net.defect.bridge_max_degree  = ${c.defect_bridge_max_degree};`);
+        ml.push(`    net.defect.bridge_max_bonds   = ${c.defect_bridge_max_bonds};`);
+        ml.push(`    net.defect.bridge_min_spacing = ${c.defect_bridge_min_spacing};`);
+      }
     }
     if (c.use_multitype) {
       ml.push(``);
       ml.push(`    %% ---- Multi-type ----`);
+      ml.push(`    net.architecture.types.enabled     = true;`);
       ml.push(`    net.architecture.types.natom_type  = ${c.natom_type};`);
       ml.push(`    net.architecture.types.nbond_type  = ${c.nbond_type};`);
       ml.push(`    net.architecture.types.atype_mode  = '${c.atype_mode}';`);
       ml.push(`    net.architecture.types.btype_mode  = '${c.btype_mode}';`);
-      ml.push(`    net.architecture.types.connectivity = [];`);
+      if (c.atype_mode === 'fixed')
+        ml.push(`    net.architecture.types.atom_count  = ${atomTargets};`);
+      else
+        ml.push(`    net.architecture.types.atom_frac   = ${atomTargets};`);
+      if (c.btype_mode === 'fixed')
+        ml.push(`    net.architecture.types.bond_count  = ${bondTargets};`);
+      else
+        ml.push(`    net.architecture.types.bond_frac   = ${bondTargets};`);
+      ml.push(...connectivityLines);
     }
     if (c.ipotential) {
       ml.push(``);
@@ -455,6 +890,8 @@ export default function ConfigBuilder() {
     ml.push(`    net.flags.imanualseed = ${boolStr(c.imanualseed)};`);
     ml.push(`    net.flags.idefect     = ${boolStr(c.idefect)};`);
     ml.push(`    net.flags.ipotential  = ${boolStr(c.ipotential)};`);
+    ml.push(`    net.flags.idumpsettings = ${boolStr(c.idumpsettings)};`);
+    ml.push(`    net.flags.iversbose_settings = ${boolStr(c.iversbose_settings)};`);
     ml.push(``);
     ml.push(`    %% ---- Generate ----`);
     ml.push(`    net.generateNetwork();`);
@@ -485,6 +922,203 @@ export default function ConfigBuilder() {
   }
 
   const t = cfg.typology_mode;
+  const atomFractionValues = sanitizeWeightArray(cfg.atom_frac_values, cfg.natom_type);
+  const bondFractionValues = sanitizeWeightArray(cfg.bond_frac_values, cfg.nbond_type);
+  const atomCountValues = sanitizeCountArray(cfg.atom_count_values, cfg.natom_type);
+  const bondCountValues = sanitizeCountArray(cfg.bond_count_values, cfg.nbond_type);
+  const connectivityRules = sanitizeConnectivityRules(cfg.connectivity_rules, cfg.natom_type, cfg.nbond_type);
+  const atomFractionSum = atomFractionValues.reduce((sum, value) => sum + value, 0);
+  const bondFractionSum = bondFractionValues.reduce((sum, value) => sum + value, 0);
+  const atomTypeOptions = Array.from({ length: cfg.natom_type }, (_, index) => index + 1);
+  const bondTypeOptions = Array.from({ length: cfg.nbond_type }, (_, index) => index + 1);
+  const topologyPolyFields = {
+    method: 'poly_method',
+    minValue: 'poly_min_value',
+    rounding: 'poly_rounding',
+    align: 'poly_align',
+    rangeMethod: 'poly_range_method',
+    targetMin: 'poly_target_min',
+    targetMax: 'poly_target_max',
+    pmfMean: 'poly_pmf_mean',
+    pmfMin: 'poly_pmf_min',
+    pmfMax: 'poly_pmf_max',
+  };
+  const kuhnPolyFields = {
+    method: 'kuhn_poly_method',
+    minValue: 'kuhn_poly_min_value',
+    rounding: 'kuhn_poly_rounding',
+    align: 'kuhn_poly_align',
+    rangeMethod: 'kuhn_poly_range_method',
+    targetMin: 'kuhn_poly_target_min',
+    targetMax: 'kuhn_poly_target_max',
+    pmfMean: 'kuhn_poly_pmf_mean',
+    pmfMin: 'kuhn_poly_pmf_min',
+    pmfMax: 'kuhn_poly_pmf_max',
+  };
+  const topologyBimodalFields = {
+    method: 'bimodal_method',
+    mean1: 'bimodal_mean1',
+    mean2: 'bimodal_mean2',
+    std1: 'bimodal_std1',
+    std2: 'bimodal_std2',
+    heightMode: 'bimodal_height_mode',
+    heightProb: 'bimodal_height_prob',
+    heightCount: 'bimodal_height_count',
+    longFirst: 'bimodal_long_first',
+    minValue: 'bimodal_min_value',
+    doubleNetworkFlag: 'bimodal_double_network_flag',
+    alpha: 'bimodal_alpha',
+    auto1: 'bimodal_auto_1_flag',
+    auto2: 'bimodal_auto_2_flag',
+    lam1: 'bimodal_lam_1',
+    lam2: 'bimodal_lam_2',
+    stdR1: 'bimodal_stdR_1',
+    stdR2: 'bimodal_stdR_2',
+    binWindowMethod: 'bimodal_bin_window_method',
+    manualDevType: 'bimodal_manual_dev_type',
+  };
+  const kuhnBimodalFields = {
+    method: 'kuhn_bimodal_method',
+    mean1: 'kuhn_bimodal_mean1',
+    mean2: 'kuhn_bimodal_mean2',
+    std1: 'kuhn_bimodal_std1',
+    std2: 'kuhn_bimodal_std2',
+    heightMode: 'kuhn_bimodal_height_mode',
+    heightProb: 'kuhn_bimodal_height_prob',
+    heightCount: 'kuhn_bimodal_height_count',
+    longFirst: 'kuhn_bimodal_long_first',
+    minValue: 'kuhn_bimodal_min_value',
+    doubleNetworkFlag: 'kuhn_bimodal_double_network_flag',
+    alpha: 'kuhn_bimodal_alpha',
+    auto1: 'kuhn_bimodal_auto_1_flag',
+    auto2: 'kuhn_bimodal_auto_2_flag',
+    lam1: 'kuhn_bimodal_lam_1',
+    lam2: 'kuhn_bimodal_lam_2',
+    stdR1: 'kuhn_bimodal_stdR_1',
+    stdR2: 'kuhn_bimodal_stdR_2',
+    binWindowMethod: 'kuhn_bimodal_bin_window_method',
+    manualDevType: 'kuhn_bimodal_manual_dev_type',
+  };
+
+  function renderTargetEditor(title, key, values, mode, summary, resetValues, count) {
+    const isFraction = mode === 'frac';
+
+    return (
+      <div className={styles.targetCard}>
+        <div className={styles.targetCardHead}>
+          <div>
+            <div className={styles.targetCardTitle}>{title}</div>
+            <div className={styles.targetCardSubtitle}>
+              {isFraction ? 'Fractions / weights per exported type' : 'Exact target count per exported type'}
+            </div>
+          </div>
+          <div className={styles.targetCardActions}>
+            {isFraction && (
+              <button
+                type="button"
+                className={styles.actionButton}
+                onClick={() => normalizeArrayValues(key, count)}
+              >
+                Normalize
+              </button>
+            )}
+            <button
+              type="button"
+              className={styles.actionButton}
+              onClick={() => resetArrayValues(key, resetValues)}
+            >
+              {isFraction ? 'Equalize' : 'Fill 1'}
+            </button>
+          </div>
+        </div>
+
+        <div className={styles.targetGrid}>
+          {values.map((value, index) => (
+            <label key={`${key}-${index}`} className={styles.targetCell}>
+              <span className={styles.targetCellLabel}>Type {index + 1}</span>
+              <input
+                type="number"
+                min={0}
+                step={isFraction ? 0.01 : 1}
+                value={value}
+                onChange={e => setArrayValue(key, index, parseFloat(e.target.value) || 0, !isFraction)}
+              />
+            </label>
+          ))}
+        </div>
+
+        <div className={styles.targetSummary}>
+          <span className={isFraction && Math.abs(summary - 1) > 0.001 ? styles.targetSummaryWarn : undefined}>
+            {isFraction ? `Current sum: ${summary.toFixed(3)}` : `Current total: ${summary.toFixed(0)}`}
+          </span>
+          {isFraction && <span>Any positive weights are normalized internally by NetworkGen.</span>}
+        </div>
+      </div>
+    );
+  }
+
+  function renderPolyEditor(fields) {
+    const method = cfg[fields.method];
+
+    return (
+      <>
+        <Row label="Method">{sel(fields.method, [['pmf'], ['range'], ['geom']])}</Row>
+        <Row label="Minimum value">{num(fields.minValue, 1)}</Row>
+        {method === 'pmf' && <>
+          <Row label="PMF mean">{num(fields.pmfMean, 1)}</Row>
+          <Row label="PMF min">{num(fields.pmfMin, 1)}</Row>
+          <Row label="PMF max">{num(fields.pmfMax, 1)}</Row>
+        </>}
+        {method === 'range' && <>
+          <Row label="Range method">{sel(fields.rangeMethod, [['rank'], ['linear']])}</Row>
+          <Row label="Target min">{num(fields.targetMin, 1)}</Row>
+          <Row label="Target max">{num(fields.targetMax, 1)}</Row>
+        </>}
+        <Row label="Rounding">{sel(fields.rounding, [['round'], ['ceil'], ['floor']])}</Row>
+        <Row label="Align to length">{sel(fields.align, [['none'], ['ascend']])}</Row>
+      </>
+    );
+  }
+
+  function renderBimodalEditor(fields) {
+    const method = cfg[fields.method];
+    const heightMode = cfg[fields.heightMode];
+    const binWindowMethod = cfg[fields.binWindowMethod];
+
+    return (
+      <>
+        <Row label="Method">{sel(fields.method, [['gaussian'], ['geom'], ['single', 'single (fixed mean)']])}</Row>
+        <Row label="Mean 1">{num(fields.mean1, 1)}</Row>
+        <Row label="Mean 2">{num(fields.mean2, 1)}</Row>
+        {method !== 'single' && <>
+          <Row label="Std 1">{num(fields.std1, 0, null, 0.5)}</Row>
+          <Row label="Std 2">{num(fields.std2, 0, null, 0.5)}</Row>
+        </>}
+        <Row label="Minimum value">{num(fields.minValue, 1)}</Row>
+        <Row label="Height mode">{sel(fields.heightMode, [['prob'], ['count']])}</Row>
+        {heightMode === 'prob'
+          ? <Row label="Fraction in mode 2">{slide(fields.heightProb, 0.05, 0.95, 0.05)}</Row>
+          : <Row label="Count in mode 2">{num(fields.heightCount, 0, null, 1)}</Row>
+        }
+        <Row label="Long first">{chk(fields.longFirst)}</Row>
+
+        <Sub title="Advanced bimodal">
+          <Row label="Double network">{chk(fields.doubleNetworkFlag)}</Row>
+          {cfg[fields.doubleNetworkFlag] && <Row label="Alpha">{num(fields.alpha, 0.01, null, 0.1)}</Row>}
+          <Row label="Auto mode 1">{chk(fields.auto1)}</Row>
+          {cfg[fields.auto1] && <Row label="lam_1">{num(fields.lam1, 0, 1, 0.01)}</Row>}
+          <Row label="Auto mode 2">{chk(fields.auto2)}</Row>
+          {cfg[fields.auto2] && <Row label="lam_2">{num(fields.lam2, 0, 1, 0.01)}</Row>}
+          <Row label="stdR_1">{num(fields.stdR1, 0, null, 0.1)}</Row>
+          <Row label="stdR_2">{num(fields.stdR2, 0, null, 0.1)}</Row>
+          <Row label="Bin window">{sel(fields.binWindowMethod, [['manual'], ['adaptive']])}</Row>
+          {binWindowMethod === 'manual' && (
+            <Row label="Manual deviation">{sel(fields.manualDevType, [['mixed'], ['kuhn'], ['both']])}</Row>
+          )}
+        </Sub>
+      </>
+    );
+  }
 
   return (
     <div className={styles.outer}>
@@ -517,7 +1151,10 @@ export default function ConfigBuilder() {
           <Row label="Ly" hint="units of b">{num('Ly', 1)}</Row>
           <Row label="Scale">{num('scale', 0.1, null, 0.1)}</Row>
           <Row label="Boundary">{sel('boundary', [['fixed'], ['periodic']])}</Row>
-          <Row label="Replicates">{num('Nreplicates', 1, null, 1)}</Row>
+          <Row label="Networks to generate" hint="sets net.Nreplicates">{num('Nreplicates', 1, null, 1)}</Row>
+          <div className={styles.note}>
+            NetworkGen currently generates 2D networks, so the domain builder only exposes the in-plane size.
+          </div>
           <Row label="Manual seed">
             {chk('imanualseed')}
           </Row>
@@ -525,13 +1162,17 @@ export default function ConfigBuilder() {
           <Row label="Output folder">{txt('write_location')}</Row>
           <Row label="Data file prefix">{txt('lammps_data_file')}</Row>
           <Row label="Viz file prefix">{txt('lammps_viz_file')}</Row>
-          <Row label="Sample number">{num('smp_number', 1)}</Row>
+          <Row label="Bond table prefix">{txt('bond_table_file')}</Row>
+          <div className={styles.note}>
+            Batch outputs already get unique replicate suffixes automatically. Leave sample numbering at the package default unless you are managing your own outer loop by hand.
+          </div>
         </Section>
 
         <Section id="architecture" title="Architecture">
           <Row label="Geometry">{sel('geometry', [['random'], ['hex_lattice', 'hex lattice']])}</Row>
           <Row label="rho_atom" hint="atoms/unit area">{num('rho_atom', 0.0001, null, 0.0001)}</Row>
           <Row label="Max bonds/atom">{num('max_peratom_bond', 3, null, 1)}</Row>
+          <Row label="Min degree keep">{num('min_degree_keep', 1, null, 1)}</Row>
           {cfg.geometry === 'hex_lattice' && (
             <Sub title="Lattice settings">
               <Row label="Lattice spacing">{num('lattice_spacing', 1, null, 0.5)}</Row>
@@ -556,31 +1197,12 @@ export default function ConfigBuilder() {
           )}
           {t === 'polydisperse' && (
             <Sub title="Polydisperse">
-              <Row label="Method">{sel('poly_method', [['pmf'], ['range'], ['geom']])}</Row>
-              {cfg.poly_method === 'pmf' && <>
-                <Row label="PMF mean">{num('poly_pmf_mean', 1)}</Row>
-                <Row label="PMF min">{num('poly_pmf_min', 1)}</Row>
-                <Row label="PMF max">{num('poly_pmf_max', 1)}</Row>
-              </>}
-              <Row label="Rounding">{sel('poly_rounding', [['round'], ['ceil'], ['floor']])}</Row>
-              <Row label="Align to length">{sel('poly_align', [['none'], ['ascend']])}</Row>
+              {renderPolyEditor(topologyPolyFields)}
             </Sub>
           )}
           {t === 'bimodal' && (
             <Sub title="Bimodal">
-              <Row label="Method">{sel('bimodal_method', [['gaussian'], ['geom'], ['single', 'single (fixed mean)']])}</Row>
-              <Row label="Mean 1">{num('bimodal_mean1', 1)}</Row>
-              <Row label="Mean 2">{num('bimodal_mean2', 1)}</Row>
-              {cfg.bimodal_method !== 'single' && <>
-                <Row label="Std 1">{num('bimodal_std1', 0, null, 0.5)}</Row>
-                <Row label="Std 2">{num('bimodal_std2', 0, null, 0.5)}</Row>
-              </>}
-              <Row label="Height mode">{sel('bimodal_height_mode', [['prob'], ['fixed']])}</Row>
-              {cfg.bimodal_height_mode === 'prob'
-                ? <Row label="Fraction (mode 1)">{slide('bimodal_height_prob', 0.05, 0.95, 0.05)}</Row>
-                : <Row label="Count (mode 1)">{num('bimodal_height_prob', 1)}</Row>
-              }
-              <Row label="Long first">{chk('bimodal_long_first')}</Row>
+              {renderBimodalEditor(topologyBimodalFields)}
             </Sub>
           )}
         </Section>
@@ -593,7 +1215,8 @@ export default function ConfigBuilder() {
               {cfg.kuhn_mode === 'mono' && (
                 <Row label="Kuhn value">{num('kuhn_mono_value', 1)}</Row>
               )}
-              <div className={styles.note}>Configure full kuhn distribution settings in the generated script.</div>
+              {cfg.kuhn_mode === 'polydisperse' && renderPolyEditor(kuhnPolyFields)}
+              {cfg.kuhn_mode === 'bimodal' && renderBimodalEditor(kuhnBimodalFields)}
             </Sub>
           )}
         </Section>
@@ -633,19 +1256,171 @@ export default function ConfigBuilder() {
               <Row label="Wall thickness">{num('defect_wall_thickness', 0, null, 0.5)}</Row>
               <Row label="Clamp thickness">{num('defect_clamp_thickness', 0, null, 0.01)}</Row>
             </Sub>
+            <Sub title="Advanced passes">
+              <Row label="Density thinning">{chk('defect_thinning')}</Row>
+              {cfg.defect_thinning && <>
+                <Row label="Thinning radius">{num('defect_thinning_radius', 0, null, 0.5)}</Row>
+                <Row label="Target keep frac">{num('defect_thinning_target_frac', 0, 1, 0.01)}</Row>
+                <Row label="Min keep frac">{num('defect_thinning_min_keep', 0, 1, 0.01)}</Row>
+              </>}
+              <Row label="Constriction bridging">{chk('defect_bridging')}</Row>
+              {cfg.defect_bridging && <>
+                <Row label="Bridge max dist">{num('defect_bridge_max_dist', 0, null, 0.5)}</Row>
+                <Row label="Void threshold">{num('defect_bridge_void_thresh', 0, 1, 0.01)}</Row>
+                <Row label="Perp width">{num('defect_bridge_perp_width', 0, null, 0.5)}</Row>
+                <Row label="Max degree">{num('defect_bridge_max_degree', 0, null, 1)}</Row>
+                <Row label="Max bonds">{num('defect_bridge_max_bonds', 0, null, 1)}</Row>
+                <Row label="Min spacing">{num('defect_bridge_min_spacing', 0, null, 0.5)}</Row>
+              </>}
+            </Sub>
           </>)}
         </Section>
 
         <Section id="multitype" title="Multi-type">
           <Row label="Enable multi-type">{chk('use_multitype')}</Row>
           {cfg.use_multitype && (<>
-            <Row label="N atom types">{num('natom_type', 1)}</Row>
-            <Row label="N bond types">{num('nbond_type', 1)}</Row>
+            <Row label="N atom types">
+              <input
+                type="number"
+                value={cfg.natom_type}
+                min={1}
+                step={1}
+                onChange={e => setAtomTypeCount(parseFloat(e.target.value) || 1)}
+              />
+            </Row>
+            <Row label="N bond types">
+              <input
+                type="number"
+                value={cfg.nbond_type}
+                min={1}
+                step={1}
+                onChange={e => setBondTypeCount(parseFloat(e.target.value) || 1)}
+              />
+            </Row>
             <Row label="Atom type mode">{sel('atype_mode', [['frac', 'fraction'], ['fixed', 'fixed count']])}</Row>
             <Row label="Bond type mode">{sel('btype_mode', [['frac', 'fraction'], ['fixed', 'fixed count']])}</Row>
-            <div className={styles.note}>
-              Connectivity exclusion rules and type fraction arrays must be set manually in the generated script.
-            </div>
+
+            <Sub title="Type targets">
+              <div className={styles.targetEditorGrid}>
+                {renderTargetEditor(
+                  cfg.atype_mode === 'frac' ? 'Atom fractions' : 'Atom counts',
+                  cfg.atype_mode === 'frac' ? 'atom_frac_values' : 'atom_count_values',
+                  cfg.atype_mode === 'frac' ? atomFractionValues : atomCountValues,
+                  cfg.atype_mode,
+                  cfg.atype_mode === 'frac'
+                    ? atomFractionSum
+                    : atomCountValues.reduce((sum, value) => sum + value, 0),
+                  cfg.atype_mode === 'frac' ? uniformFractions(cfg.natom_type) : unitCounts(cfg.natom_type),
+                  cfg.natom_type
+                )}
+                {renderTargetEditor(
+                  cfg.btype_mode === 'frac' ? 'Bond fractions' : 'Bond counts',
+                  cfg.btype_mode === 'frac' ? 'bond_frac_values' : 'bond_count_values',
+                  cfg.btype_mode === 'frac' ? bondFractionValues : bondCountValues,
+                  cfg.btype_mode,
+                  cfg.btype_mode === 'frac'
+                    ? bondFractionSum
+                    : bondCountValues.reduce((sum, value) => sum + value, 0),
+                  cfg.btype_mode === 'frac' ? uniformFractions(cfg.nbond_type) : unitCounts(cfg.nbond_type),
+                  cfg.nbond_type
+                )}
+              </div>
+            </Sub>
+
+            <Sub title="Connectivity rules">
+              <div className={styles.note}>
+                Add rows of the form `[atomTypeA atomTypeB bondType allowed]`. Leave the table empty to allow all combinations. Atom-type order is symmetric, so `(1,2)` is treated the same as `(2,1)`.
+              </div>
+
+              <div className={styles.ruleToolbar}>
+                <button type="button" className={styles.actionButton} onClick={addConnectivityRule}>
+                  Add rule
+                </button>
+                {connectivityRules.length > 0 && (
+                  <button
+                    type="button"
+                    className={`${styles.actionButton} ${styles.actionButtonGhost}`}
+                    onClick={() => resetArrayValues('connectivity_rules', [])}
+                  >
+                    Clear rules
+                  </button>
+                )}
+              </div>
+
+              {connectivityRules.length === 0 ? (
+                <div className={styles.ruleEmptyState}>
+                  No explicit rules yet. The generated script will leave `types.connectivity = []`, which means all type combinations are allowed.
+                </div>
+              ) : (
+                <div className={styles.ruleTableWrap}>
+                  <table className={styles.ruleTable}>
+                    <thead>
+                      <tr>
+                        <th>Atom A</th>
+                        <th>Atom B</th>
+                        <th>Bond type</th>
+                        <th>Action</th>
+                        <th />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {connectivityRules.map((rule, index) => (
+                        <tr key={`rule-${index}`}>
+                          <td>
+                            <select
+                              value={rule.atomTypeA}
+                              onChange={e => updateConnectivityRule(index, 'atomTypeA', parseFloat(e.target.value) || 1)}
+                            >
+                              {atomTypeOptions.map(typeId => (
+                                <option key={`rule-a-${typeId}`} value={typeId}>Type {typeId}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td>
+                            <select
+                              value={rule.atomTypeB}
+                              onChange={e => updateConnectivityRule(index, 'atomTypeB', parseFloat(e.target.value) || 1)}
+                            >
+                              {atomTypeOptions.map(typeId => (
+                                <option key={`rule-b-${typeId}`} value={typeId}>Type {typeId}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td>
+                            <select
+                              value={rule.bondType}
+                              onChange={e => updateConnectivityRule(index, 'bondType', parseFloat(e.target.value) || 1)}
+                            >
+                              {bondTypeOptions.map(typeId => (
+                                <option key={`rule-bond-${typeId}`} value={typeId}>Type {typeId}</option>
+                              ))}
+                            </select>
+                          </td>
+                          <td>
+                            <select
+                              value={rule.allowed ? 'allow' : 'forbid'}
+                              onChange={e => updateConnectivityRule(index, 'allowed', e.target.value === 'allow')}
+                            >
+                              <option value="forbid">Forbid</option>
+                              <option value="allow">Allow</option>
+                            </select>
+                          </td>
+                          <td className={styles.ruleDeleteCell}>
+                            <button
+                              type="button"
+                              className={`${styles.actionButton} ${styles.actionButtonGhost}`}
+                              onClick={() => removeConnectivityRule(index)}
+                            >
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </Sub>
           </>)}
         </Section>
 
@@ -672,6 +1447,8 @@ export default function ConfigBuilder() {
           )}
           <Row label="Write log">{chk('ilog')}</Row>
           <Row label="Auto-name files">{chk('savemode')}</Row>
+          <Row label="Dump settings">{chk('idumpsettings')}</Row>
+          <Row label="Verbose settings dump">{chk('iversbose_settings')}</Row>
         </Section>
 
       </div>

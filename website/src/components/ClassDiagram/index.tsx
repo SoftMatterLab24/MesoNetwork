@@ -11,13 +11,13 @@ const CLASSES = [
     fields: [
       { name: 'Nreplicates', type: 'int', default: '1', desc: 'Number of network replicates to generate in a single call.' },
       { name: 'flags', type: 'struct', default: '—', desc: 'Boolean control flags: isave, iplot, ilog, savemode, imanualseed, idefect, ipotential.' },
-      { name: 'domain', type: 'struct', default: '—', desc: 'Domain settings: b, Lx, Ly, Lz, scale, boundary, seed, write_location, file prefixes.' },
+      { name: 'domain', type: 'struct', default: '—', desc: 'Domain settings: b, Lx, Ly, scale, boundary, seed, write_location, file prefixes.' },
       { name: 'peratom', type: 'struct', default: '—', desc: 'Per-atom constraints: Max_peratom_bond, min_degree_keep.' },
       { name: 'perbond', type: 'bondstyle', default: 'bondstyle()', desc: 'Per-bond property assignments. Subclass — see bondstyle.', isRef: true, refId: 'bondstyle' },
       { name: 'defect', type: 'struct', default: '—', desc: 'Defect settings: density_mode, n_voids, size_dist, radius_mean, center_distribution, etc.' },
       { name: 'pot', type: 'struct', default: '—', desc: 'Potential table settings: k_LD, N_rho, rho_min, rho_max.' },
       { name: 'architecture', type: 'architecture', default: 'architecture()', desc: 'Network geometry and typology. Subclass — see architecture.', isRef: true, refId: 'architecture' },
-      { name: 'log', type: 'struct', default: '{}', desc: 'Log output settings.' },
+      { name: 'log', type: 'networklog', default: 'networklog()', desc: 'Replicate-aware logging helper used for printed output and settings dumps.' },
     ],
     methods: [
       { name: 'generateNetwork()', desc: 'Main generation loop. Runs all build steps for each replicate.' },
@@ -32,10 +32,10 @@ const CLASSES = [
     fields: [
       { name: 'geometry', type: 'string', default: "'random'", desc: "Node placement pattern. Options: 'random', 'hex_lattice'." },
       { name: 'strand_typology', type: 'assignmentmode', default: 'assignmentmode()', desc: 'Target bond length distribution. Uses assignmentmode framework.', isRef: true, refId: 'assignmentmode' },
-      { name: 'types', type: 'struct', default: '—', desc: 'Multi-type settings: natom_type, nbond_type, atype_mode, btype_mode, connectivity (exclusion rules), frac arrays.' },
+      { name: 'types', type: 'struct', default: '—', desc: 'Multi-type settings: enabled flag, atom/bond target arrays, and connectivity rows [atomTypeA atomTypeB bondType allowed].' },
       { name: 'lattice_spacing', type: 'double', default: '6', desc: 'Nominal node spacing in units of b. Used when geometry = hex_lattice.' },
       { name: 'spacing_multiplier_mode', type: 'string', default: "'auto'", desc: "How spacing multiplier is set. Options: 'auto', 'manual'." },
-      { name: 'spacing_multiplier', type: 'double', default: '1', desc: 'Manual scale factor applied to lattice_spacing.' },
+      { name: 'spacing_multiplier', type: 'double', default: '1.2', desc: 'Manual scale factor applied to lattice_spacing.' },
       { name: 'lattice_disorder_level', type: 'double', default: '1', desc: 'Magnitude of random positional perturbations. Range [0, 1].' },
       { name: 'lattice_disorder_maxfrac', type: 'double', default: '0.4', desc: 'Max fractional displacement from ideal lattice position.' },
       { name: 'lattice_max_del_per_node', type: 'int', default: '1', desc: 'Max bonds deletable per node during topological disorder.' },
@@ -62,11 +62,11 @@ const CLASSES = [
     description: 'General statistical distribution framework. Used by strand_typology and all perbond properties.',
     fields: [
       { name: 'auto', type: 'boolean', default: 'true', desc: 'When true, copies the parent property distribution (e.g. kuhn copies strand_typology).' },
-      { name: 'mode', type: 'string', default: "'mono'", desc: "Active distribution mode. Options: 'mono', 'uniform', 'poly', 'bimodal'." },
+      { name: 'mode', type: 'string', default: "'mono'", desc: "Active distribution mode. Options: 'mono', 'uniform', 'poly', 'polydisperse' (alias), 'bimodal'." },
       { name: 'mono', type: 'struct', default: '{value: 20}', desc: 'Single fixed value assignment. Field: value.' },
       { name: 'uniform', type: 'struct', default: '{min: 5, max: 40}', desc: 'Flat distribution. Fields: min_value, max_value.' },
       { name: 'poly', type: 'struct', default: '{method: pmf, ...}', desc: "Continuous distribution. Fields: method ('geom','range','pmf'), pmf_mean, pmf_min, pmf_max, rounding, align_to_length, etc." },
-      { name: 'bimodal', type: 'struct', default: '{mean_1: 35, ...}', desc: "Two-population mixture. Core: mean_1/2, std_1/2, method ('single','geom','gaussian'), height_mode, height_prob. Advanced: lam_1/2, stdR_1/2, double_network_flag, alpha, auto_1/2_flag, bin_window_method." },
+      { name: 'bimodal', type: 'struct', default: '{mean_1: 35, ...}', desc: "Two-population mixture. Core: mean_1/2, std_1/2, method ('single','geom','gaussian'), height_mode, height_prob, height_count. Advanced: lam_1/2, stdR_1/2, double_network_flag, alpha, auto_1/2_flag, bin_window_method." },
     ],
   },
 ];

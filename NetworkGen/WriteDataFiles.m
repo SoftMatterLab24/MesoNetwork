@@ -1,4 +1,4 @@
-function WriteDataFiles(obj, Atoms, Bonds, Nvec, LDpot)
+function WriteDataFiles(obj, Atoms, Bonds, Nvec, LDpot, TypeData)
 % -------------------------------------------------------------------------
 % WriteDataFiles
 % - Write LAMMPS data file
@@ -19,7 +19,12 @@ function WriteDataFiles(obj, Atoms, Bonds, Nvec, LDpot)
 %   Bonds : bond array [bondID id1 id2 L0 type]
 %   Nvec  : per-bond Kuhn segment counts
 %   LDpot : local density potential struct, or []
+%   TypeData : optional runtime type-label struct for export
 % -------------------------------------------------------------------------
+
+    if nargin < 6
+        TypeData = [];
+    end
 
     if ~obj.flags.isave
         obj.log.print('   Did not write data files because obj.flags.isave = false.\n');
@@ -62,12 +67,45 @@ function WriteDataFiles(obj, Atoms, Bonds, Nvec, LDpot)
     ylo = obj.domain.ylo; yhi = obj.domain.yhi;
     zlo = obj.domain.zlo; zhi = obj.domain.zhi;
 
-    % For now standard network assumptions:
-    natype = 1;
-    if size(Bonds,2) >= 5 && ~isempty(Bonds)
-        nbtype = max(Bonds(:,5));
+    atom_type_vec = ones(Atom_count, 1);
+
+    if ~isempty(TypeData) && isstruct(TypeData) && isfield(TypeData, 'enabled') && TypeData.enabled
+        if isfield(TypeData, 'atom_types') && ~isempty(TypeData.atom_types)
+            atom_type_vec = TypeData.atom_types(:);
+        end
+
+        if isfield(TypeData, 'bond_types') && ~isempty(TypeData.bond_types)
+            bond_type_vec = TypeData.bond_types(:);
+        elseif size(Bonds,2) >= 5 && ~isempty(Bonds)
+            bond_type_vec = Bonds(:,5);
+        else
+            bond_type_vec = ones(Bond_count, 1);
+        end
+
+        natype = max(max(atom_type_vec), TypeData.natom_type);
+        if isempty(bond_type_vec)
+            nbtype = max(1, TypeData.nbond_type);
+        else
+            nbtype = max(max(bond_type_vec), TypeData.nbond_type);
+        end
     else
-        nbtype = 1;
+        if size(Bonds,2) >= 5 && ~isempty(Bonds)
+            bond_type_vec = Bonds(:,5);
+            nbtype = max(Bonds(:,5));
+        else
+            bond_type_vec = ones(Bond_count, 1);
+            nbtype = 1;
+        end
+
+        natype = 1;
+    end
+
+    if numel(atom_type_vec) ~= Atom_count
+        error('WriteDataFiles: atom type vector must have length %d.', Atom_count);
+    end
+
+    if numel(bond_type_vec) ~= Bond_count
+        error('WriteDataFiles: bond type vector must have length %d.', Bond_count);
     end
 
     % ---------------------------------------------------------------------
@@ -91,18 +129,14 @@ function WriteDataFiles(obj, Atoms, Bonds, Nvec, LDpot)
     fprintf(fid, 'Atoms #bpm/sphere\n\n');
     % atomID molID atomType diameter density x y z
     for i = 1:Atom_count
-        fprintf(fid, '%d 1 1 1 1 %.16g %.16g %.16g\n', ...
-            Atoms(i,1), Atoms(i,2), Atoms(i,3), Atoms(i,4));
+        fprintf(fid, '%d 1 %d 1 1 %.16g %.16g %.16g\n', ...
+            Atoms(i,1), atom_type_vec(i), Atoms(i,2), Atoms(i,3), Atoms(i,4));
     end
 
     fprintf(fid, '\nBonds\n\n');
     % bondID bondType atom1 atom2
     for i = 1:Bond_count
-        if size(Bonds,2) >= 5
-            btype = Bonds(i,5);
-        else
-            btype = 1;
-        end
+        btype = bond_type_vec(i);
         fprintf(fid, '%d %d %d %d\n', Bonds(i,1), btype, Bonds(i,2), Bonds(i,3));
     end
 

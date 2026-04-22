@@ -12,16 +12,16 @@ Strand typology sets the target bond length distribution across the network. It 
 
 | Type | Args | Default |
 |------|------|---------|
-| `string` | `'mono'` \| `'polydisperse'` \| `'bimodal'` | `'mono'` |
+| `string` | `'mono'` \| `'polydisperse'` \| `'poly'` \| `'bimodal'` | `'mono'` |
 
 Sets the target bond length distribution type for the network.
 
 - **mono** — attempts to make all bonds the same length. Due to the geometric constraints of random node placement, exact uniformity is not guaranteed, but the generator minimizes length variation as much as possible.
-- **polydisperse** — bond lengths are drawn from a continuous distribution. Requires configuring the `poly` sub-settings in [Assignment Modes](../assignment-modes/overview).
+- **polydisperse** — bond lengths are drawn from a continuous distribution. This is the preferred website label; the package also accepts the legacy alias `poly`. Configure the `poly` sub-settings in [Assignment Modes](../assignment-modes/overview).
 - **bimodal** — bond lengths are drawn from a mixture of two distributions, producing two distinct strand populations. Requires configuring the `bimodal` sub-settings in [Assignment Modes](../assignment-modes/overview).
 
 :::note Linked settings
-Setting `strand_typology` to `polydisperse` or `bimodal` activates the corresponding **Assignment Mode** sub-settings. See [Assignment Modes](../assignment-modes/overview) for full configuration options.
+Setting `strand_typology` to `polydisperse` (or the legacy alias `poly`) or `bimodal` activates the corresponding **Assignment Mode** sub-settings. See [Assignment Modes](../assignment-modes/overview) for full configuration options.
 :::
 
 :::tip Coupling with perbond

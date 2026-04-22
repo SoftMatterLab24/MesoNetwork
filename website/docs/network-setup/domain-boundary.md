@@ -5,7 +5,7 @@ sidebar_position: 1
 
 # Domain & Boundary
 
-These settings define the physical size and shape of the simulation domain, as well as the random seed and output file naming.
+These settings define the physical size and shape of the 2D simulation domain, as well as the random seed and output file naming.
 
 ---
 
@@ -15,24 +15,10 @@ These settings define the physical size and shape of the simulation domain, as w
 |------|------|---------|
 | `double` | (0, ∞) | `1.6` |
 
-The fundamental lengthscale of the network. All domain dimensions (`Lx`, `Ly`, `Lz`) are specified in units of `b`. Changing `b` effectively rescales the entire network.
+The fundamental lengthscale of the network. The in-plane domain lengths (`Lx`, `Ly`) are specified in units of `b`. Changing `b` effectively rescales the entire network.
 
 ```matlab
 net.domain.b = 1.0;
-```
-
----
-
-### `dimension`
-
-| Type | Args | Default |
-|------|------|---------|
-| `double` | `2` \| `3` | `2` |
-
-Dimensionality of the network. Currently only 2D networks are supported.
-
-```matlab
-net.domain.dimension = 2;
 ```
 
 ---
@@ -65,20 +51,6 @@ net.domain.Ly = 10;
 
 ---
 
-### `Lz`
-
-| Type | Args | Default |
-|------|------|---------|
-| `double` | (0, ∞) | — |
-
-The z-dimension of the simulation domain in units of `b`. Only relevant when `dimension = 3`.
-
-```matlab
-net.domain.Lz = 10;
-```
-
----
-
 ### `scale`
 
 | Type | Args | Default |
@@ -102,7 +74,7 @@ net.domain.scale = 2.0; % doubles the domain size
 Defines the boundary conditions of the simulation domain.
 
 - **fixed** — nodes near the boundary are clamped. Suitable for tensile test simulations where boundary nodes act as grips.
-- **periodic** — the domain wraps in all directions. Suitable for bulk network simulations where edge effects should be avoided.
+- **periodic** — the domain wraps in-plane. Suitable for bulk network simulations where edge effects should be avoided.
 
 ```matlab
 net.domain.boundary = 'periodic';

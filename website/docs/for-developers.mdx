@@ -8,7 +8,7 @@ import ClassDiagram from '@site/src/components/ClassDiagram';
 
 # For Developers
 
-NetworkGen is built around four MATLAB classes. Instantiate `network`, configure its properties, then call `generateNetwork()`. The other three classes are automatically instantiated as subclass properties.
+NetworkGen is built around four MATLAB classes. Instantiate `network`, configure its properties, then call `generateNetwork()`. The other three classes are automatically instantiated as subclass properties. For continuous distributions, the package accepts both the internal mode name `poly` and the website-facing alias `polydisperse`.
 
 ## Class map
 
@@ -41,10 +41,8 @@ All fields across all four classes. Fields marked with **†** are computed inte
 | `flags.idefect` | `boolean` | `false` | |
 | `flags.ipotential` | `boolean` | `true` | |
 | `domain.b` | `double` | `1.6` | |
-| `domain.dimension` | `int` | `2` | |
 | `domain.Lx` | `double` | `150` | |
 | `domain.Ly` | `double` | `150` | |
-| `domain.Lz` | `double` | `10` | |
 | `domain.scale` | `double` | `1` | |
 | `domain.boundary` | `string` | `'fixed'` | |
 | `domain.seed` | `int` | `12345` | |
@@ -57,8 +55,6 @@ All fields across all four classes. Fields marked with **†** are computed inte
 | `domain.xhi` **†** | `double` | `[]` | Computed by `SetupDomain` |
 | `domain.ylo` **†** | `double` | `[]` | Computed by `SetupDomain` |
 | `domain.yhi` **†** | `double` | `[]` | Computed by `SetupDomain` |
-| `domain.zlo` **†** | `double` | `[]` | Computed by `SetupDomain` |
-| `domain.zhi` **†** | `double` | `[]` | Computed by `SetupDomain` |
 | `domain.Max_atom` **†** | `int` | `[]` | Computed from `rho_atom` and domain area |
 | `domain.Max_bond` **†** | `int` | `[]` | Computed from `Max_atom` and `Max_peratom_bond` |
 | `domain.min_node_sep` **†** | `double` | `[]` | Computed from `lattice_spacing * b` |
@@ -108,15 +104,16 @@ All fields across all four classes. Fields marked with **†** are computed inte
 | `lattice_max_del_per_node` | `int` | `1` | |
 | `lattice_min_degree_keep` | `int` | `5` | |
 | `strand_typology` | `assignmentmode` | — | See `assignmentmode` table |
+| `types.enabled` | `boolean` | `false` | |
 | `types.natom_type` | `int` | `1` | |
-| `types.nbond_type` | `int` | `5` | |
+| `types.nbond_type` | `int` | `1` | |
 | `types.atype_mode` | `string` | `'frac'` | |
 | `types.btype_mode` | `string` | `'frac'` | |
 | `types.atom_count` | `int array` | `0` | |
 | `types.bond_count` | `int array` | `0` | |
 | `types.atom_frac` | `double array` | `1` | |
 | `types.bond_frac` | `double array` | `1` | |
-| `types.connectivity` | `int array` | `[]` | |
+| `types.connectivity` | `int array` | `[]` | Rows are `[atomTypeA atomTypeB bondType allowed]` |
 | `types.atype_sel_method` | `string` | `'random'` | |
 | `types.btype_sel_method` | `string` | `'random'` | |
 

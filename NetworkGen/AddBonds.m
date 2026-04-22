@@ -23,7 +23,7 @@ function [Atoms, Bonds] = AddBonds(obj, Atoms, LatticeData)
         case 'mono'
             [Atoms, Bonds] = AddBondsMono(obj, Atoms, LatticeData);
 
-        case 'poly'
+        case {'poly', 'polydisperse'}
             [Atoms, Bonds] = AddBondsPoly(obj, Atoms, LatticeData);
 
         case 'bimodal'

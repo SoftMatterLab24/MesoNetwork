@@ -178,35 +178,39 @@ methods
             % CleanupNetwork can prune isolated nodes, rebuild connectivity,
             % update Nvec, etc.
 
+            % ---------------------------------------------------------
+            % 9. Assign exported multi-type labels if requested
+            % ---------------------------------------------------------
+            TypeData = AssignMultiType(obj, Atoms, Bonds);
 
             % ---------------------------------------------------------
-            % 9. Construct local density potential
+            % 10. Construct local density potential
             % ---------------------------------------------------------
             LDpot = ConstructLDPotential(obj, Atoms, Bonds, Nvec);
 
             % ---------------------------------------------------------
-            % 10. Scale domain if needed
+            % 11. Scale domain if needed
             % ---------------------------------------------------------
             [Atoms, Bonds] = ScaleDomain(obj, Atoms, Bonds);
             
             % ---------------------------------------------------------
-            % 11. Show visualization and statistics
+            % 12. Show visualization and statistics
             % ---------------------------------------------------------
             VisualizeNetwork(obj, Atoms, Bonds, Nvec);
             % VisualizeNetwork should check obj.flags.iplot internally
 
             % ---------------------------------------------------------
-            % 12. Computes
+            % 13. Computes
             % ---------------------------------------------------------
             order = ComputeOrder(obj, Atoms, Bonds);
 
             % ---------------------------------------------------------
-            % 13. Write data files
+            % 14. Write data files
             % ---------------------------------------------------------
-            WriteDataFiles(obj, Atoms, Bonds, Nvec, LDpot);
+            WriteDataFiles(obj, Atoms, Bonds, Nvec, LDpot, TypeData);
 
             % ---------------------------------------------------------
-            % 14. Write and clear logs
+            % 15. Write and clear logs
             % ---------------------------------------------------------
             outdir = obj.domain.write_location;
             obj.log.recordNetworkStats(Atoms, Bonds, Nvec, obj, LDpot, order);

@@ -148,6 +148,162 @@
   font-size: 11px;
 }
 
+.targetEditorGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 12px;
+}
+
+.targetCard {
+  border: 0.5px solid var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  background: var(--ifm-background-surface-color);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.targetCardHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.targetCardTitle {
+  font: 500 12px var(--ifm-font-family-base);
+  color: var(--ifm-color-content);
+}
+
+.targetCardSubtitle {
+  font-size: 11px;
+  color: var(--ifm-color-secondary-darkest);
+  margin-top: 2px;
+}
+
+.targetCardActions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.actionButton {
+  border: 0.5px solid var(--ifm-color-emphasis-300);
+  background: var(--ifm-color-emphasis-100);
+  color: var(--ifm-color-content);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font: 500 11px var(--ifm-font-family-base);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+
+.actionButton:hover {
+  background: var(--ifm-color-emphasis-200);
+  border-color: var(--ifm-color-emphasis-400);
+  transform: translateY(-1px);
+}
+
+.actionButtonGhost {
+  background: transparent;
+}
+
+.targetGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 8px;
+}
+
+.targetCell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border-radius: 6px;
+  background: var(--ifm-color-emphasis-100);
+  border: 0.5px solid var(--ifm-color-emphasis-200);
+}
+
+.targetCellLabel {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ifm-color-secondary-darkest);
+}
+
+.targetSummary {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: var(--ifm-color-secondary-darkest);
+}
+
+.targetSummaryWarn {
+  color: #a34b13;
+  font-weight: 500;
+}
+
+.ruleToolbar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ruleEmptyState {
+  border: 0.5px dashed var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 12px;
+  color: var(--ifm-color-secondary-darkest);
+  background: var(--ifm-color-emphasis-100);
+}
+
+.ruleTableWrap {
+  overflow-x: auto;
+  border: 0.5px solid var(--ifm-color-emphasis-300);
+  border-radius: 8px;
+  background: var(--ifm-background-surface-color);
+}
+
+.ruleTable {
+  width: 100%;
+  min-width: 520px;
+  border-collapse: collapse;
+}
+
+.ruleTable th,
+.ruleTable td {
+  padding: 8px 10px;
+  border-bottom: 0.5px solid var(--ifm-color-emphasis-200);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.ruleTable th {
+  font: 500 10px var(--ifm-font-family-base);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ifm-color-secondary-darkest);
+  background: var(--ifm-color-emphasis-100);
+}
+
+.ruleTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.ruleTable td select {
+  width: 100%;
+}
+
+.ruleDeleteCell {
+  width: 1%;
+  white-space: nowrap;
+}
+
 .codeCol {
   position: sticky;
   top: 80px;
