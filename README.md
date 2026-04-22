@@ -151,7 +151,7 @@ cd build
 cmake -D PKG_BPM=yes -D PKG_EXTRA-FIX=yes -D PKG_GRANULAR=yes -D PKG_MISC=yes \
       -D PKG_MOLECULE=yes -D PKG_RIGID=yes -D PKG_TNT=yes \
       -D PKG_EXTRA-MOLECULE=yes -D PKG_COLLOID=yes -D PKG_MC=yes \
-      -D PKG_BROWNIAN=yes -D PKG_MANYBODY=yes ../cmake
+      -D PKG_BROWNIAN=yes -D PKG_MANYBODY=yes -D PKG_POLY-NET=yes ../cmake
 ```
 
 6. Compile (replace `4` with your processor count)
