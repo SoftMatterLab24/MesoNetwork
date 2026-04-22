@@ -30,13 +30,6 @@ function [] = SetupDomain(obj)
     obj.domain.zhi =  Lz*b;
 
     %% ---------------------- Default / user controls ---------------------
-    % Atom density
-    if ~isempty(obj.architecture.rho_atom)
-        Rho_atom = obj.architecture.rho_atom;
-    else
-        Rho_atom = 0.0078;
-    end
-
     % Per-atom bond cap
     if isempty(obj.peratom.Max_peratom_bond)
         Max_peratom_bond = 5;
@@ -59,6 +52,14 @@ function [] = SetupDomain(obj)
     end
     min_node_sep2 = min_node_sep^2;
 
+    % Atom density
+    if ~isempty(obj.architecture.rho_atom)
+        Rho_atom = obj.architecture.rho_atom;
+    else
+        Rho_atom = 0.7/((pi/4)*min_node_sep2);
+        obj.architecture.rho_atom = Rho_atom;
+    end
+    
     %% ---------------------- Network size caps ---------------------------
     obj.domain.Max_atom = ceil( ...
         Rho_atom * ...

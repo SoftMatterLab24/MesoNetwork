@@ -26,7 +26,7 @@ properties
     lattice_max_del_per_node =  1;
     lattice_min_degree_keep =   5;
 
-    rho_atom =                  0.0078;
+    rho_atom =                  [];
 
 end
 

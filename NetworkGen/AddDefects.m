@@ -280,8 +280,10 @@ function [Atoms, Bonds, Nvec] = AddDefects(obj, Atoms, Bonds, Nvec)
         near_boundary(in_clamp) = true;
     end
 
-    % Protect x-boundary atoms in sparse mode
-    if do_sparse
+    % Protect x-boundary atoms in sparse mode.
+    % Only applied for 'fixed' boundary — periodic networks wrap around
+    % and need no boundary protection on x-edges.
+    if do_sparse && strcmpi(obj.domain.boundary, 'fixed')
         in_x_wall                = (atom_x <= xlo + wall_t) | (atom_x >= xhi - wall_t);
         in_void(in_x_wall)       = false;
         near_boundary(in_x_wall) = true;
