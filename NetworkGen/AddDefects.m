@@ -234,8 +234,9 @@ function [Atoms, Bonds, Nvec] = AddDefects(obj, Atoms, Bonds, Nvec)
     in_void       = false(natom, 1);
     near_boundary = false(natom, 1);
 
-    atom_x = Atoms(:, 2);
-    atom_y = Atoms(:, 3);
+    % Atoms column layout (post-refactor): [ID | molID | X | Y | Z | deg | nbrs]
+    atom_x = Atoms(:, 3);
+    atom_y = Atoms(:, 4);
 
     for v = 1:n_voids
         cx_v = centers(v, 1);
@@ -442,8 +443,9 @@ function [Atoms, Bonds, Nvec] = local_thin_network(obj, Atoms, Bonds, Nvec)
 
     natom_before = size(Atoms, 1);
     atom_ids     = Atoms(:, 1);
-    ax           = Atoms(:, 2);
-    ay           = Atoms(:, 3);
+    % Atoms column layout: [ID | molID | X | Y | Z | deg | nbrs]
+    ax           = Atoms(:, 3);
+    ay           = Atoms(:, 4);
     natom        = numel(atom_ids);
 
     % Expected atoms in a circle of radius r_thin under average density
@@ -571,8 +573,9 @@ function [Atoms, Bonds, Nvec] = local_bridge_constrictions(obj, Atoms, Bonds, Nv
         max_bonds, bridge_min_spacing/b, bridge_min_spacing);
 
     atom_ids = Atoms(:, 1);
-    ax       = Atoms(:, 2);
-    ay       = Atoms(:, 3);
+    % Atoms column layout: [ID | molID | X | Y | Z | deg | nbrs]
+    ax       = Atoms(:, 3);
+    ay       = Atoms(:, 4);
     natom    = numel(atom_ids);
 
     % Expected atoms in density check circles

@@ -57,25 +57,28 @@ function [Atoms, Bonds] = ApplyGeometricDisorder(obj, Atoms, Bonds)
 
     for i = 1:natom
 
-        % Skip fixed boundary nodes (set by AddAtomsHex in col 6)
-        if size(Atoms, 2) >= 6 && Atoms(i, 6) == 1
-            continue;
-        end
+        % Note: the old layout used Atoms(:,6) as an isFixed flag for
+        % boundary nodes. Under the refactored layout col 6 is the atom
+        % degree, which is populated after AddBonds, so the old guard is
+        % no longer meaningful. If a hex-lattice run needs boundary
+        % clamping again, reintroduce an explicit isFixed column and
+        % restore the guard here.
 
         % Uniform random displacement inside a disk of radius r_max.
         % sqrt(rand) gives uniform area density (not clumped at centre).
         rr    = r_max * sqrt(rand);
         theta = 2 * pi * rand;
 
-        x_new = Atoms(i, 2) + rr * cos(theta);
-        y_new = Atoms(i, 3) + rr * sin(theta);
+        % Atoms column layout: [ID | molID | X | Y | Z | deg | nbrs]
+        x_new = Atoms(i, 3) + rr * cos(theta);
+        y_new = Atoms(i, 4) + rr * sin(theta);
 
         % Clamp to domain interior
         x_new = max(xlo + edgeTol, min(xhi - edgeTol, x_new));
         y_new = max(ylo + edgeTol, min(yhi - edgeTol, y_new));
 
-        Atoms(i, 2) = x_new;
-        Atoms(i, 3) = y_new;
+        Atoms(i, 3) = x_new;
+        Atoms(i, 4) = y_new;
         n_moved = n_moved + 1;
 
     end
@@ -90,8 +93,8 @@ function [Atoms, Bonds] = ApplyGeometricDisorder(obj, Atoms, Bonds)
             ii = Bonds(k, 2);   % atom row index (IDs = rows after renumber)
             jj = Bonds(k, 3);
 
-            dx = Atoms(jj, 2) - Atoms(ii, 2);
-            dy = Atoms(jj, 3) - Atoms(ii, 3);
+            dx = Atoms(jj, 3) - Atoms(ii, 3);
+            dy = Atoms(jj, 4) - Atoms(ii, 4);
             Bonds(k, 4) = sqrt(dx*dx + dy*dy);
         end
     end

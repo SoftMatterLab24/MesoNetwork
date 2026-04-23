@@ -22,6 +22,15 @@ function LDpot = ConstructLDPotential(obj, Atoms, Bonds, Nvec)
 %   LDpot : struct with local-density potential parameters
 % -------------------------------------------------------------------------
 
+    %% ------------------------------------------------------------------
+    %  0.  Early exit if defects are disabled
+    %% ------------------------------------------------------------------
+    if ~obj.flags.ipotential
+        obj.log.print('   [ConstructLDPotential] Skipped (flags.ipotential = false)\n');
+        LDpot = [];
+        return;
+    end
+
     if nargin < 4
         error('ConstructLDPotential: requires obj, Atoms, Bonds, and Nvec.');
     end
