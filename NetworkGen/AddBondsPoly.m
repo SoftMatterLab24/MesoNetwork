@@ -1,40 +1,42 @@
-function [Atoms, Bonds] = AddBondsPoly(obj, Atoms, LatticeData)
+function [Atoms, Bonds] = AddBondsPoly(obj, Atoms, LatticeData, PreBonds)
 % -------------------------------------------------------------------------
 % AddBondsPoly
 %
-% Polydisperse bond-topology generation:
-%   - random      -> generalized distance-limited random bonding
-%   - hex_lattice -> generalized distance-limited bonding on lattice nodes
+% Polydisperse bond-topology generation (broader length distribution than mono).
+%   - random / hex_lattice / bottle_brush all route to the same general
+%     distance-limited random connector.
 %
-% Here "poly" is interpreted as a broader connection-length topology than
-% mono, but no Kuhn / contour-length assignment is done yet.
+% Atoms column layout:
+%   [ID | molID | X | Y | Z | deg | nbr_1 ... nbr_{Max_peratom_bond}]
+%
+% INPUT:
+%   obj         : network object
+%   Atoms       : atom array
+%   LatticeData : unused here (kept for dispatcher symmetry)
+%   PreBonds    : optional pre-existing bond list; seeds adjacency to avoid
+%                 duplicates. When non-empty, internal pruning is skipped.
+%
+% OUTPUT:
+%   Atoms : updated atom array
+%   Bonds : [bondID | atomID_i | atomID_j | L0 | type=0]
+%           type column is left 0; AssignMultiType assigns it later.
 % -------------------------------------------------------------------------
 
-    geom = lower(obj.architecture.geometry);
-
-    switch geom
-
-        case 'random'
-            [Atoms, Bonds] = connect_general_poly(obj, Atoms);
-
-        case 'hex_lattice'
-            [Atoms, Bonds] = connect_general_poly(obj, Atoms);
-
-        otherwise
-            error('AddBondsPoly: unknown geometry "%s".', obj.architecture.geometry);
+    if nargin < 4
+        PreBonds = [];
     end
 
-    % LatticeData is not explicitly required here because poly lattice is
-    % treated as generalized geometric connection on the existing node set.
+    [Atoms, Bonds] = connect_general_poly(obj, Atoms, PreBonds);
+
     %#ok<NASGU>
 
 end
 
 
 % =========================================================================
-% GENERAL POLY CONNECTOR (used for both random and lattice node sets)
+% GENERAL POLY CONNECTOR
 % =========================================================================
-function [AtomsOut, BondsOut] = connect_general_poly(obj, Atoms)
+function [AtomsOut, BondsOut] = connect_general_poly(obj, Atoms, PreBonds)
 
     natom             = size(Atoms,1);
     Max_bond          = obj.domain.Max_bond;
@@ -49,8 +51,6 @@ function [AtomsOut, BondsOut] = connect_general_poly(obj, Atoms)
 
     isPeriodic = strcmpi(obj.domain.boundary, 'periodic');
 
-    % Poly topology cutoff:
-    % larger than mono to allow broader connection-length distribution
     a = obj.domain.min_node_sep;
     if strcmpi(obj.architecture.spacing_multiplier_mode, 'auto')
         spacing_multiplier = 4.5;
@@ -62,8 +62,8 @@ function [AtomsOut, BondsOut] = connect_general_poly(obj, Atoms)
     Rcut2 = Rcut * Rcut;
 
     ids = Atoms(:,1);
-    x   = Atoms(:,2);
-    y   = Atoms(:,3);
+    x   = Atoms(:,3);   % X at col 3
+    y   = Atoms(:,4);   % Y at col 4
 
     hx = Rcut;
     hy = Rcut;
@@ -83,7 +83,17 @@ function [AtomsOut, BondsOut] = connect_general_poly(obj, Atoms)
     deg = zeros(natom,1);
     adj = sparse(natom, natom);
 
-    BondsRows = zeros(Max_bond,3); % [row1 row2 L]
+    % Seed adjacency from PreBonds (not degree).
+    if ~isempty(PreBonds)
+        for k = 1:size(PreBonds, 1)
+            r1 = PreBonds(k, 2);
+            r2 = PreBonds(k, 3);
+            adj(r1, r2) = 1;
+            adj(r2, r1) = 1;
+        end
+    end
+
+    BondsRows = zeros(Max_bond,3);
     nbond = 0;
     ntries = 0;
     no_progress = 0;
@@ -160,8 +170,9 @@ function [AtomsOut, BondsOut] = connect_general_poly(obj, Atoms)
 
     BondsRows = BondsRows(1:nbond,:);
 
+    skip_prune = ~isempty(PreBonds);
     [AtomsOut, BondsOut] = finalize_network(obj, Atoms, BondsRows, ids, x, y, ...
-        Max_peratom_bond, min_keep, isPeriodic, Lx, Ly, 1);
+        Max_peratom_bond, min_keep, isPeriodic, Lx, Ly, skip_prune);
 
 end
 
@@ -233,12 +244,13 @@ function d = minimum_image(isPeriodic, dx, dy, Lx, Ly)
 end
 
 function [AtomsOut, BondsOut] = finalize_network(obj, Atoms, BondsRows, ids, x, y, ...
-    Max_peratom_bond, min_keep, isPeriodic, Lx, Ly, bondType)
+    Max_peratom_bond, min_keep, isPeriodic, Lx, Ly, skip_prune)
+% See AddBondsMono.m for commentary - identical semantics here.
 
     natom = size(Atoms,1);
     pruned_atom_mask = false(natom,1);
 
-    if ~isempty(BondsRows)
+    if ~isempty(BondsRows) && ~skip_prune
         changed = true;
         while changed
             deg = zeros(natom,1);
@@ -276,8 +288,8 @@ function [AtomsOut, BondsOut] = finalize_network(obj, Atoms, BondsRows, ids, x, 
     if any(pruned_atom_mask)
         Atoms = Atoms(~pruned_atom_mask, :);
         ids   = Atoms(:,1);
-        x     = Atoms(:,2);
-        y     = Atoms(:,3);
+        x     = Atoms(:,3);
+        y     = Atoms(:,4);
         natom = size(Atoms,1);
 
         old2new_row = zeros(numel(pruned_atom_mask),1,'int32');
@@ -292,9 +304,11 @@ function [AtomsOut, BondsOut] = finalize_network(obj, Atoms, BondsRows, ids, x, 
     end
 
     if isempty(Atoms) || isempty(BondsRows)
-        AtomsOut = zeros(0,5);
+        AtomsOut = Atoms;
         BondsOut = zeros(0,5);
-        obj.log.print('   Pruned all atoms/bonds\n');
+        if ~skip_prune
+            obj.log.print('   Pruned all atoms/bonds\n');
+        end
         return;
     end
 
@@ -309,7 +323,7 @@ function [AtomsOut, BondsOut] = finalize_network(obj, Atoms, BondsRows, ids, x, 
     for k = 1:nb
         r1 = BondsRows(k,1);
         r2 = BondsRows(k,2);
-        BondsOut(k,:) = [k, ids(r1), ids(r2), BondsRows(k,3), bondType];
+        BondsOut(k,:) = [k, ids(r1), ids(r2), BondsRows(k,3), 0];
     end
 
     oldIDs = ids;
@@ -325,27 +339,28 @@ function [AtomsOut, BondsOut] = finalize_network(obj, Atoms, BondsRows, ids, x, 
         BondsOut(:,1) = (1:size(BondsOut,1)).';
     end
 
-    if size(Atoms,2) < 5 + Max_peratom_bond
-        Atoms(:, size(Atoms,2)+1 : 5+Max_peratom_bond) = 0;
+    needed_cols = 6 + Max_peratom_bond;
+    if size(Atoms,2) < needed_cols
+        Atoms(:, size(Atoms,2)+1 : needed_cols) = 0;
     end
 
-    Atoms(:,5) = 0;
-    Atoms(:,6:5+Max_peratom_bond) = 0;
+    Atoms(:,6) = 0;
+    Atoms(:,7:6+Max_peratom_bond) = 0;
 
     for k = 1:size(BondsOut,1)
         ii = BondsOut(k,2);
         jj = BondsOut(k,3);
 
-        nb1 = Atoms(ii,5) + 1;
+        nb1 = Atoms(ii,6) + 1;
         if nb1 <= Max_peratom_bond
-            Atoms(ii,5) = nb1;
-            Atoms(ii,5+nb1) = jj;
+            Atoms(ii,6) = nb1;
+            Atoms(ii, 6 + nb1) = jj;
         end
 
-        nb2 = Atoms(jj,5) + 1;
+        nb2 = Atoms(jj,6) + 1;
         if nb2 <= Max_peratom_bond
-            Atoms(jj,5) = nb2;
-            Atoms(jj,5+nb2) = ii;
+            Atoms(jj,6) = nb2;
+            Atoms(jj, 6 + nb2) = ii;
         end
     end
 

@@ -1,8 +1,16 @@
 function LDpot = ConstructLDPotential(obj, Atoms, Bonds, Nvec)
 % -------------------------------------------------------------------------
 % ConstructLDPotential
-% - Construct local-density potential parameters and table
-% - Reads settings from obj.domain and obj.pot
+% - Construct local-density potential parameters and table.
+%
+% Crosslink detection is now molID-based (geometry-agnostic): if the network
+% contains more than one unique molID (e.g. bottle-brush with one molID per
+% rod), bonds whose two endpoints share a molID are treated as intra-
+% molecule (rod) bonds and excluded from the Kuhn-segment sum. Otherwise
+% (single-molID networks), every bond contributes. This removes the old
+% hardcoded `Bonds(:,5) == 1` check.
+%
+% Atoms column layout: [ID | molID | X | Y | Z | deg | nbrs...]
 %
 % INPUT:
 %   obj   : network object
@@ -14,9 +22,6 @@ function LDpot = ConstructLDPotential(obj, Atoms, Bonds, Nvec)
 %   LDpot : struct with local-density potential parameters
 % -------------------------------------------------------------------------
 
-    % ---------------------------------------------------------------------
-    % Basic checks
-    % ---------------------------------------------------------------------
     if nargin < 4
         error('ConstructLDPotential: requires obj, Atoms, Bonds, and Nvec.');
     end
@@ -68,14 +73,42 @@ function LDpot = ConstructLDPotential(obj, Atoms, Bonds, Nvec)
 
     % ---------------------------------------------------------------------
     % Derived network quantities
+    %
+    % Crosslink = inter-molecule bond. If the network has multiple molIDs
+    % we treat same-molID bonds as intra-molecule (rod-like) and exclude
+    % them from the Kuhn-segment sum. For single-molID networks every
+    % bond counts.
     % ---------------------------------------------------------------------
-    Total_kuhn_segment = sum(Nvec);
+    mol_ids = Atoms(:, 2);
+    unique_mols = unique(mol_ids(mol_ids > 0));
+    multi_mol = numel(unique_mols) > 1;
 
-    if Total_kuhn_segment <= 0
-        error('ConstructLDPotential: sum(Nvec) must be positive.');
+    if multi_mol && ~isempty(Bonds)
+        mol_i = mol_ids(Bonds(:, 2));
+        mol_j = mol_ids(Bonds(:, 3));
+        crosslink_mask = (mol_i ~= mol_j);
+        Total_kuhn_segment = sum(Nvec(crosslink_mask));
+
+        obj.log.print('   LDPot: %d / %d bonds identified as crosslinks (inter-molecule)\n', ...
+            sum(crosslink_mask), size(Bonds,1));
+    else
+        Total_kuhn_segment = sum(Nvec);
     end
 
-    sig_c = 0.5 * b * sqrt(Total_kuhn_segment / Atom_count);
+    if Total_kuhn_segment <= 0
+        error(['ConstructLDPotential: total Kuhn-segment count is <= 0. ' ...
+               'This usually means no inter-molecule crosslink bonds remain ' ...
+               'after cleanup, or Nvec is zero.']);
+    end
+
+    % Determine rod atom size for bottle-brush geometry
+    sig_r = 0;
+    if strcmpi(obj.architecture.geometry, 'bottle_brush')
+        sig_r = obj.architecture.bottlebrush.sigma_c_rod;
+    end
+
+    % Calculate sig_c
+    sig_c = 0.5 * sqrt(((Total_kuhn_segment / Atom_count) * b^2) + sig_r^2);
 
     atom_area = (xhi - xlo) * (yhi - ylo);
     if atom_area <= 0
@@ -93,7 +126,6 @@ function LDpot = ConstructLDPotential(obj, Atoms, Bonds, Nvec)
     R1 = 0.8 * sig_c;
     rc = 2.0 * sig_c;
 
-    % Density vector and harmonic density potential
     rho_vec = linspace(rho_min, rho_max, N_rho + 1).';
     pot_density = kLD * (rho_vec - rho0).^2;
 
@@ -113,12 +145,8 @@ function LDpot = ConstructLDPotential(obj, Atoms, Bonds, Nvec)
     LDpot.drho        = drho;
     LDpot.pot_density = pot_density;
 
-    % Optional extra bookkeeping
     LDpot.sig_c = sig_c;
 
-    % ---------------------------------------------------------------------
-    % Logging
-    % ---------------------------------------------------------------------
     obj.log.print('   Constructed LD potential with parameters:\n');
     obj.log.print('   Target equilibrium density rho0 = %.4f\n', rho0);
     obj.log.print('   Lower cutoff R1 = %.4f * b\n', R1 / b);

@@ -23,6 +23,10 @@ function [Atoms, LatticeData] = AddAtoms(obj)
         case 'hex_lattice'
             [Atoms, LatticeData] = AddAtomsHex(obj);
 
+        case 'bottle_brush'
+            Atoms = AddAtomsBottleBrush(obj);
+            LatticeData = [];
+
         otherwise
             error('AddAtoms: unknown geometry "%s".', obj.architecture.geometry);
 

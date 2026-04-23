@@ -1,32 +1,37 @@
-function [Atoms, Bonds] = AddBondsBimodal(obj, Atoms, LatticeData)
+function [Atoms, Bonds] = AddBondsBimodal(obj, Atoms, LatticeData, PreBonds)
 % -------------------------------------------------------------------------
 % AddBondsBimodal
 %
 % Bimodal bond-topology generation:
-%   - random      -> bimodal distance-window connector
-%   - hex_lattice -> same algorithm acting on lattice node positions
+%   - random / hex_lattice / bottle_brush all route to the same generalized
+%     bimodal distance-window connector.
+%
+% Atoms column layout:
+%   [ID | molID | X | Y | Z | deg | nbr_1 ... nbr_{Max_peratom_bond}]
+%
+% INPUT:
+%   obj         : network object
+%   Atoms       : atom array
+%   LatticeData : unused (kept for dispatcher symmetry)
+%   PreBonds    : optional pre-existing bonds; seeds adjacency so the long
+%                 and short bond passes don't duplicate rod bonds. When
+%                 non-empty, internal pruning is skipped.
 %
 % OUTPUT:
-%   Bonds : [bondID | id1 | id2 | L0 | type]
-%           type = 1 or 2
+%   Atoms : updated atom array
+%   Bonds : [bondID | atomID_i | atomID_j | L0 | type=0]
+%           NOTE: bond type is LEFT ZERO. The connector uses internal
+%           long/short labels only for its own bookkeeping and clears the
+%           column before returning - AssignMultiType decides real types.
 % -------------------------------------------------------------------------
 
-    geom = lower(obj.architecture.geometry);
-
-    switch geom
-
-        case 'random'
-            [Atoms, Bonds] = connect_bimodal_general(obj, Atoms);
-
-        case 'hex_lattice'
-            [Atoms, Bonds] = connect_bimodal_general(obj, Atoms);
-
-        otherwise
-            error('AddBondsBimodal: unknown geometry "%s".', obj.architecture.geometry);
+    if nargin < 4
+        PreBonds = [];
     end
 
+    [Atoms, Bonds] = connect_bimodal_general(obj, Atoms, PreBonds);
+
     %#ok<NASGU>
-    % LatticeData not explicitly needed in this generalized interpretation.
 
 end
 
@@ -34,7 +39,7 @@ end
 % =========================================================================
 % GENERAL BIMODAL CONNECTOR
 % =========================================================================
-function [Atoms, Bonds] = connect_bimodal_general(obj, Atoms)
+function [Atoms, Bonds] = connect_bimodal_general(obj, Atoms, PreBonds)
 
     natom            = size(Atoms,1);
     Max_bond         = obj.domain.Max_bond;
@@ -53,6 +58,7 @@ function [Atoms, Bonds] = connect_bimodal_general(obj, Atoms)
     epsr         = 1e-9;
 
     isPeriodic = strcmpi(obj.domain.boundary, 'periodic');
+    skip_prune = ~isempty(PreBonds);
 
     b = obj.domain.b;
 
@@ -69,9 +75,6 @@ function [Atoms, Bonds] = connect_bimodal_general(obj, Atoms)
 
     useProb    = strcmpi(bi.height_mode, 'prob');
     useManual  = strcmpi(bi.bin_window_method, 'manual');
-    % 'both' is a legacy alias for 'mixed' (use sigR for BOTH window widths).
-    % Without this, 'both' silently falls to the lam*b*sig branch and produces
-    % a type-2 window ~5x too narrow, breaking double-network bond placement.
     useMixed   = strcmpi(bi.manual_dev_type, 'mixed') || ...
                  strcmpi(bi.manual_dev_type, 'both');
     long_first = bi.long_first;
@@ -171,7 +174,6 @@ function [Atoms, Bonds] = connect_bimodal_general(obj, Atoms)
         N1old = N1;
         R1AVG = 0.5*(r1_upper-r1_lower) + r1_lower;
         N1 = R1AVG/(lam1*b);
-        % Write back so AssignPerBond receives the updated value.
         obj.architecture.strand_typology.bimodal.mean_1 = N1;
         obj.log.print('   Auto N1: adjusted N1 from %.0f to %.0f\n', N1old, N1);
     end
@@ -180,17 +182,27 @@ function [Atoms, Bonds] = connect_bimodal_general(obj, Atoms)
         N2old = N2;
         R2AVG = 0.5*(r2_upper-r2_lower) + r2_lower;
         N2 = 1.4*R2AVG/(lam2*b);
-        % Write back so AssignPerBond receives the updated value.
         obj.architecture.strand_typology.bimodal.mean_2 = N2;
         obj.log.print('   Auto N2: adjusted N2 from %.0f to %.0f\n', N2old, N2);
     end
 
     ids = Atoms(:,1);
-    x   = Atoms(:,2);
-    y   = Atoms(:,3);
+    x   = Atoms(:,3);   % X at col 3
+    y   = Atoms(:,4);   % Y at col 4
 
     % Live per-node adjacency set used by exclude_existing_any.
     adj_set = cell(natom, 1);
+
+    % Seed adjacency from PreBonds so duplicate bonds aren't generated.
+    % Atom IDs in PreBonds equal row indices at this point.
+    if ~isempty(PreBonds)
+        for k = 1:size(PreBonds, 1)
+            r1 = PreBonds(k, 2);
+            r2 = PreBonds(k, 3);
+            adj_set{r1}(end+1) = r2; %#ok<AGROW>
+            adj_set{r2}(end+1) = r1; %#ok<AGROW>
+        end
+    end
 
     if double_network
         avg_nn_spacing = sqrt((xhi-xlo)*(yhi-ylo)/natom);
@@ -227,7 +239,7 @@ function [Atoms, Bonds] = connect_bimodal_general(obj, Atoms)
     deg1 = zeros(natom,1);
     deg2 = zeros(natom,1);
 
-    Btmp = zeros(Max_bond, 5); % [bid r1 r2 L type]
+    Btmp = zeros(Max_bond, 5);   % [bid r1 r2 L internal_label(1/2)]
     nbond = 0;
     countType2 = 0;
 
@@ -331,8 +343,8 @@ function [Atoms, Bonds] = connect_bimodal_general(obj, Atoms)
             deg2(r1) = deg2(r1) + 1;
             deg2(r2) = deg2(r2) + 1;
 
-            adj_set{r1}(end+1) = r2;
-            adj_set{r2}(end+1) = r1;
+            adj_set{r1}(end+1) = r2; %#ok<AGROW>
+            adj_set{r2}(end+1) = r1; %#ok<AGROW>
 
             no_progress = 0;
         end
@@ -408,8 +420,8 @@ function [Atoms, Bonds] = connect_bimodal_general(obj, Atoms)
             deg1(r1) = deg1(r1) + 1;
             deg1(r2) = deg1(r2) + 1;
 
-            adj_set{r1}(end+1) = r2;
-            adj_set{r2}(end+1) = r1;
+            adj_set{r1}(end+1) = r2; %#ok<AGROW>
+            adj_set{r2}(end+1) = r1; %#ok<AGROW>
 
             no_progress = 0;
         end
@@ -492,8 +504,8 @@ function [Atoms, Bonds] = connect_bimodal_general(obj, Atoms)
             degTot(r1) = degTot(r1) + 1;
             degTot(r2) = degTot(r2) + 1;
 
-            adj_set{r1}(end+1) = r2;
-            adj_set{r2}(end+1) = r1;
+            adj_set{r1}(end+1) = r2; %#ok<AGROW>
+            adj_set{r2}(end+1) = r1; %#ok<AGROW>
 
             no_progress = 0;
         end
@@ -599,8 +611,8 @@ function [Atoms, Bonds] = connect_bimodal_general(obj, Atoms)
             degTot(r1) = degTot(r1) + 1;
             degTot(r2) = degTot(r2) + 1;
 
-            adj_set{r1}(end+1) = r2;
-            adj_set{r2}(end+1) = r1;
+            adj_set{r1}(end+1) = r2; %#ok<AGROW>
+            adj_set{r2}(end+1) = r1; %#ok<AGROW>
 
             no_progress = 0;
         end
@@ -608,12 +620,14 @@ function [Atoms, Bonds] = connect_bimodal_general(obj, Atoms)
 
     Btmp = Btmp(1:nbond,:);
 
-    [Atoms, Bonds] = finalize_bimodal_network(Atoms, Btmp, ids, x, y, ...
-        Max_peratom_bond, min_keep, isPeriodic, Lx, Ly);
+    [Atoms, Bonds] = finalize_bimodal_network(Atoms, Btmp, ids, Max_peratom_bond, ...
+        min_keep, isPeriodic, Lx, Ly, skip_prune);
 
-    obj.log.print('   Bimodal/%s: placed %d bonds (%d type1, %d type2)\n', ...
-        lower(obj.architecture.geometry), size(Bonds,1), ...
-        sum(Bonds(:,5)==1), sum(Bonds(:,5)==2));
+    % Bond type column (5) is set to 0: AssignMultiType is authoritative.
+    % The connector's internal long/short label (in Btmp col 5) is discarded
+    % by the finalize helper, which writes col 5 = 0.
+    obj.log.print('   Bimodal/%s: placed %d bonds (types left to AssignMultiType)\n', ...
+        lower(obj.architecture.geometry), size(Bonds,1));
 
 end
 
@@ -668,12 +682,6 @@ function neigh = gather_neighbors(r1, Cells, cx, cy, nx, ny, isPeriodic)
 end
 
 function cand = exclude_existing_any(cand, r1, adj_set)
-% EXCLUDE_EXISTING_ANY
-%   Remove from cand any row index already connected to r1.
-%
-%   adj_set is a natom-element cell array where adj_set{r} contains the
-%   set of row indices bonded to r (any type).  It is maintained live in
-%   the calling loop so this function is O(degree) not O(nbond).
 
     if isempty(cand) || isempty(adj_set{r1})
         return;
@@ -698,39 +706,26 @@ function d = minimum_image(isPeriodic, dx, dy, Lx, Ly)
 end
 
 function isSparse = pick_uniform_sparse_nodes(x, y, f_sparse, r_spacing)
-% PICK_UNIFORM_SPARSE_NODES
-%   Select a spatially uniform random subset of nodes such that every
-%   selected node is at least r_spacing away from every other selected node.
-%
-%   The spacing constraint is HARD: if the domain cannot fit f_sparse*natom
-%   nodes at the requested separation, fewer nodes are returned.  The old
-%   code had a fallback that topped up with randomly-chosen close neighbours,
-%   which defeated the spacing guarantee needed for double-network geometry.
-%
-%   x, y       - node coordinates  (natom x 1)
-%   f_sparse   - target fraction of nodes to select  (e.g. 0.04 for alpha=5)
-%   r_spacing  - minimum centre-to-centre distance between selected nodes
 
     natom          = numel(x);
     Nsparse_target = round(f_sparse * natom);
     isSparse       = false(natom, 1);
 
     idx_all = randperm(natom);
-    picked  = [];                  % row indices of accepted nodes
+    picked  = [];
 
     for k = 1:natom
         i = idx_all(k);
 
         if isempty(picked)
-            picked(end+1) = i;     %#ok<AGROW>
+            picked(end+1) = i; %#ok<AGROW>
             continue;
         end
 
-        % Accept only if far enough from every already-selected node
         dx = x(picked) - x(i);
         dy = y(picked) - y(i);
         if all(sqrt(dx.^2 + dy.^2) >= r_spacing)
-            picked(end+1) = i;     %#ok<AGROW>
+            picked(end+1) = i; %#ok<AGROW>
         end
 
         if numel(picked) >= Nsparse_target
@@ -748,12 +743,15 @@ function isSparse = pick_uniform_sparse_nodes(x, y, f_sparse, r_spacing)
 
 end
 
-function [Atoms, Bonds] = finalize_bimodal_network(Atoms, Btmp, ids, x, y, ...
-    Max_peratom_bond, min_keep, isPeriodic, Lx, Ly)
+function [Atoms, Bonds] = finalize_bimodal_network(Atoms, Btmp, ids, ...
+    Max_peratom_bond, min_keep, isPeriodic, Lx, Ly, skip_prune)
+% New-layout finalize helper. Bond type col (5) is written as 0 regardless
+% of the internal label carried in Btmp: AssignMultiType sets the real type
+% later.
 
     natom = size(Atoms,1);
 
-    if ~isempty(Btmp) && (min_keep > 0)
+    if ~isempty(Btmp) && (min_keep > 0) && ~skip_prune
         changed = true;
         while changed
             deg_tot = zeros(natom,1);
@@ -791,10 +789,12 @@ function [Atoms, Bonds] = finalize_bimodal_network(Atoms, Btmp, ids, x, y, ...
     for k = 1:size(Btmp,1)
         r1 = Btmp(k,2);
         r2 = Btmp(k,3);
-        Bonds(k,:) = [k, ids(r1), ids(r2), Btmp(k,4), Btmp(k,5)];
+        Bonds(k,:) = [k, ids(r1), ids(r2), Btmp(k,4), 0];
     end
 
-    if min_keep > 0
+    % Second pruning pass operates in atom-ID space, iteratively removing
+    % low-degree atoms until converged. Bypassed when skip_prune is true.
+    if (min_keep > 0) && ~skip_prune
         changed = true;
         while changed
             changed = false;
@@ -844,8 +844,8 @@ function [Atoms, Bonds] = finalize_bimodal_network(Atoms, Btmp, ids, x, y, ...
     end
 
     if isempty(Atoms) || isempty(Bonds)
-        Atoms = zeros(0,5);
-        Bonds = zeros(0,5);
+        Atoms = zeros(0, 6 + Max_peratom_bond);
+        Bonds = zeros(0, 5);
         return;
     end
 
@@ -859,33 +859,38 @@ function [Atoms, Bonds] = finalize_bimodal_network(Atoms, Btmp, ids, x, y, ...
     Bonds(tfJ,3) = newIDs(locJ(tfJ));
     Bonds(:,1) = (1:size(Bonds,1)).';
 
+    % Recompute bond lengths under current (possibly renumbered) atom positions
     for k = 1:size(Bonds,1)
         i = Bonds(k,2);
         j = Bonds(k,3);
         Bonds(k,4) = minimum_image(isPeriodic, ...
-            Atoms(j,2)-Atoms(i,2), Atoms(j,3)-Atoms(i,3), Lx, Ly);
+            Atoms(j,3)-Atoms(i,3), Atoms(j,4)-Atoms(i,4), Lx, Ly);
     end
 
-    Atoms(:,5:end) = 0;
+    % Rebuild neighbor lists in the new column layout
+    needed_cols = 6 + Max_peratom_bond;
+    if size(Atoms,2) < needed_cols
+        Atoms(:, size(Atoms,2)+1 : needed_cols) = 0;
+    end
+
+    Atoms(:,6) = 0;
+    Atoms(:,7:6+Max_peratom_bond) = 0;
 
     for k = 1:size(Bonds,1)
         ii = Bonds(k,2);
         jj = Bonds(k,3);
 
-        need_i = 5 + (Atoms(ii,5)+1);
-        need_j = 5 + (Atoms(jj,5)+1);
-        need = max(need_i, need_j);
-
-        curC = size(Atoms,2);
-        if need > curC
-            Atoms(:, curC+1:need) = 0;
+        nb1 = Atoms(ii,6) + 1;
+        if nb1 <= Max_peratom_bond
+            Atoms(ii,6) = nb1;
+            Atoms(ii, 6 + nb1) = jj;
         end
 
-        Atoms(ii,5) = Atoms(ii,5) + 1;
-        Atoms(ii,5+Atoms(ii,5)) = jj;
-
-        Atoms(jj,5) = Atoms(jj,5) + 1;
-        Atoms(jj,5+Atoms(jj,5)) = ii;
+        nb2 = Atoms(jj,6) + 1;
+        if nb2 <= Max_peratom_bond
+            Atoms(jj,6) = nb2;
+            Atoms(jj, 6 + nb2) = ii;
+        end
     end
 
 end

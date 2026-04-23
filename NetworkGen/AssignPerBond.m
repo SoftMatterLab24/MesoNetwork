@@ -1,26 +1,28 @@
 function Nvec = AssignPerBond(obj, Bonds, Atoms)
 % -------------------------------------------------------------------------
 % AssignPerBond
-% - Top-level dispatcher for per-bond Kuhn segment assignment
+% - Top-level dispatcher for per-bond Kuhn segment assignment.
 %
-% LOGIC:
-%   1) If obj.perbond.kuhn.auto == true:
-%         use obj.architecture.strand_typology.mode
-%   2) Else:
-%         use obj.perbond.kuhn.mode
-%
-% This allows mixed cases, e.g.
-%   - mono topology + poly Kuhn assignment
-%   - mono lattice + bimodal Kuhn assignment
+% This version is type-agnostic: every bond is processed by the same
+% distribution implied by obj.perbond.kuhn.mode, regardless of Bonds(:,5).
+% Multi-type per-bond assignment (e.g. different distributions for
+% different bond types) is deferred to a future version.
 %
 % INPUT:
 %   obj   : network object
-%   Bonds : bond array
+%   Bonds : bond array [bondID, id1, id2, L0, type]
 %   Atoms : atom array
 %
 % OUTPUT:
 %   Nvec  : [Nbonds x 1] Kuhn segment count per bond
 % -------------------------------------------------------------------------
+
+    nbonds = size(Bonds, 1);
+
+    if nbonds == 0
+        Nvec = zeros(0, 1);
+        return;
+    end
 
     mode = lower(obj.perbond.kuhn.mode);
 

@@ -4,11 +4,9 @@ function [Atoms, LatticeData] = AddAtomsHex(obj)
 % - Generate a 2D hexagonal (triangular) lattice
 % - No geometric disorder applied here
 %
-% INPUT:
-%   obj : network class object
-%
 % OUTPUT:
-%   Atoms       : atom array
+%   Atoms       : [ID | molID | X | Y | Z | deg | nbr_1 ... nbr_{Max_peratom_bond}]
+%                 All atoms receive molID = 1 (single-molecule default).
 %   LatticeData : struct with idx_map, Nx, Ny
 % -------------------------------------------------------------------------
 
@@ -20,10 +18,8 @@ function [Atoms, LatticeData] = AddAtomsHex(obj)
     Lx = xhi - xlo;
     Ly = yhi - ylo;
 
-    % SetupDomain already stored the absolute min spacing
     a = obj.domain.min_node_sep;
 
-    edgeTol = 0.25 * a;
     dy = a * sqrt(3) / 2;
 
     Ny_est = floor(Ly / dy) + 2;
@@ -66,23 +62,19 @@ function [Atoms, LatticeData] = AddAtomsHex(obj)
         end
     end
 
-    % Trim
     x_all = x_all(1:nat);
     y_all = y_all(1:nat);
 
-    % Fixed boundary nodes
-    isFixed = (x_all <= xlo + edgeTol) | (x_all >= xhi - edgeTol) | ...
-              (y_all <= ylo + edgeTol) | (y_all >= yhi - edgeTol);
+    Max_peratom_bond = obj.peratom.Max_peratom_bond;
+    ncols = 6 + Max_peratom_bond;
 
-    % Keep old lattice atom layout for compatibility
-    % [id x y z type isFixed]
-    Atoms = zeros(nat, 10);
-    Atoms(:,1) = (1:nat).';
-    Atoms(:,2) = x_all;
-    Atoms(:,3) = y_all;
-    Atoms(:,4) = 0.0;
-    Atoms(:,5) = 1;
-    Atoms(:,6) = double(isFixed);
+    Atoms = zeros(nat, ncols);
+    Atoms(:,1) = (1:nat).';   % ID
+    Atoms(:,2) = 1;            % molID (single-molecule default)
+    Atoms(:,3) = x_all;        % X
+    Atoms(:,4) = y_all;        % Y
+    Atoms(:,5) = 0.0;          % Z
+    % col 6 = degree (0), cols 7..6+Max_peratom_bond = neighbors (0)
 
     LatticeData.idx_map = idx_map;
     LatticeData.Nx      = size(idx_map,2);

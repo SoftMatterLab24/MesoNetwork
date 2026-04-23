@@ -1,33 +1,21 @@
 function order = ComputeOrder(obj, Atoms, Bonds)
 % -------------------------------------------------------------------------
 % ComputeOrder
-% - Compute structural order parameters for the generated network
-% - Reads Atoms and Bonds and returns a packed order struct
+% - Compute structural order parameters for the generated network.
 %
-% INPUT:
-%   obj   : network object
-%   Atoms : atom array
-%   Bonds : bond array
-%
-% OUTPUT:
-%   order : struct containing order-parameter results
+% Atoms column layout: [ID | molID | X | Y | Z | deg | nbrs...]
+% X at col 3, Y at col 4.
 % -------------------------------------------------------------------------
 
     %#ok<INUSD>
     order = struct();
 
-    % ---------------------------------------------------------------------
-    % Hexagonal order parameter
-    % ---------------------------------------------------------------------
     [phi6k, phi6_hexatic, phi6_hexagonal] = ComputeHexOrder(Atoms, Bonds);
 
     order.hex.phi6k           = phi6k;
     order.hex.phi6_hexatic    = phi6_hexatic;
     order.hex.phi6_hexagonal  = phi6_hexagonal;
 
-    % ---------------------------------------------------------------------
-    % Logging
-    % ---------------------------------------------------------------------
     obj.log.print('   Computed structural order parameters:\n');
     obj.log.print('   Hexatic order phi6 = %.4f\n', phi6_hexatic);
     obj.log.print('   Hexagonal order phi6 = %.4f\n', phi6_hexagonal);
@@ -36,20 +24,8 @@ end
 
 
 function [phi6k, phi6_hexatic, phi6_hexagonal] = ComputeHexOrder(Atoms, Bonds)
-% -------------------------------------------------------------------------
-% ComputeHexOrder
-% - Compute local and global hexagonal/hexatic order parameters from
-%   network connectivity
-%
-% INPUT:
-%   Atoms : atom array
-%   Bonds : bond array [bondID id1 id2 ...]
-%
-% OUTPUT:
-%   phi6k          : complex local hexatic order parameter per atom
-%   phi6_hexatic   : global hexatic order parameter
-%   phi6_hexagonal : average local hexagonal order magnitude
-% -------------------------------------------------------------------------
+% Compute local and global hexagonal/hexatic order parameters from
+% network connectivity. Uses X/Y at cols 3/4 under the new Atoms layout.
 
     N = size(Atoms,1);
 
@@ -62,9 +38,6 @@ function [phi6k, phi6_hexatic, phi6_hexagonal] = ComputeHexOrder(Atoms, Bonds)
         return;
     end
 
-    % ---------------------------------------------------------------------
-    % Build neighbor list from bond connectivity
-    % ---------------------------------------------------------------------
     neighborList = cell(N,1);
 
     for iB = 1:size(Bonds,1)
@@ -77,9 +50,6 @@ function [phi6k, phi6_hexatic, phi6_hexagonal] = ComputeHexOrder(Atoms, Bonds)
         end
     end
 
-    % ---------------------------------------------------------------------
-    % Compute local hexatic order parameter for each atom
-    % ---------------------------------------------------------------------
     for k = 1:N
 
         neighbors = neighborList{k};
@@ -94,7 +64,7 @@ function [phi6k, phi6_hexatic, phi6_hexagonal] = ComputeHexOrder(Atoms, Bonds)
         angles = zeros(numNeighbors,1);
 
         for j = 1:numNeighbors
-            vec = Atoms(neighbors(j), 2:3) - Atoms(k, 2:3);
+            vec = Atoms(neighbors(j), 3:4) - Atoms(k, 3:4);   % X,Y at cols 3,4
             angles(j) = atan2(vec(2), vec(1));
         end
 
@@ -102,9 +72,6 @@ function [phi6k, phi6_hexatic, phi6_hexagonal] = ComputeHexOrder(Atoms, Bonds)
         phi6norm(k) = abs(phi6k(k));
     end
 
-    % ---------------------------------------------------------------------
-    % Global order parameters
-    % ---------------------------------------------------------------------
     phi6_hexatic   = abs(sum(phi6k) / N);
     phi6_hexagonal = sum(phi6norm) / N;
 

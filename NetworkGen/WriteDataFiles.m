@@ -5,21 +5,18 @@ function WriteDataFiles(obj, Atoms, Bonds, Nvec, LDpot, TypeData)
 % - Write bond table
 % - Optionally write local-density potential table
 %
-% Uses:
-%   obj.flags.isave
-%   obj.flags.ipotential
-%   obj.domain.write_location
-%   obj.log.lammps_data_file
-%   obj.log.bond_table_file
-%   obj.log.pot_file
+% Atoms column layout:
+%   [ID | molID | X | Y | Z | deg | nbrs...]
+%   molID is always present (set by every AddAtoms* routine).
 %
 % INPUTS
-%   obj   : network object
-%   Atoms : atom array
-%   Bonds : bond array [bondID id1 id2 L0 type]
-%   Nvec  : per-bond Kuhn segment counts
-%   LDpot : local density potential struct, or []
-%   TypeData : optional runtime type-label struct for export
+%   obj      : network object
+%   Atoms    : atom array
+%   Bonds    : bond array [bondID | id1 | id2 | L0 | type]
+%   Nvec     : per-bond Kuhn segment counts
+%   LDpot    : local density potential struct, or []
+%   TypeData : runtime type-label struct from AssignMultiType, or []
+%              (atom types). Bond types are already written in Bonds(:,5).
 % -------------------------------------------------------------------------
 
     if nargin < 6
@@ -33,9 +30,6 @@ function WriteDataFiles(obj, Atoms, Bonds, Nvec, LDpot, TypeData)
 
     obj.log.print('   Writing network data files...\n');
 
-    % ---------------------------------------------------------------------
-    % Prepare output directory
-    % ---------------------------------------------------------------------
     outdir = obj.domain.write_location;
     if isempty(outdir)
         outdir = '.';
@@ -45,9 +39,6 @@ function WriteDataFiles(obj, Atoms, Bonds, Nvec, LDpot, TypeData)
         mkdir(outdir);
     end
 
-    % ---------------------------------------------------------------------
-    % Resolve paths from replicate-prepared names
-    % ---------------------------------------------------------------------
     data_path      = fullfile(outdir, obj.log.lammps_data_file);
     bondtable_path = fullfile(outdir, obj.log.bond_table_file);
 
@@ -57,9 +48,6 @@ function WriteDataFiles(obj, Atoms, Bonds, Nvec, LDpot, TypeData)
         potfile_path = '';
     end
 
-    % ---------------------------------------------------------------------
-    % Gather counts and domain info
-    % ---------------------------------------------------------------------
     Atom_count = size(Atoms,1);
     Bond_count = size(Bonds,1);
 
@@ -67,37 +55,54 @@ function WriteDataFiles(obj, Atoms, Bonds, Nvec, LDpot, TypeData)
     ylo = obj.domain.ylo; yhi = obj.domain.yhi;
     zlo = obj.domain.zlo; zhi = obj.domain.zhi;
 
+    % ---------------------------------------------------------------------
+    % Molecule IDs: always at col 2 of Atoms
+    % ---------------------------------------------------------------------
+    if size(Atoms, 2) >= 2
+        mol_id_vec = Atoms(:, 2);
+        mol_id_vec(mol_id_vec == 0) = 1;
+    else
+        mol_id_vec = ones(Atom_count, 1);
+    end
+
+    if numel(mol_id_vec) ~= Atom_count
+        error('WriteDataFiles: molecule ID vector must have length %d.', Atom_count);
+    end
+
+    % ---------------------------------------------------------------------
+    % Atom / bond type vectors
+    % Bond types come directly from Bonds(:,5), which AssignMultiType has
+    % populated by this point (with a safe default of 1 when typing is off).
+    % ---------------------------------------------------------------------
     atom_type_vec = ones(Atom_count, 1);
 
     if ~isempty(TypeData) && isstruct(TypeData) && isfield(TypeData, 'enabled') && TypeData.enabled
         if isfield(TypeData, 'atom_types') && ~isempty(TypeData.atom_types)
             atom_type_vec = TypeData.atom_types(:);
         end
-
-        if isfield(TypeData, 'bond_types') && ~isempty(TypeData.bond_types)
-            bond_type_vec = TypeData.bond_types(:);
-        elseif size(Bonds,2) >= 5 && ~isempty(Bonds)
-            bond_type_vec = Bonds(:,5);
-        else
-            bond_type_vec = ones(Bond_count, 1);
-        end
-
         natype = max(max(atom_type_vec), TypeData.natom_type);
+    else
+        natype = 1;
+    end
+
+    if size(Bonds,2) >= 5 && ~isempty(Bonds)
+        bond_type_vec = Bonds(:,5);
+    else
+        bond_type_vec = ones(Bond_count, 1);
+    end
+
+    if ~isempty(TypeData) && isstruct(TypeData) && isfield(TypeData, 'enabled') && TypeData.enabled
         if isempty(bond_type_vec)
             nbtype = max(1, TypeData.nbond_type);
         else
             nbtype = max(max(bond_type_vec), TypeData.nbond_type);
         end
     else
-        if size(Bonds,2) >= 5 && ~isempty(Bonds)
-            bond_type_vec = Bonds(:,5);
-            nbtype = max(Bonds(:,5));
-        else
-            bond_type_vec = ones(Bond_count, 1);
+        if isempty(bond_type_vec)
             nbtype = 1;
+        else
+            nbtype = max(max(bond_type_vec), 1);
         end
-
-        natype = 1;
     end
 
     if numel(atom_type_vec) ~= Atom_count
@@ -128,13 +133,14 @@ function WriteDataFiles(obj, Atoms, Bonds, Nvec, LDpot, TypeData)
 
     fprintf(fid, 'Atoms #bpm/sphere\n\n');
     % atomID molID atomType diameter density x y z
+    %   coords at cols 3 (x), 4 (y), 5 (z) under new layout
     for i = 1:Atom_count
-        fprintf(fid, '%d 1 %d 1 1 %.16g %.16g %.16g\n', ...
-            Atoms(i,1), atom_type_vec(i), Atoms(i,2), Atoms(i,3), Atoms(i,4));
+        fprintf(fid, '%d %d %d 1 1 %.16g %.16g %.16g\n', ...
+            Atoms(i,1), mol_id_vec(i), atom_type_vec(i), ...
+            Atoms(i,3), Atoms(i,4), Atoms(i,5));
     end
 
     fprintf(fid, '\nBonds\n\n');
-    % bondID bondType atom1 atom2
     for i = 1:Bond_count
         btype = bond_type_vec(i);
         fprintf(fid, '%d %d %d %d\n', Bonds(i,1), btype, Bonds(i,2), Bonds(i,3));

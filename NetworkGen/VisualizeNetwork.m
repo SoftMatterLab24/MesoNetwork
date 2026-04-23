@@ -1,16 +1,10 @@
 function VisualizeNetwork(obj, Atoms, Bonds, Nvec)
 % -------------------------------------------------------------------------
 % VisualizeNetwork
-% - Visualize generated network and optional distributions
+% - Visualize generated network and optional distributions.
 %
-% INPUT:
-%   obj   : network object
-%   Atoms : atom array
-%   Bonds : bond array [bondID id1 id2 L0 type]
-%   Nvec  : per-bond Kuhn segment counts
-%
-% OUTPUT:
-%   none
+% Atoms column layout: [ID | molID | X | Y | Z | deg | nbrs...]
+% X at col 3, Y at col 4.
 % -------------------------------------------------------------------------
 
     if ~obj.flags.iplot
@@ -40,7 +34,7 @@ function VisualizeNetwork(obj, Atoms, Bonds, Nvec)
     % ---------------------------------------------------------------------
     figure; hold on;
 
-    scatter(Atoms(:,2), Atoms(:,3), 8, 'k', 'filled');
+    scatter(Atoms(:,3), Atoms(:,4), 8, 'k', 'filled');
 
     for k = 1:Total_bond
         if Bonds(k,1) == 0
@@ -55,12 +49,12 @@ function VisualizeNetwork(obj, Atoms, Bonds, Nvec)
         end
 
         if strcmp(mode, 'bimodal') && size(Bonds,2) >= 5 && Bonds(k,5) ~= 1
-            plot([Atoms(i1,2) Atoms(i2,2)], ...
-                 [Atoms(i1,3) Atoms(i2,3)], ...
+            plot([Atoms(i1,3) Atoms(i2,3)], ...
+                 [Atoms(i1,4) Atoms(i2,4)], ...
                  'r-', 'LineWidth', 1.5);
         else
-            plot([Atoms(i1,2) Atoms(i2,2)], ...
-                 [Atoms(i1,3) Atoms(i2,3)], ...
+            plot([Atoms(i1,3) Atoms(i2,3)], ...
+                 [Atoms(i1,4) Atoms(i2,4)], ...
                  'k-');
         end
     end
@@ -80,7 +74,6 @@ function VisualizeNetwork(obj, Atoms, Bonds, Nvec)
 
     if any(strcmp(mode, {'poly', 'polydisperse'}))
 
-        % --- Kuhn distribution ---
         nbinsN = max(10, min(80, ceil(sqrt(numel(Nvec)))));
         figure; hold on;
         histogram(Nvec, nbinsN, ...
@@ -93,7 +86,6 @@ function VisualizeNetwork(obj, Atoms, Bonds, Nvec)
         set(gca, 'FontSize', 14, 'LineWidth', 1.5);
         hold off;
 
-        % --- Bond length distribution ---
         figure; hold on;
         histogram(Bonds(:,4), 60, ...
             'FaceColor', [0.1 0.1 0.9], ...
@@ -106,7 +98,6 @@ function VisualizeNetwork(obj, Atoms, Bonds, Nvec)
         set(gca, 'FontSize', 14, 'LineWidth', 1.5);
         hold off;
 
-        % --- Prestretch distribution ---
         lamvec = (Bonds(:,4)) ./ (Nvec * b);
 
         dlam = 0.01;
@@ -139,7 +130,6 @@ function VisualizeNetwork(obj, Atoms, Bonds, Nvec)
             'Location', 'best');
         hold off;
 
-        % --- Joint histogram N vs prestretch ---
         figure; hold on;
 
         nbinsN3D = 40;
@@ -175,7 +165,6 @@ function VisualizeNetwork(obj, Atoms, Bonds, Nvec)
             type1 = true(size(Bonds,1),1);
         end
 
-        % --- Kuhn distribution ---
         nbins = max(10, min(80, ceil(sqrt(numel(Nvec)))));
         figure; hold on;
         histogram(Nvec(type1), nbins, ...
@@ -192,7 +181,6 @@ function VisualizeNetwork(obj, Atoms, Bonds, Nvec)
         set(gca, 'FontSize', 14, 'LineWidth', 1.5);
         hold off;
 
-        % --- Bond length distribution ---
         figure; hold on;
         histogram(Bonds(type1,4), 50, ...
             'FaceColor', [0.2 0.2 0.2], ...
@@ -209,7 +197,6 @@ function VisualizeNetwork(obj, Atoms, Bonds, Nvec)
         set(gca, 'FontSize', 14, 'LineWidth', 1.5);
         hold off;
 
-        % --- Prestretch distribution ---
         lamvec1 = (Bonds(type1,4)) ./ (Nvec(type1) * b);
         lamvec2 = (Bonds(~type1,4)) ./ (Nvec(~type1) * b);
 

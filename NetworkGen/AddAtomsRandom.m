@@ -5,7 +5,8 @@ function [Atoms] = AddAtomsRandom(obj)
 % - Reads all needed parameters from obj.domain
 %
 % OUTPUT:
-%   Atoms : [ ID | X | Y | Z | ... ]
+%   Atoms : [ID | molID | X | Y | Z | deg | nbr_1 ... nbr_{Max_peratom_bond}]
+%           All atoms receive molID = 1 (single-molecule default).
 % -------------------------------------------------------------------------
 
     % --------- Unpack domain ---------
@@ -18,6 +19,9 @@ function [Atoms] = AddAtomsRandom(obj)
     node_scatter_max_tries    = obj.domain.node_scatter_max_tries;
     max_tries_per_node_sample = obj.domain.max_tries_per_node_sample;
     min_node_sep2             = obj.domain.min_node_sep2;
+
+    Max_peratom_bond = obj.peratom.Max_peratom_bond;
+    ncols = 6 + Max_peratom_bond;   % ID, molID, X, Y, Z, deg, nbrs
 
     dmin = sqrt(min_node_sep2);
 
@@ -32,8 +36,7 @@ function [Atoms] = AddAtomsRandom(obj)
     gridHeads = zeros(ny, nx, 'int32');
     nextIdx   = zeros(Max_atom, 1, 'int32');
 
-    % Keep old random-network atom layout for compatibility
-    Atoms  = zeros(Max_atom, 10);
+    Atoms  = zeros(Max_atom, ncols);
     N_atom = 0;
 
     % --------- Helpers ---------
@@ -77,8 +80,8 @@ function [Atoms] = AddAtomsRandom(obj)
                 k = head;
 
                 while k ~= 0
-                    dx = xi - Atoms(k,2);
-                    dy = yi - Atoms(k,3);
+                    dx = xi - Atoms(k,3);   % X now at col 3
+                    dy = yi - Atoms(k,4);   % Y now at col 4
 
                     if (dx*dx + dy*dy) < min_node_sep2
                         ok = false;
@@ -92,7 +95,7 @@ function [Atoms] = AddAtomsRandom(obj)
     end
 
     function insert_into_grid(idx)
-        [ci, cj] = coord2cell(Atoms(idx,2), Atoms(idx,3));
+        [ci, cj] = coord2cell(Atoms(idx,3), Atoms(idx,4));
         head = gridHeads(cj, ci);
         nextIdx(idx) = head;
         gridHeads(cj, ci) = int32(idx);
@@ -130,10 +133,12 @@ function [Atoms] = AddAtomsRandom(obj)
 
         N_atom = N_atom + 1;
 
-        Atoms(N_atom,1) = N_atom;
-        Atoms(N_atom,2) = xi;
-        Atoms(N_atom,3) = yi;
-        Atoms(N_atom,4) = zi;
+        Atoms(N_atom, 1) = N_atom;  % ID
+        Atoms(N_atom, 2) = 1;       % molID (single-molecule default)
+        Atoms(N_atom, 3) = xi;      % X
+        Atoms(N_atom, 4) = yi;      % Y
+        Atoms(N_atom, 5) = zi;      % Z
+        % col 6 = degree (0), cols 7..6+Max_peratom_bond = neighbors (0)
 
         insert_into_grid(N_atom);
 

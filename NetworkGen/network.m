@@ -2,8 +2,6 @@ classdef network < handle
 
 properties
 
-    % Define properites and set default parameters
-
     %%% replicate count
     Nreplicates = 1;
 
@@ -97,7 +95,7 @@ properties
         'bridge_max_bonds',     0, ...
         'bridge_min_spacing',   0 ...
     );
-    
+
     %%% Potential
     pot = struct(...
         'k_LD',                 0.414, ...
@@ -113,9 +111,8 @@ end
 
 methods
 
-    % Explicitly initialize subclass objects in the constructor
     function obj = network()
-        warning off backtrace % Suppress stack trace
+        warning off backtrace
         obj.architecture = architecture();
         obj.perbond = bondstyle();
         obj.log = networklog();
@@ -123,99 +120,89 @@ methods
 
     function [obj] = generateNetwork(obj)
 
-        %%% Loop over replicates
-        for ii= 1:obj.Nreplicates %Nreps
+        for ii = 1:obj.Nreplicates
 
             % ---------------------------------------------------------
             % 1. Prepare replicate-specific information
             % ---------------------------------------------------------
             localPrepareReplicate(obj, ii, obj.Nreplicates);
 
-            obj.log.setReplicate(ii); % Set current replicate in log for tracking
+            obj.log.setReplicate(ii);
 
             % ---------------------------------------------------------
             % 2. Construct domain
             % ---------------------------------------------------------
             SetupDomain(obj);
             syncKuhnAssignmentFromTopology(obj);
-            % New version of SetupDomain should read from obj.domain, obj.arch, ...
-            
-            % ---------------------------------------------------------
-            % 3. Add atoms
-            % ---------------------------------------------------------
-            [Atoms, LatticeData] = AddAtoms(obj);
-            % Decides internally to do random or hex based on geometry flag
-            % ---------------------------------------------------------
-            % 4. Assign per/atom
-            % ---------------------------------------------------------
-            %Atoms = AssignPerAtom(obj, Atoms);
-            % AssignPerAtom should read per-atom settings (if any) from obj
-           
 
             % ---------------------------------------------------------
-            % 5. Add bonds
+            % 3. Add atoms   (Atoms has molID at col 2 from every path)
+            % ---------------------------------------------------------
+            [Atoms, LatticeData] = AddAtoms(obj);
+
+            % ---------------------------------------------------------
+            % 4. Add bonds   (all Bonds(:,5) = 0 at this point)
             % ---------------------------------------------------------
             [Atoms, Bonds] = AddBonds(obj, Atoms, LatticeData);
             syncKuhnAssignmentFromTopology(obj);
 
             % ---------------------------------------------------------
-            % 6. Assign per/bond
+            % 5. Add heterogeneities  (voids + hex-only disorders)
+            %    Nvec not yet assigned; pass []. Downstream routines
+            %    already gate on ~isempty(Nvec).
             % ---------------------------------------------------------
-            Nvec = AssignPerBond(obj, Bonds, Atoms);
-            % AssignPerBond should read obj.perbond.* settings and assign
-
-            % ---------------------------------------------------------
-            % 7. Add heterogeneities (voids, geometric disorder, topo disorder)
-            % ---------------------------------------------------------
+            Nvec = [];
             [Atoms, Bonds, Nvec] = AddHeterogeneities(obj, Atoms, Bonds, Nvec);
-            % Dispatcher: calls AddDefects (any geometry),
-            % ApplyGeometricDisorder and ApplyTopologicalDisorder (hex_lattice only)
 
             % ---------------------------------------------------------
-            % 8. Clean-up network
+            % 6. Clean up network  (drops disconnected fragments, etc.)
             % ---------------------------------------------------------
             [Atoms, Bonds, Nvec] = CleanupNetwork(obj, Atoms, Bonds, Nvec);
-            % CleanupNetwork can prune isolated nodes, rebuild connectivity,
-            % update Nvec, etc.
 
             % ---------------------------------------------------------
-            % 9. Assign exported multi-type labels if requested
+            % 7. Assign exported atom/bond types
+            %    Writes Bonds(:,5) directly; returns TypeData for atom
+            %    types and bookkeeping. Safe default Bonds(:,5) = 1 when
+            %    typing is disabled.
             % ---------------------------------------------------------
-            TypeData = AssignMultiType(obj, Atoms, Bonds);
+            [Bonds, TypeData] = AssignMultiType(obj, Atoms, Bonds);
 
             % ---------------------------------------------------------
-            % 10. Construct local density potential
+            % 8. Assign per-bond Kuhn segments (type-agnostic)
+            % ---------------------------------------------------------
+            Nvec = AssignPerBond(obj, Bonds, Atoms);
+
+            % ---------------------------------------------------------
+            % 9. Construct local density potential
             % ---------------------------------------------------------
             LDpot = ConstructLDPotential(obj, Atoms, Bonds, Nvec);
 
             % ---------------------------------------------------------
-            % 11. Scale domain if needed
+            % 10. Scale domain if needed
             % ---------------------------------------------------------
             [Atoms, Bonds] = ScaleDomain(obj, Atoms, Bonds);
-            
-            % ---------------------------------------------------------
-            % 12. Show visualization and statistics
-            % ---------------------------------------------------------
-            VisualizeNetwork(obj, Atoms, Bonds, Nvec);
-            % VisualizeNetwork should check obj.flags.iplot internally
 
             % ---------------------------------------------------------
-            % 13. Computes
+            % 11. Show visualization and statistics
+            % ---------------------------------------------------------
+            VisualizeNetwork(obj, Atoms, Bonds, Nvec);
+
+            % ---------------------------------------------------------
+            % 12. Computes
             % ---------------------------------------------------------
             order = ComputeOrder(obj, Atoms, Bonds);
 
             % ---------------------------------------------------------
-            % 14. Write data files
+            % 13. Write data files
             % ---------------------------------------------------------
             WriteDataFiles(obj, Atoms, Bonds, Nvec, LDpot, TypeData);
 
             % ---------------------------------------------------------
-            % 15. Write and clear logs
+            % 14. Write and clear logs
             % ---------------------------------------------------------
             outdir = obj.domain.write_location;
             obj.log.recordNetworkStats(Atoms, Bonds, Nvec, obj, LDpot, order);
-            % Collects statistics across arrays and stores in log object for this replicate
-            
+
             obj.log.writeLogs( fullfile(outdir, obj.log.console_log_file), ...
                    fullfile(outdir, obj.log.network_log_file), obj );
             obj.log.clear();

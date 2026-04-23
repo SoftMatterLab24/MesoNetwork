@@ -7,10 +7,10 @@ net.Nreplicates = 1;
 
 %% ---- Domain ----
 net.domain.b                 = 1.6;
-net.domain.Lx                = 150*3;
-net.domain.Ly                = 150*3;
+net.domain.Lx                = 150*1;
+net.domain.Ly                = 150*1;
 net.domain.scale             = 1;
-net.domain.boundary          = 'fixed';
+net.domain.boundary          = 'periodic';
 net.domain.write_location    = './networks';
 net.domain.lammps_data_file  = 'PolyNetwork';
 net.domain.lammps_viz_file   = 'PolyVisual';
@@ -18,9 +18,10 @@ net.domain.smp_number        = 1;
 net.domain.seed              = 1852;
 
 %% ---- Architecture ----
-net.architecture.geometry           = 'random';
-net.architecture.rho_atom           = 0.0078;
-net.peratom.Max_peratom_bond        = 6;
+net.architecture.geometry           = 'bottle_brush';
+net.architecture.bottlebrush.rod_collision_multiplier = 0.2;
+net.peratom.Max_peratom_bond        = 4;
+
 
 %% ---- Strand typology ----
 net.architecture.strand_typology.mode = 'poly';
@@ -32,32 +33,20 @@ net.architecture.strand_typology.poly.rounding       = 'round';
 net.architecture.strand_typology.poly.align_to_length = 'none';
 
 net.architecture.spacing_multiplier_mode = 'fixed';
-net.architecture.spacing_multiplier = 1.87;
+net.architecture.spacing_multiplier = 1.75;
 
 %% ---- Perbond ----
 net.perbond.kuhn.auto = true;
 
 %% ---- Multi-type (optional) ----
 net.architecture.types.enabled    = true;
-net.architecture.types.natom_type = 3;
+%net.architecture.types.natom_type = 1;
 net.architecture.types.nbond_type = 2;
-net.architecture.types.atype_mode = 'frac';
-net.architecture.types.btype_mode = 'frac';
-net.architecture.types.atom_frac  = [0.50 0.20 0.30];
+net.architecture.types.btype_sel_method = 'by_molid';
+%net.architecture.types.atype_mode = 'frac';
+%net.architecture.types.btype_mode = 'frac';
+%net.architecture.types.atom_frac  = [0.50 0.20 0.30];
 net.architecture.types.bond_frac  = [0.70 0.30];
-% connectivity rows are [atomTypeA atomTypeB bondType allowed]
-% unspecified combinations default to allowed
-net.architecture.types.connectivity = [ ...
-    1 1 1 1; ...
-    2 2 1 1; ...
-    3 3 1 1; ...
-    1 2 2 1; ...
-    1 2 1 0;  ...
-    1 3 1 0;  ...
-    1 3 2 1;  ...
-    2 3 1 0;  ...
-    2 3 2 1;  ...
-];
 
 %% ---- Defects ----
 net.defect.density_mode       = 'area_frac';
@@ -101,7 +90,7 @@ net.flags.ilog       = true;
 net.flags.savemode   = true;
 net.flags.imanualseed = true;
 net.flags.idefect    = false;
-net.flags.ipotential = true;
+net.flags.ipotential = false;
 net.flags.idumpsettings = true;
 net.flags.iversbose_settings = true;
 

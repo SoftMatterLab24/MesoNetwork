@@ -1,22 +1,18 @@
 function Nvec = AssignPerBondBimodal(obj, Bonds, Atoms)
 % -------------------------------------------------------------------------
 % AssignPerBondBimodal
-% - Assign Kuhn segment numbers to bonds in a bimodal manner
+% - Assign Kuhn segment numbers to bonds in a bimodal manner.
 %
-% Supported modes:
-%   obj.perbond.kuhn.bimodal.method
-%       'single'
-%       'geom'
-%       'gaussian'
+% Per the type-agnostic rule for AssignPerBond, the bond-type column is
+% IGNORED. Bonds are split into two groups by median length:
+%       shorter half -> group 1 (target mean N1)
+%       longer half  -> group 2 (target mean N2)
 %
-% Uses:
-%   obj.perbond.kuhn.bimodal.*
-%
-% Bond types:
-%   If Bonds has 5th column, use Bonds(:,5) as type labels.
-%   If not, create a fallback split by bond length:
-%       shorter half -> type 1
-%       longer half  -> type 2
+% Supported methods (obj.perbond.kuhn.bimodal.method):
+%       'single'    -> constant N1 for group 1, N2 for group 2
+%       'geom'      -> N ~ (L/b)^2 per bond, rounded
+%       'gaussian'  -> typed Gaussian around N1 / N2 with length-sorted
+%                      placement within each group
 %
 % OUTPUT:
 %   Nvec : [Nbonds x 1]
@@ -29,18 +25,15 @@ function Nvec = AssignPerBondBimodal(obj, Bonds, Atoms)
     if nbonds == 0
         return;
     end
-    obj.perbond.kuhn.bimodal = obj.architecture.strand_typology.bimodal; %% DELETE THIS WHEN COPYING WORKS
+
     bd = obj.perbond.kuhn.bimodal;
     b  = obj.domain.b;
 
     Lvec = Bonds(:,4);
 
-    % Determine type vector
-    if size(Bonds,2) >= 5
-        type = Bonds(:,5);
-    else
-        % fallback: classify by median length
-        type = ones(nbonds,1);
+    % Length-based split (bond-type column ignored by design)
+    type = ones(nbonds,1);
+    if nbonds > 1
         Lmid = median(Lvec);
         type(Lvec > Lmid) = 2;
     end
@@ -74,13 +67,7 @@ function Nvec = AssignPerBondBimodal(obj, Bonds, Atoms)
     switch mode
 
         case 'geom'
-            % N ~ (L/b)^2 with rounding policy
             raw = (Lvec ./ max(b,eps)).^2;
-
-            switch lower(bd.method) %#ok<FXSET>
-                otherwise
-                    % rounding belongs conceptually to poly, but allow reuse
-            end
 
             if isfield(bd,'rounding') && ~isempty(bd.rounding)
                 switch lower(bd.rounding)
@@ -101,7 +88,6 @@ function Nvec = AssignPerBondBimodal(obj, Bonds, Atoms)
             end
 
         case 'gaussian'
-            % typed Gaussian around N1/N2
             is_manual = false;
             if isfield(bd,'bin_window_method') && ~isempty(bd.bin_window_method)
                 is_manual = strcmpi(bd.bin_window_method,'manual');
@@ -180,7 +166,7 @@ function Nvec = AssignPerBondBimodal(obj, Bonds, Atoms)
             error('AssignPerBondBimodal: unknown bimodal.method "%s".', bd.method);
     end
 
-    obj.log.print('   Kuhn assignment mode: bimodal (%s)\n', mode);
+    obj.log.print('   Kuhn assignment mode: bimodal (%s, length-split)\n', mode);
     obj.log.print('   Kuhn-to-crosslinker ratio %0.4f\n', sum(Nvec)/max(natoms,1));
     obj.log.print('   Average chain length %0.4f\n', sum(Nvec)/max(length(Nvec),1));
 

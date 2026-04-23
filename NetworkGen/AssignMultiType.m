@@ -1,40 +1,55 @@
-function TypeData = AssignMultiType(obj, Atoms, Bonds)
+function [Bonds, TypeData] = AssignMultiType(obj, Atoms, Bonds)
 % -------------------------------------------------------------------------
 % AssignMultiType
-%   Assign exported atom and bond types after CleanupNetwork.
+%   Assign exported atom and bond types after CleanupNetwork, and write
+%   the assigned bond type into Bonds(:,5) directly so downstream stages
+%   (ConstructLDPotential, WriteDataFiles) can read it without consulting
+%   TypeData.
 %
-%   This stage does not mutate Atoms or Bonds. It computes runtime labels
-%   used by WriteDataFiles so the core generation pipeline can keep using
-%   its existing internal matrix layout.
+%   New: Bond-type selection method 'by_molid' sets Bonds(:,5) from
+%   endpoint molID comparisons (Atoms(:,2)):
+%       same molID      -> obj.architecture.types.btype_same_mol  (default 2)
+%       different molID -> obj.architecture.types.btype_diff_mol  (default 1)
+%   A warning is emitted if the network contains only a single molID;
+%   in that case all bonds fall into the same-mol branch.
 %
-%   Connectivity rules are supplied as:
+%   Connectivity rules still supported:
 %       obj.architecture.types.connectivity = [type_i, type_j, bond_type, allowed]
-%
-%   Unspecified triples default to allowed. Atom types are assigned on the
-%   cleaned graph using the atom-pair projection of those rules, and bond
-%   types are then assigned to each surviving bond under the full
-%   (atom-type, bond-type) connectivity table. When requested atom or bond
-%   fractions cannot be achieved exactly while preserving the rules, the
-%   closest valid assignment found is used and logged.
+%   When used with btype_sel_method='by_molid', the solver is bypassed for
+%   bond-type assignment (molID rule is authoritative), but atom-type
+%   assignment still respects pair_allowed.
 %
 % INPUT
 %   obj   : network object
-%   Atoms : cleaned atom array
-%   Bonds : cleaned bond array
+%   Atoms : cleaned atom array (layout: ID | molID | X | Y | Z | deg | nbrs)
+%   Bonds : cleaned bond array [bondID | i | j | L0 | type]
 %
 % OUTPUT
-%   TypeData : struct with atom_types, bond_types, and summary counts
+%   Bonds    : same dims as input; col 5 now holds the final bond type
+%              (filled with 1 by default when typing is disabled)
+%   TypeData : struct of labels/counters, or [] when typing is disabled
 % -------------------------------------------------------------------------
 
     TypeData = [];
 
+    nbond = size(Bonds, 1);
+
     cfg = obj.architecture.types;
+
+    % ---------------------------------------------------------------
+    % Typing disabled: ensure Bonds(:,5) is set to a valid default
+    % ---------------------------------------------------------------
     if ~isfield(cfg, 'enabled') || ~logical(cfg.enabled)
+        if nbond > 0
+            if size(Bonds, 2) < 5
+                Bonds(:, end+1:5) = 0;
+            end
+            Bonds(:, 5) = 1;     % safe default so LAMMPS reads a valid bond type
+        end
         return;
     end
 
     natom = size(Atoms, 1);
-    nbond = size(Bonds, 1);
 
     natom_type = max(1, round(cfg.natom_type));
     nbond_type = max(1, round(cfg.nbond_type));
@@ -72,6 +87,9 @@ function TypeData = AssignMultiType(obj, Atoms, Bonds)
 
     has_rule_restrictions = ~all(bond_allowed(:));
 
+    % ---------------------------------------------------------------
+    % Atom-type assignment
+    % ---------------------------------------------------------------
     if natom == 0
         obj.log.print('   [AssignMultiType] No atoms remain after cleanup; nothing to label\n');
         return;
@@ -92,21 +110,47 @@ function TypeData = AssignMultiType(obj, Atoms, Bonds)
     TypeData.atom_realized_count = type_counts(TypeData.atom_types, natom_type);
     TypeData.atom_exact = isequal(TypeData.atom_realized_count, atom_target);
 
+    % ---------------------------------------------------------------
+    % Bond-type assignment
+    % ---------------------------------------------------------------
+    btype_method = 'random';
+    if isfield(cfg, 'btype_sel_method') && ~isempty(cfg.btype_sel_method)
+        btype_method = lower(cfg.btype_sel_method);
+    end
+
     if nbond == 0
         bond_types = zeros(0, 1);
         bond_realized = zeros(1, nbond_type);
+
     elseif nbond_type == 1
         bond_types = ones(nbond, 1);
         bond_realized = type_counts(bond_types, nbond_type);
+
+    elseif strcmpi(btype_method, 'by_molid')
+        % molID-based bond typing: authoritative, bypasses fractional solver
+        [bond_types, bond_realized, n_invalid] = assign_bond_types_by_molid( ...
+            Atoms, Bonds, nbond_type, cfg, obj);
+
+        if n_invalid > 0
+            error(['AssignMultiType: %d bonds have an endpoint molID that ' ...
+                   'makes by_molid assignment impossible (check btype_same_mol ' ...
+                   'and btype_diff_mol fall within 1..nbond_type).'], n_invalid);
+        end
+
+        if has_rule_restrictions
+            obj.log.print(['   [AssignMultiType] btype_sel_method="by_molid" ignores ' ...
+                           'connectivity rules for bond-type assignment\n']);
+        end
+
     elseif ~has_rule_restrictions
-        if isfield(cfg, 'btype_sel_method') && ~isempty(cfg.btype_sel_method) && ...
-                ~strcmpi(cfg.btype_sel_method, 'random')
+        if ~strcmpi(btype_method, 'random')
             obj.log.print(['   [AssignMultiType] Unsupported btype_sel_method="%s"; ' ...
-                           'using random assignment\n'], cfg.btype_sel_method);
+                           'using random assignment\n'], btype_method);
         end
 
         bond_types = random_labels_from_counts(bond_target);
         bond_realized = type_counts(bond_types, nbond_type);
+
     else
         [bond_types, bond_realized, n_unassigned_bonds, ~] = assign_bond_types_for_atoms( ...
             Bonds(:, 2), Bonds(:, 3), atom_types, bond_target, bond_allowed);
@@ -121,6 +165,19 @@ function TypeData = AssignMultiType(obj, Atoms, Bonds)
     TypeData.bond_realized_count = bond_realized;
     TypeData.bond_exact = isequal(TypeData.bond_realized_count, bond_target);
 
+    % ---------------------------------------------------------------
+    % Write bond types back into Bonds(:,5) so downstream reads see them
+    % ---------------------------------------------------------------
+    if nbond > 0
+        if size(Bonds, 2) < 5
+            Bonds(:, end+1:5) = 0;
+        end
+        Bonds(:, 5) = bond_types(:);
+    end
+
+    % ---------------------------------------------------------------
+    % Logging
+    % ---------------------------------------------------------------
     obj.log.print('   [AssignMultiType] Atom target counts:  %s\n', mat2str(atom_target));
     obj.log.print('   [AssignMultiType] Atom realized counts:%s\n', mat2str(TypeData.atom_realized_count));
 
@@ -129,10 +186,12 @@ function TypeData = AssignMultiType(obj, Atoms, Bonds)
                        'the connectivity rules; using closest valid assignment\n']);
     end
 
-    obj.log.print('   [AssignMultiType] Bond target counts:  %s\n', mat2str(bond_target));
+    if ~strcmpi(btype_method, 'by_molid')
+        obj.log.print('   [AssignMultiType] Bond target counts:  %s\n', mat2str(bond_target));
+    end
     obj.log.print('   [AssignMultiType] Bond realized counts:%s\n', mat2str(TypeData.bond_realized_count));
 
-    if ~TypeData.bond_exact
+    if ~TypeData.bond_exact && ~strcmpi(btype_method, 'by_molid')
         obj.log.print(['   [AssignMultiType] Exact bond targets were infeasible under ' ...
                        'the connectivity rules; using closest valid assignment\n']);
     end
@@ -140,6 +199,54 @@ function TypeData = AssignMultiType(obj, Atoms, Bonds)
     record_type_stats(obj, TypeData);
 end
 
+
+% =========================================================================
+% molID-based bond typing (new)
+% =========================================================================
+function [bond_types, realized, n_invalid] = assign_bond_types_by_molid( ...
+    Atoms, Bonds, nbond_type, cfg, obj)
+
+    nbond = size(Bonds, 1);
+
+    btype_same = 2;
+    btype_diff = 1;
+    if isfield(cfg, 'btype_same_mol') && ~isempty(cfg.btype_same_mol)
+        btype_same = round(cfg.btype_same_mol);
+    end
+    if isfield(cfg, 'btype_diff_mol') && ~isempty(cfg.btype_diff_mol)
+        btype_diff = round(cfg.btype_diff_mol);
+    end
+
+    mol_ids = Atoms(:, 2);
+    unique_mols = unique(mol_ids);
+    unique_mols = unique_mols(unique_mols > 0);
+
+    if numel(unique_mols) <= 1
+        obj.log.print(['   [AssignMultiType] Warning: network has <=1 unique molecule ' ...
+                       'ID; btype_sel_method="by_molid" will label every bond with ' ...
+                       'btype_same_mol=%d. Consider setting btype_sel_method="random" ' ...
+                       'or disabling obj.architecture.types.enabled for this case.\n'], ...
+                       btype_same);
+    end
+
+    mol_i = mol_ids(Bonds(:, 2));
+    mol_j = mol_ids(Bonds(:, 3));
+
+    bond_types = zeros(nbond, 1);
+    same_mask  = (mol_i == mol_j);
+
+    bond_types(same_mask)  = btype_same;
+    bond_types(~same_mask) = btype_diff;
+
+    n_invalid = sum(bond_types < 1 | bond_types > nbond_type);
+
+    realized = type_counts(bond_types, nbond_type);
+end
+
+
+% =========================================================================
+% Everything below this line is unchanged from the original implementation
+% =========================================================================
 
 function target_counts = resolve_target_counts(total_count, ntypes, mode, count_values, frac_values)
 

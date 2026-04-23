@@ -3,7 +3,7 @@ classdef architecture
 properties
 
     %%% Architecture
-    geometry = 'random'                     % 'random', 'hex_lattice'
+    geometry = 'random'                     % 'random', 'hex_lattice', 'bottle_brush'
     strand_typology = assignmentmode();
     types = struct(...
         'enabled',              false, ...
@@ -16,8 +16,10 @@ properties
         'atom_frac',            1, ...
         'bond_frac',            1, ...
         'connectivity',         [ ], ...
-        'atype_sel_method',     'random', ... 
-        'btype_sel_method',     'random' ... 
+        'atype_sel_method',     'random', ...
+        'btype_sel_method',     'random', ...
+        'btype_same_mol',       2, ...    % bond type for endpoints sharing a molecule ID (btype_sel_method='by_molid')
+        'btype_diff_mol',       1 ...     % bond type for endpoints with different molecule IDs
     );
     lattice_spacing =           6;
     spacing_multiplier_mode =   'auto';
@@ -28,6 +30,14 @@ properties
     lattice_min_degree_keep =   5;
 
     rho_atom =                  [];
+
+    %%% Bottle-brush architecture
+    bottlebrush = struct(...
+        'Nr',                   10, ...     % atoms per rod
+        'sigma_r',              1.0, ...    % rod atom separation distance
+        'sigma_c_rod',          1.0, ...    % rod atom size (for LD potential)
+        'rod_collision_multiplier', 2.0 ... % rod center separation = multiplier * sigma_r
+    );
 
 end
 

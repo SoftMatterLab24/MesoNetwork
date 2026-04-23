@@ -1,20 +1,15 @@
 function [Atoms, Bonds] = ScaleDomain(obj, Atoms, Bonds)
 % -------------------------------------------------------------------------
 % ScaleDomain
-% - Uniformly rescale domain bounds, atom coordinates, and bond lengths
-% - Reads scale factor from obj.domain.scale
+% - Uniformly rescale domain bounds, atom coordinates, and bond lengths.
+% - Reads scale factor from obj.domain.scale.
 %
-% INPUT:
-%   obj   : network object
-%   Atoms : atom array [ID x y z ...]
-%   Bonds : bond array [ID i j L type]
-%
-% OUTPUT:
-%   Atoms : scaled atom array
-%   Bonds : scaled bond array
+% Atoms column layout:
+%   [ID | molID | X | Y | Z | deg | nbrs...]
+% Coordinates are now at cols 3-5 (not 2-4).
 %
 % SIDE EFFECT:
-%   Updates obj.domain.xlo/xhi/ylo/yhi/zlo/zhi in place
+%   Updates obj.domain.xlo/xhi/ylo/yhi/zlo/zhi in place.
 % -------------------------------------------------------------------------
 
     if nargin < 3
@@ -35,7 +30,6 @@ function [Atoms, Bonds] = ScaleDomain(obj, Atoms, Bonds)
         error('ScaleDomain: obj.domain.scale must be positive.');
     end
 
-    % No-op case
     if scaleFactor == 1
         obj.log.print('   Domain scaling skipped (scale = 1).\n');
         return;
@@ -43,9 +37,6 @@ function [Atoms, Bonds] = ScaleDomain(obj, Atoms, Bonds)
 
     obj.log.print('   Scaling domain by factor %.6g\n', scaleFactor);
 
-    % ---------------------------------------------------------------------
-    % Scale domain bounds
-    % ---------------------------------------------------------------------
     obj.domain.xlo = obj.domain.xlo * scaleFactor;
     obj.domain.xhi = obj.domain.xhi * scaleFactor;
 
@@ -55,16 +46,11 @@ function [Atoms, Bonds] = ScaleDomain(obj, Atoms, Bonds)
     obj.domain.zlo = obj.domain.zlo * scaleFactor;
     obj.domain.zhi = obj.domain.zhi * scaleFactor;
 
-    % ---------------------------------------------------------------------
-    % Scale atom coordinates
-    % ---------------------------------------------------------------------
-    if ~isempty(Atoms) && size(Atoms,2) >= 4
-        Atoms(:,2:4) = Atoms(:,2:4) * scaleFactor;
+    % Atom coordinates (X, Y, Z) at columns 3, 4, 5 under new layout
+    if ~isempty(Atoms) && size(Atoms,2) >= 5
+        Atoms(:,3:5) = Atoms(:,3:5) * scaleFactor;
     end
 
-    % ---------------------------------------------------------------------
-    % Scale bond equilibrium lengths
-    % ---------------------------------------------------------------------
     if ~isempty(Bonds) && size(Bonds,2) >= 4
         Bonds(:,4) = Bonds(:,4) * scaleFactor;
     end
