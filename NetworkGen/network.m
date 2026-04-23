@@ -136,20 +136,18 @@ methods
             syncKuhnAssignmentFromTopology(obj);
 
             % ---------------------------------------------------------
-            % 3. Add atoms   (Atoms has molID at col 2 from every path)
+            % 3. Add atoms  
             % ---------------------------------------------------------
             [Atoms, LatticeData] = AddAtoms(obj);
 
             % ---------------------------------------------------------
-            % 4. Add bonds   (all Bonds(:,5) = 0 at this point)
+            % 4. Add bonds  
             % ---------------------------------------------------------
             [Atoms, Bonds] = AddBonds(obj, Atoms, LatticeData);
             syncKuhnAssignmentFromTopology(obj);
 
             % ---------------------------------------------------------
             % 5. Add heterogeneities  (voids + hex-only disorders)
-            %    Nvec not yet assigned; pass []. Downstream routines
-            %    already gate on ~isempty(Nvec).
             % ---------------------------------------------------------
             Nvec = [];
             [Atoms, Bonds, Nvec] = AddHeterogeneities(obj, Atoms, Bonds, Nvec);
