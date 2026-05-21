@@ -32,11 +32,25 @@ properties
     rho_atom =                  [];
 
     %%% Bottle-brush architecture
+    %
+    % Rod-length dispersity:
+    %   rod_dispersity = false -> every rod has exactly Nr atoms.
+    %   rod_dispersity = true  -> each rod's atom count is sampled from the
+    %                             rod_length assignmentmode. Set its .mode
+    %                             ('mono' | 'uniform' | 'poly' | 'bimodal')
+    %                             and the matching sub-struct of settings,
+    %                             exactly as for strand_typology. The .auto
+    %                             flag of rod_length is not used.
+    %   Supported rod_length methods: poly -> 'pmf' or 'mono';
+    %                                 bimodal -> 'gaussian' or 'single'.
+    %   (poly 'geom'/'range' need bond lengths and do not apply to rods.)
     bottlebrush = struct(...
-        'Nr',                   10, ...     % atoms per rod
-        'sigma_r',              1.0, ...    % rod atom separation distance
-        'sigma_c_rod',          1.0, ...    % rod atom size (for LD potential)
-        'rod_collision_multiplier', 2.0 ... % rod center separation = multiplier * sigma_r
+        'Nr',                       10, ...    % baseline atoms per rod (used when rod_dispersity = false)
+        'sigma_r',                  1.0, ...   % rod atom separation distance
+        'sigma_c_rod',              1.0, ...   % rod atom size (for LD potential)
+        'rod_collision_multiplier', 2.0, ...   % rod center separation = multiplier * sigma_r
+        'rod_dispersity',           false, ... % when true, per-rod atom count is sampled from rod_length
+        'rod_length',               assignmentmode() ...  % distribution governing per-rod atom count
     );
 
 end

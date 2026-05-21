@@ -34,13 +34,25 @@ function RodBonds = AddBondsRods(obj, Atoms)
     RodBonds = zeros(natom, 5);
     nbond = 0;
 
-    % Walk atoms in their current row order. Whenever two consecutive rows
-    % share a molID, they form a rod bond. This matches the block layout
-    % produced by AddAtomsBottleBrush (atoms within a rod are contiguous).
-    for k = 1:(natom - 1)
-        if mol_ids(k) == mol_ids(k+1) && mol_ids(k) > 0
+    % Build rod bonds by grouping atoms by molID and connecting consecutive
+    % rod atoms in ascending ID order. Rod atoms are created with incremental
+    % IDs, so this prevents same-molID bonds from spanning across nonadjacent
+    % rod atoms.
+    unique_mol_ids = unique(mol_ids(mol_ids > 0));
+    for mi = 1:numel(unique_mol_ids)
+        mol = unique_mol_ids(mi);
+        idx = find(mol_ids == mol);
+        if numel(idx) < 2
+            continue;
+        end
+
+        % Order rod atoms by atom ID rather than by nearest spatial neighbor.
+        [~, order] = sort(ids(idx));
+        chain = idx(order);
+
+        for j = 1:(numel(chain) - 1)
             nbond = nbond + 1;
-            RodBonds(nbond, :) = [nbond, ids(k), ids(k+1), sigma_r, 0];
+            RodBonds(nbond, :) = [nbond, ids(chain(j)), ids(chain(j+1)), sigma_r, 0];
         end
     end
 

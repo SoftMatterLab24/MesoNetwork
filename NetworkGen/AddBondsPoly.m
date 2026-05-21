@@ -62,6 +62,8 @@ function [AtomsOut, BondsOut] = connect_general_poly(obj, Atoms, PreBonds)
     Rcut2 = Rcut * Rcut;
 
     ids = Atoms(:,1);
+    mol_ids = Atoms(:,2);
+    sameRod = strcmpi(obj.architecture.geometry, 'bottle_brush');
     x   = Atoms(:,3);   % X at col 3
     y   = Atoms(:,4);   % Y at col 4
 
@@ -131,6 +133,9 @@ function [AtomsOut, BondsOut] = connect_general_poly(obj, Atoms, PreBonds)
                 continue;
             end
             if adj(r1,r2) ~= 0
+                continue;
+            end
+            if sameRod && (mol_ids(r1) == mol_ids(r2))
                 continue;
             end
 

@@ -187,6 +187,8 @@ function [Atoms, Bonds] = connect_bimodal_general(obj, Atoms, PreBonds)
     end
 
     ids = Atoms(:,1);
+    mol_ids = Atoms(:,2);
+    sameRod = strcmpi(obj.architecture.geometry, 'bottle_brush');
     x   = Atoms(:,3);   % X at col 3
     y   = Atoms(:,4);   % Y at col 4
 
@@ -311,6 +313,9 @@ function [Atoms, Bonds] = connect_bimodal_general(obj, Atoms, PreBonds)
             in2 = (d >= r2lo) & (d <= r2hi);
             cand2 = neigh(in2);
             cand2 = exclude_existing_any(cand2, r1, adj_set);
+            if sameRod
+                cand2 = cand2(mol_ids(cand2) ~= mol_ids(r1));
+            end
 
             if ~useManual
                 C = numel(cand2);
@@ -392,6 +397,9 @@ function [Atoms, Bonds] = connect_bimodal_general(obj, Atoms, PreBonds)
             in1 = (d >= rlo) & (d <= rhi);
             cand = neigh(in1);
             cand = exclude_existing_any(cand, r1, adj_set);
+            if sameRod
+                cand = cand(mol_ids(cand) ~= mol_ids(r1));
+            end
 
             if ~useManual
                 C = numel(cand);
@@ -474,6 +482,9 @@ function [Atoms, Bonds] = connect_bimodal_general(obj, Atoms, PreBonds)
             in1 = (d >= rlo) & (d <= rhi);
             cand = neigh(in1);
             cand = exclude_existing_any(cand, r1, adj_set);
+            if sameRod
+                cand = cand(mol_ids(cand) ~= mol_ids(r1));
+            end
 
             if ~useManual
                 C = numel(cand);
@@ -577,6 +588,9 @@ function [Atoms, Bonds] = connect_bimodal_general(obj, Atoms, PreBonds)
             in2 = (d >= r2lo) & (d <= r2hi);
             cand2 = neigh(in2);
             cand2 = exclude_existing_any(cand2, r1, adj_set);
+            if sameRod
+                cand2 = cand2(mol_ids(cand2) ~= mol_ids(r1));
+            end
 
             if ~useManual
                 C = numel(cand2);
