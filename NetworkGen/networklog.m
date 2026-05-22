@@ -293,10 +293,21 @@ methods
                 b = obj_network.domain.b;
             end
 
+            if isfield(LDpot, 'type')
+                obj.record('LD_type', LDpot.type, ...
+                    'desc', 'Local density potential type');
+            end
+
             if isfield(LDpot, 'rho0')
                 obj.record('LD_rho0', LDpot.rho0, ...
                     'fmt', '%.6f', ...
                     'desc', 'Equilibrium local density (rho0)');
+            end
+
+            if isfield(LDpot, 'ea')
+                obj.record('LD_ea', LDpot.ea, ...
+                    'fmt', '%.6f', ...
+                    'desc', 'vdW energy parameter');
             end
 
             if isfield(LDpot, 'R_lower')

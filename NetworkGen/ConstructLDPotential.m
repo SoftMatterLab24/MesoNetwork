@@ -56,10 +56,18 @@ function LDpot = ConstructLDPotential(obj, Atoms, Bonds, Nvec)
 
     b = obj.domain.b;
 
+    type    = obj.pot.type;
     kLD     = obj.pot.k_LD;
+    
     N_rho   = obj.pot.N_rho;
     rho_min = obj.pot.rho_min;
     rho_max = obj.pot.rho_max;
+
+    % Harmonic parameters (none)
+
+    % vdW parameters
+    ea      = obj.pot.ea;
+    
 
     if isempty(kLD)
         kLD = 0.414;
@@ -79,6 +87,7 @@ function LDpot = ConstructLDPotential(obj, Atoms, Bonds, Nvec)
     end
 
     drho = (rho_max - rho_min) / (N_rho - 1);
+    rho0 = [];
 
     % ---------------------------------------------------------------------
     % Derived network quantities
@@ -130,34 +139,71 @@ function LDpot = ConstructLDPotential(obj, Atoms, Bonds, Nvec)
     % Construct local-density potential parameters
     % ---------------------------------------------------------------------
     R2 = 4.0 * sig_c;
-    rho0 = 0.8 * (R2 / sig_c)^2;
-
+    
     R1 = 0.8 * sig_c;
-    rc = 2.0 * sig_c;
+    rc = 2.0 * sig_c
 
-    rho_vec = linspace(rho_min, rho_max, N_rho + 1).';
-    pot_density = kLD * (rho_vec - rho0).^2;
+    if strcmpi(type, 'harmonic')
+        rho0 = 0.8 * (R2 / sig_c)^2;
+        rho_vec = linspace(rho_min, rho_max, N_rho + 1).';
+        pot_density = kLD * (rho_vec - rho0).^2;
+    elseif strcmpi(type, 'vdW')
+        if ea < 0
+            error('ConstructLDPotential: vdW potential requires non-negative ea.');
+        end
+
+        nu = pi*b^2/4                                % Kuhn segment area
+        kappa = Total_kuhn_segment / Atom_count % Kuhn segments per atom
+        Vc = pi*R2^2                          % confining volume per atom
+
+        N_bound = Vc / (kappa * nu)
+        rho_max = N_bound * (1 - 1e-6); % avoid log(0) singularity
+
+        if rho_min >= N_bound
+            error('ConstructLDPotential: vdW rho_min must be below the physical bound %.6g.', N_bound);
+        end
+
+        N_points = linspace(rho_min, N_bound*(1- 1e-6), N_rho + 1);
+
+        term0 = Vc ./(N_points .* kappa) - nu;
+        term1 = -kLD .* kappa .* N_points;
+        term2 = (ea .* nu .* (N_points .* kappa).^2) ./ Vc;
+        pot_density = term1 .* log(term0) - term2;
+    else
+        error('ConstructLDPotential: unsupported potential type "%s".', type);
+    end
 
     % ---------------------------------------------------------------------
     % Pack output struct
     % ---------------------------------------------------------------------
     LDpot = struct();
 
+    LDpot.type        = type;
     LDpot.N_LD        = 1;
     LDpot.N_rho       = N_rho;
     LDpot.R_lower     = R1;
     LDpot.R_upper     = R2;
     LDpot.rc          = rc;
     LDpot.rho_min     = rho_min;
-    LDpot.rho0        = rho0;
     LDpot.rho_max     = rho_max;
     LDpot.drho        = drho;
     LDpot.pot_density = pot_density;
+    LDpot.sig_c       = sig_c;
 
-    LDpot.sig_c = sig_c;
+    if strcmpi(type, 'harmonic')
+        LDpot.rho0 = rho0;
+    end
+    if strcmpi(type, 'vdW')
+        LDpot.ea = ea;
+    end
 
-    obj.log.print('   Constructed LD potential with parameters:\n');
-    obj.log.print('   Target equilibrium density rho0 = %.4f\n', rho0);
+    obj.log.print('   Constructed LD potential of type %s with %d table entries:\n', ...
+        type, numel(pot_density));
+    if strcmpi(type, 'harmonic')
+        obj.log.print('   Target equilibrium density rho0 = %.4f\n', rho0);
+    else
+        obj.log.print('   vdW binding energy ea = %.4f\n', ea);
+    end
     obj.log.print('   Lower cutoff R1 = %.4f * b\n', R1 / b);
     obj.log.print('   Upper cutoff R2 = %.4f * b\n', R2 / b);
     obj.log.print('   BPM/spring repulsion cutoff rc = %.4f * b\n', rc / b);

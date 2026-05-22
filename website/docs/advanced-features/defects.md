@@ -170,16 +170,38 @@ net.defect.void_overlap = false;
 
 | Type | Args | Default |
 |------|------|---------|
-| `string` | `'random'` \| `'uniform'` \| `'clustered'` | `'clustered'` |
+| `string` | `'random'` \| `'uniform'` \| `'clustered'` \| `'manual'` | `'clustered'` |
 
 Controls the spatial distribution of void centers.
 
 - **random** — void centers placed randomly
 - **uniform** — void centers distributed evenly across the domain
 - **clustered** — void centers grouped around parent locations
+- **manual** — void centers specified explicitly via `manual_centers` (only works with `density_mode = 'count'`)
 
 ```matlab
 net.defect.center_distribution = 'clustered';
+```
+
+---
+
+### `defect.manual_centers`
+
+| Type | Args | Default |
+|------|------|---------|
+| `double array` | [N × 2] matrix | `[]` |
+
+Explicit coordinates of void centers when using `center_distribution = 'manual'`. Must be an N×2 array where N equals the number of voids (`n_voids`) and each row contains [x, y] coordinates.
+
+Only used when `center_distribution = 'manual'` AND `density_mode = 'count'`.
+
+Coordinates outside the domain are automatically clamped to the domain boundaries.
+
+```matlab
+net.defect.density_mode = 'count';
+net.defect.n_voids = 3;
+net.defect.center_distribution = 'manual';
+net.defect.manual_centers = [25.0, 30.0; 50.0, 50.0; 75.0, 35.0];
 ```
 
 ---
@@ -296,7 +318,9 @@ net.defect.clamp_thickness = 1.5;
 
 ---
 
-## Example
+## Examples
+
+### Random void distribution
 
 ```matlab
 net.flags.idefect = true;
@@ -308,6 +332,23 @@ net.defect.radius_std = 0.5;
 net.defect.radius_min = 0.5;
 net.defect.radius_max = 4.0;
 net.defect.center_distribution = 'random';
+net.defect.void_overlap = false;
+net.defect.prune_isolated = true;
+```
+
+### Manual void placement
+
+```matlab
+net.flags.idefect = true;
+net.defect.density_mode = 'count';
+net.defect.n_voids = 3;
+net.defect.size_dist = 'gaussian';
+net.defect.radius_mean = 5.0;
+net.defect.radius_std = 1.0;
+net.defect.radius_min = 2.0;
+net.defect.radius_max = 8.0;
+net.defect.center_distribution = 'manual';
+net.defect.manual_centers = [25.0, 30.0; 50.0, 50.0; 75.0, 35.0];
 net.defect.void_overlap = false;
 net.defect.prune_isolated = true;
 ```

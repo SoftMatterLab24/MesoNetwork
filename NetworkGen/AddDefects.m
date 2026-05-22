@@ -144,6 +144,25 @@ function [Atoms, Bonds, Nvec] = AddDefects(obj, Atoms, Bonds, Nvec)
             cand_x = max(x_lo, min(x_hi, cand_x));
             cand_y = max(y_lo, min(y_hi, cand_y));
 
+        case 'manual'
+            % Use manually-specified void center coordinates
+            if ~strcmpi(d.density_mode, 'count')
+                error('AddDefects: manual center_distribution only works with density_mode=''count''');
+            end
+            if isempty(d.manual_centers)
+                error('AddDefects: manual center_distribution requires manual_centers to be set');
+            end
+            if size(d.manual_centers, 1) ~= n_voids || size(d.manual_centers, 2) ~= 2
+                error('AddDefects: manual_centers must be [%d x 2] array but got [%d x %d]', ...
+                    n_voids, size(d.manual_centers, 1), size(d.manual_centers, 2));
+            end
+            cand_x = d.manual_centers(:, 1);
+            cand_y = d.manual_centers(:, 2);
+            % Clamp to domain bounds
+            cand_x = max(xlo, min(xhi, cand_x));
+            cand_y = max(ylo, min(yhi, cand_y));
+            obj.log.print('   [AddDefects] Using manual coordinates for %d voids\n', n_voids);
+
         otherwise
             warning('AddDefects: unknown center_distribution "%s"; using random.', ...
                 d.center_distribution);

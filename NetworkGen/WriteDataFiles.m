@@ -209,7 +209,11 @@ function WriteDataFiles(obj, Atoms, Bonds, Nvec, LDpot, TypeData)
 
         fclose(fidP);
 
-        obj.log.print('   Wrote %s\n', potfile_path);
+        if isfield(LDpot, 'type')
+            obj.log.print('   Wrote %s (%s LD potential)\n', potfile_path, LDpot.type);
+        else
+            obj.log.print('   Wrote %s\n', potfile_path);
+        end
     elseif obj.flags.ipotential
         obj.log.print('   Skipped potential write because LDpot is empty.\n');
     end

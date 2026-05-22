@@ -128,7 +128,8 @@ A complete flat reference of all NetworkGen settings. For detailed descriptions 
 | `net.defect.shape_roughness` | `double` | [0, 1] | `0.3` |
 | `net.defect.shape_n_modes` | `int` | [1, ∞) | `2` |
 | `net.defect.void_overlap` | `boolean` | `true` \| `false` | `false` |
-| `net.defect.center_distribution` | `string` | `'random'` \| `'uniform'` \| `'clustered'` | `'clustered'` |
+| `net.defect.center_distribution` | `string` | `'random'` \| `'uniform'` \| `'clustered'` \| `'manual'` | `'clustered'` |
+| `net.defect.manual_centers` | `double array` | [N × 2] | `[]` |
 | `net.defect.n_cluster_parents` | `int` | [1, ∞) | `2` |
 | `net.defect.cluster_spread` | `double` | (0, ∞) | `10` |
 | `net.defect.margin_frac` | `double` | [0, 0.5) | `0.15` |
