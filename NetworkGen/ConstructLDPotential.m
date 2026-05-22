@@ -157,7 +157,7 @@ function LDpot = ConstructLDPotential(obj, Atoms, Bonds, Nvec)
         Vc = pi*R2^2                          % confining volume per atom
 
         N_bound = Vc / (kappa * nu)
-        rho_max = N_bound * (1 - 1e-6); % avoid log(0) singularity
+        rho_max = N_bound * (1 - 1e-6);
 
         if rho_min >= N_bound
             error('ConstructLDPotential: vdW rho_min must be below the physical bound %.6g.', N_bound);
