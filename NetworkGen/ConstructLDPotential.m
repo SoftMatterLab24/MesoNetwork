@@ -138,36 +138,45 @@ function LDpot = ConstructLDPotential(obj, Atoms, Bonds, Nvec)
     % ---------------------------------------------------------------------
     % Construct local-density potential parameters
     % ---------------------------------------------------------------------
-    R2 = 4.0 * sig_c;
-    
-    R1 = 0.8 * sig_c;
-    rc = 2.0 * sig_c
+ 
 
     if strcmpi(type, 'harmonic')
+        R2 = 4.0 * sig_c;
+    
+        R1 = 0.8 * sig_c;
+        rc = 2.0 * sig_c
+
         rho0 = 0.8 * (R2 / sig_c)^2;
         rho_vec = linspace(rho_min, rho_max, N_rho + 1).';
         pot_density = kLD * (rho_vec - rho0).^2;
     elseif strcmpi(type, 'vdW')
+        R2 = 2.85 * sig_c;
+    
+        R1 = 0.2 * R2;
+        rc = 2.0 * sig_c;
+
         if ea < 0
             error('ConstructLDPotential: vdW potential requires non-negative ea.');
         end
 
-        nu = pi*b^2/4                                % Kuhn segment area
-        kappa = Total_kuhn_segment / Atom_count % Kuhn segments per atom
-        Vc = pi*R2^2                          % confining volume per atom
+        nu = pi*b^2/4;                                  % Kuhn segment area
+        kappa = Total_kuhn_segment / Atom_count;        % Kuhn segments per atom
+        Vc = pi*R2^2;                                   % confining volume per atom
 
-        N_bound = Vc / (kappa * nu)
-        rho_max = N_bound * (1 - 1e-6);
-
+        N_bound = Vc / (kappa * nu);
+        rho_max = (N_bound - 1) * (1 - 1e-6);
+        rho_max
         if rho_min >= N_bound
             error('ConstructLDPotential: vdW rho_min must be below the physical bound %.6g.', N_bound);
         end
 
-        N_points = linspace(rho_min, N_bound*(1- 1e-6), N_rho + 1);
+        N_points = linspace(rho_min, rho_max, N_rho + 1);
+        drho = (rho_max - rho_min) / (N_rho - 1);
 
-        term0 = Vc ./(N_points .* kappa) - nu;
-        term1 = -kLD .* kappa .* N_points;
-        term2 = (ea .* nu .* (N_points .* kappa).^2) ./ Vc;
+        x      = kappa .* (N_points + 1);          % +1 = the central node's own contribution
+        term0  = Vc ./ x - nu;                      % Vc/(kappa*(Ntilde+1)) - nu
+        term1  = -kLD .* x;
+        term2  = ea .* nu .* x.^2 ./ Vc;
         pot_density = term1 .* log(term0) - term2;
     else
         error('ConstructLDPotential: unsupported potential type "%s".', type);

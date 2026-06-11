@@ -68,7 +68,8 @@ function [AtomsOut, BondsOut] = connect_random_mono(obj, Atoms, PreBonds)
     ylo = obj.domain.ylo; yhi = obj.domain.yhi;
     Lx = xhi - xlo; Ly = yhi - ylo;
 
-    isPeriodic = strcmpi(obj.domain.boundary, 'periodic');
+    % Per-axis periodicity [periodic-in-x, periodic-in-y], resolved by SetupDomain.
+    isPeriodic = [obj.domain.isPeriodicX, obj.domain.isPeriodicY];
 
     a = obj.domain.min_node_sep;
     if strcmpi(obj.architecture.spacing_multiplier_mode, 'auto')
@@ -330,49 +331,42 @@ end
 % HELPERS
 % =========================================================================
 function neigh = gather_neighbors(r1, Cells, cx, cy, nx, ny, isPeriodic)
+% isPeriodic = [perX, perY]. Wrap the cell index on an axis only if that
+% axis is periodic; otherwise skip out-of-range cells on that axis.
 
     Cx = cx(r1);
     Cy = cy(r1);
     neigh = [];
 
-    if isPeriodic
-        for dxCell = -1:1
-            ix = Cx + dxCell;
+    perX = isPeriodic(1);
+    perY = isPeriodic(2);
+
+    for dxCell = -1:1
+        ix = Cx + dxCell;
+        if perX
             if ix < 1
                 ix = nx;
             elseif ix > nx
                 ix = 1;
             end
+        elseif ix < 1 || ix > nx
+            continue;
+        end
 
-            for dyCell = -1:1
-                iy = Cy + dyCell;
+        for dyCell = -1:1
+            iy = Cy + dyCell;
+            if perY
                 if iy < 1
                     iy = ny;
                 elseif iy > ny
                     iy = 1;
                 end
-
-                if ~isempty(Cells{ix,iy})
-                    neigh = [neigh, Cells{ix,iy}]; %#ok<AGROW>
-                end
-            end
-        end
-    else
-        for dxCell = -1:1
-            ix = Cx + dxCell;
-            if ix < 1 || ix > nx
+            elseif iy < 1 || iy > ny
                 continue;
             end
 
-            for dyCell = -1:1
-                iy = Cy + dyCell;
-                if iy < 1 || iy > ny
-                    continue;
-                end
-
-                if ~isempty(Cells{ix,iy})
-                    neigh = [neigh, Cells{ix,iy}]; %#ok<AGROW>
-                end
+            if ~isempty(Cells{ix,iy})
+                neigh = [neigh, Cells{ix,iy}]; %#ok<AGROW>
             end
         end
     end
@@ -380,15 +374,17 @@ function neigh = gather_neighbors(r1, Cells, cx, cy, nx, ny, isPeriodic)
 end
 
 function d = minimum_image(isPeriodic, dx, dy, Lx, Ly)
+% isPeriodic = [perX, perY]. Minimum-image is applied only on periodic axes.
 
-    if ~isPeriodic
-        d = sqrt(dx.^2 + dy.^2);
-        return;
+    dx0 = dx;
+    dy0 = dy;
+    if isPeriodic(1)
+        dx0 = dx - Lx .* round(dx ./ Lx);
     end
-
-    dxp = dx - Lx .* round(dx ./ Lx);
-    dyp = dy - Ly .* round(dy ./ Ly);
-    d = sqrt(dxp.^2 + dyp.^2);
+    if isPeriodic(2)
+        dy0 = dy - Ly .* round(dy ./ Ly);
+    end
+    d = sqrt(dx0.^2 + dy0.^2);
 
 end
 

@@ -200,7 +200,7 @@ function WriteDataFiles(obj, Atoms, Bonds, Nvec, LDpot, TypeData)
         fprintf(fidP, '%2.4f %2.4f \n', LDpot.R_lower, LDpot.R_upper);
         fprintf(fidP, '1 \n');
         fprintf(fidP, '1 \n');
-        fprintf(fidP, '%2.4f %2.4f %2.4f \n', ...
+        fprintf(fidP, '%2.4f %2.4f %2.8f \n', ...
             LDpot.rho_min, LDpot.rho_max, LDpot.drho);
 
         for i = 1:length(LDpot.pot_density)

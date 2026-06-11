@@ -83,6 +83,31 @@ function [] = SetupDomain(obj)
     obj.domain.min_node_sep    = min_node_sep;
     obj.domain.min_node_sep2   = min_node_sep2;
 
-
+    %% ---------------------- Boundary periodicity ------------------------
+    % Resolve the boundary specification into per-axis periodicity flags so
+    % the bond generators can wrap (or not) each axis independently:
+    %   'fixed'      -> fixed    in x and y
+    %   'periodic'   -> periodic in x and y
+    %   'periodic_x' -> periodic in x, fixed in y
+    %   'periodic_y' -> periodic in y, fixed in x
+    switch lower(strtrim(obj.domain.boundary))
+        case {'fixed', 'f', 'ff'}
+            obj.domain.isPeriodicX = false;
+            obj.domain.isPeriodicY = false;
+        case {'periodic', 'p', 'pp'}
+            obj.domain.isPeriodicX = true;
+            obj.domain.isPeriodicY = true;
+        case {'periodic_x', 'periodic-x', 'px', 'pf'}
+            obj.domain.isPeriodicX = true;
+            obj.domain.isPeriodicY = false;
+        case {'periodic_y', 'periodic-y', 'py', 'fp'}
+            obj.domain.isPeriodicX = false;
+            obj.domain.isPeriodicY = true;
+        otherwise
+            error(['SetupDomain: unknown boundary "%s". Use ''fixed'', ' ...
+                   '''periodic'', ''periodic_x'' (periodic in x, fixed in y), ' ...
+                   'or ''periodic_y'' (periodic in y, fixed in x).'], ...
+                   obj.domain.boundary);
+    end
 
 end
